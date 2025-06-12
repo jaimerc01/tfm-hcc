@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: Historia Clinica Comun
+  datasource:
+    url: jdbc:postgresql://localhost:5432/HCC_DEV
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8080

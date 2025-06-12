@@ -31,5 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+.code-workspace
+launch.json
 
-clave-github.txt
+clave.txt
+workspace.code-workspace
