@@ -10,6 +10,6 @@ public interface PerfilService {
      * @param rol el nombre del rol a buscar
      * @return el perfil correspondiente o null si no se encuentra
      */
-    Perfil findByRol(String rol);
+    Perfil getPerfilByRol(String rol);
 
 }

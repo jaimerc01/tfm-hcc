@@ -6,20 +6,20 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hcc.tfm_hcc.facade.PerfilFacade;
 import com.hcc.tfm_hcc.model.Perfil;
-import com.hcc.tfm_hcc.service.PerfilService;
 
 @RestController
 @RequestMapping("/perfil")
 public class PerfilControllerImpl implements PerfilController {
 
     @Autowired
-    private PerfilService perfilService;
+    private PerfilFacade perfilFacade;
 
     @Override
     @GetMapping("/rol/{rol}")
     public Perfil getPerfilByRol(@PathVariable String rol) {
-        return perfilService.findByRol(rol);
+        return perfilFacade.getPerfilByRol(rol);
     }
     
 }

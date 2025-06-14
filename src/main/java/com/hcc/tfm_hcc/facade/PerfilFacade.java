@@ -1,8 +1,9 @@
-package com.hcc.tfm_hcc.controller;
+package com.hcc.tfm_hcc.facade;
+
 import com.hcc.tfm_hcc.model.Perfil;
 
-public interface PerfilController {
-    
+public interface PerfilFacade {
+
     /**
      * Obtiene un perfil según el rol especificado.
      *
@@ -10,4 +11,5 @@ public interface PerfilController {
      * @return el perfil correspondiente al rol, o null si no se encuentra
      */
     Perfil getPerfilByRol(String rol);
+    
 }

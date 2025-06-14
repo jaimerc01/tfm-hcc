@@ -1,14 +1,27 @@
 package com.hcc.tfm_hcc.model;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.GenerationType;
 import java.util.UUID;
 
+import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+@Data
+@NoArgsConstructor
 @Entity
-public class Perfil {
+@Table(name = "perfil")
+public class Perfil implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -18,36 +31,4 @@ public class Perfil {
     @Column(name = "rol", nullable = false, unique = true)
     private String rol;
 
-    public Perfil() {
-    }
-
-    public UUID getId() {
-        return this.id;
-    }
-
-    public String getRol() {
-        return this.rol;
-    }
-
-    public void setRol(String rol) {
-        this.rol = rol;
-    }
-
-    @Override
-    public String toString() {
-        return "Perfil{" +
-                "id=" + id +
-                ", rol='" + rol + '\'' +
-                '}';
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Perfil perfil)) return false;
-
-        if (!id.equals(perfil.id)) return false;
-        return rol.equals(perfil.rol);
-    }
-    
 }

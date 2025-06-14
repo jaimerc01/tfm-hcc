@@ -13,6 +13,6 @@ import com.hcc.tfm_hcc.model.Perfil;
 public interface PerfilRepository  extends CrudRepository<Perfil, Long> {
 
     @Query("SELECT p FROM Perfil p WHERE LOWER(p.rol) = LOWER(:rol)")
-    Optional<Perfil> findByRol(@Param("rol") String rol);
+    Optional<Perfil> getPerfilByRol(@Param("rol") String rol);
     
 }

@@ -16,8 +16,8 @@ public class PerfilServiceImpl implements PerfilService {
     }
 
     @Override
-    public Perfil findByRol(String rol) {
-    return perfilRepository.findByRol(rol)
-        .orElseThrow(() -> new PerfilNotFoundException(rol));
+    public Perfil getPerfilByRol(String rol) {
+        return perfilRepository.getPerfilByRol(rol)
+            .orElseThrow(() -> new PerfilNotFoundException(rol));
     }
 }
