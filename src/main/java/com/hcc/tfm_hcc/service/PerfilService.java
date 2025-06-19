@@ -1,5 +1,6 @@
 package com.hcc.tfm_hcc.service;
 
+import com.hcc.tfm_hcc.exception.PerfilNotFoundException;
 import com.hcc.tfm_hcc.model.Perfil;
 
 public interface PerfilService {
@@ -10,6 +11,6 @@ public interface PerfilService {
      * @param rol el nombre del rol a buscar
      * @return el perfil correspondiente o null si no se encuentra
      */
-    Perfil getPerfilByRol(String rol);
+    public Perfil getPerfilByRol(String rol) throws PerfilNotFoundException;
 
 }
