@@ -1,14 +1,17 @@
-package com.hcc.tfm_hcc.service;
+package com.hcc.tfm_hcc.service.impl;
 
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.UsuarioService;
 
+@Service
 public class UsuarioServiceImpl implements UsuarioService {
 
     @Autowired

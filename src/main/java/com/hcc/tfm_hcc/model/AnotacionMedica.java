@@ -16,7 +16,13 @@ public class AnotacionMedica extends BaseEntity {
     private static final long serialVersionUID = 7L;
 
     @ManyToOne
-    @JoinColumn(name = "id_historial_clinico", nullable = false)
-    private HistorialClinico historialClinico;
+    @JoinColumn(name = "id_profesional", nullable = false)
+    private Usuario medico;
     
+    @ManyToOne
+    @JoinColumn(name = "id_paciente", nullable = false)
+    private Usuario paciente;
+
+    @JoinColumn(name = "mensaje", nullable = false)
+    private String mensaje;
 }

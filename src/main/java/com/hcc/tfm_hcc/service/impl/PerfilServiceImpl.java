@@ -1,10 +1,11 @@
-package com.hcc.tfm_hcc.service;
+package com.hcc.tfm_hcc.service.impl;
 
 import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.exception.PerfilNotFoundException;
 import com.hcc.tfm_hcc.model.Perfil;
 import com.hcc.tfm_hcc.repository.PerfilRepository;
+import com.hcc.tfm_hcc.service.PerfilService;
 
 @Service
 public class PerfilServiceImpl implements PerfilService {
