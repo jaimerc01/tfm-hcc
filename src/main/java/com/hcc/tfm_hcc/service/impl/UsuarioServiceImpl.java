@@ -1,8 +1,9 @@
 package com.hcc.tfm_hcc.service.impl;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
@@ -20,15 +21,20 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Override
-    public String altaUsuario(UsuarioDTO usuarioDTO) {
+    public Usuario altaUsuario(UsuarioDTO usuarioDTO) {
+
+        usuarioDTO.setPassword(passwordEncoder.encode(usuarioDTO.getPassword()));
         
         Usuario usuario = usuarioMapper.toEntity(usuarioDTO);
-        usuario.setFechaCreacion(new Date());
+        usuario.setFechaCreacion(LocalDateTime.now());
 
         this.usuarioRepository.save(usuario);
 
-        return "Usuario creado con éxito";
+        return usuario;
     }
     
 }

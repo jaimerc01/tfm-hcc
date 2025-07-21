@@ -10,5 +10,5 @@ public interface UsuarioController {
      * @param usuarioDTO el objeto que contiene los datos del usuario a dar de alta
      * @return el id del usuario creado, o un mensaje de error si la operación falla
      */
-    String altaUsuario(UsuarioDTO usuarioDTO);
+    // String altaUsuario(UsuarioDTO usuarioDTO);
 }

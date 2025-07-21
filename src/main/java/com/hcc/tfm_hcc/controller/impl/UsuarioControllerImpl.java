@@ -17,9 +17,9 @@ public class UsuarioControllerImpl implements UsuarioController{
     @Autowired
     private UsuarioFacade usuarioFacade;
 
-    @Override
-    @PostMapping("/alta")
-    public String altaUsuario(@RequestBody UsuarioDTO usuarioDTO) {
-        return usuarioFacade.altaUsuario(usuarioDTO);
-    }
+    // @Override
+    // @PostMapping("/alta")
+    // public String altaUsuario(@RequestBody UsuarioDTO usuarioDTO) {
+    //     return usuarioFacade.altaUsuario(usuarioDTO);
+    // }
 }

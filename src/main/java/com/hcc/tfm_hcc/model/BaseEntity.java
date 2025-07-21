@@ -1,7 +1,7 @@
 package com.hcc.tfm_hcc.model;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import jakarta.persistence.Column;
@@ -26,9 +26,9 @@ public class BaseEntity implements Serializable{
     
     @Column(name = "fecha_creacion", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
-    private Date fechaCreacion;
+    private LocalDateTime fechaCreacion;
 
     @Column(name = "fecha_ultima_modificacion")
     @Temporal(TemporalType.TIMESTAMP)
-    private Date fechaUltimaModificacion;
+    private LocalDateTime fechaUltimaModificacion;
 }

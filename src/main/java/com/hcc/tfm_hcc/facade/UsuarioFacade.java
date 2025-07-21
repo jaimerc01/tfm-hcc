@@ -7,7 +7,7 @@ public interface UsuarioFacade {
      * Da de alta un nuevo usuario en el sistema.
      *
      * @param usuarioDTO el objeto que contiene los datos del usuario a dar de alta
-     * @return el id del usuario creado, o un mensaje de error si la operación falla
+     * @return el usuario dado de alta
      */
-    String altaUsuario(UsuarioDTO usuarioDTO);
+    UsuarioDTO altaUsuario(UsuarioDTO usuarioDTO);
 }

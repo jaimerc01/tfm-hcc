@@ -8,6 +8,11 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-
+  
 server:
   port: 8080
+
+security:
+  jwt:
+    secret-key: ${JWT_SECRET}
+    expiration-time: 3600000 # 1 hour in milliseconds 
