@@ -7,13 +7,9 @@ const isAuthenticated = computed(() => !!user.value)
 
 export function useAuth() {
   const login = async (credentials) => {
-    try {
-      const result = await authService.login(credentials)
-      user.value = result.user
-      return result
-    } catch (error) {
-      throw error
-    }
+    const result = await authService.login(credentials)
+    user.value = result.user
+    return result
   }
 
   const logout = async () => {

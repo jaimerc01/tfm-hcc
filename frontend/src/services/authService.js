@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = process.env.VUE_APP_API_URL || 'http://localhost:8080/api'
+const API_BASE_URL = process.env.VUE_APP_API_URL || 'http://localhost:8081/'
 
 class AuthService {
   constructor() {
@@ -23,7 +23,7 @@ class AuthService {
 
   async login(credentials) {
     try {
-      const response = await this.apiClient.post('/auth/login', credentials)
+      const response = await this.apiClient.post('/authentication/login', credentials)
       const { token, user } = response.data
       
       // Guardar token y usuario en localStorage

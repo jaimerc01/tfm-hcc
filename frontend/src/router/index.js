@@ -24,12 +24,6 @@ const routes = [
     component: DashboardView,
     meta: { requiresAuth: true } // Requiere autenticación
   },
-  {
-    path: '/patients',
-    name: 'Patients',
-    component: () => import('@/views/patients/PatientListView.vue'),
-    meta: { requiresAuth: true }
-  }
 ]
 
 const router = createRouter({
