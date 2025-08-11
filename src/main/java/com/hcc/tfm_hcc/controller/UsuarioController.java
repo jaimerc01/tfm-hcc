@@ -11,4 +11,11 @@ public interface UsuarioController {
      * @return el id del usuario creado, o un mensaje de error si la operación falla
      */
     // String altaUsuario(UsuarioDTO usuarioDTO);
+
+    /**
+     * Obtiene el nombre del usuario autenticado.
+     *
+     * @return el nombre del usuario, o null si no está autenticado
+     */
+    String getNombreUsuario();
 }

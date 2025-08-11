@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.IncorrectCredentials;
-import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.AutenticacionService;
@@ -26,13 +25,12 @@ public class AutenticacionServiceImpl implements AutenticacionService {
     @Autowired
     private AuthenticationManager authenticationManager;
 
-    @Autowired
-    private UsuarioMapper usuarioMapper;
-
+    @Override
     public Usuario registrar(UsuarioDTO usuarioDTO) {
         return usuarioService.altaUsuario(usuarioDTO);
     }
 
+    @Override
     public Usuario autenticar(LoginUsuarioDTO loginUsuarioDTO) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(

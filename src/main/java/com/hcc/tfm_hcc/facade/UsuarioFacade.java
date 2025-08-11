@@ -10,4 +10,11 @@ public interface UsuarioFacade {
      * @return el usuario dado de alta
      */
     UsuarioDTO altaUsuario(UsuarioDTO usuarioDTO);
+
+    /**
+     * Obtiene el nombre del usuario autenticado.
+     *
+     * @return el nombre del usuario, o null si no está autenticado
+     */
+    String getNombreUsuario();
 }

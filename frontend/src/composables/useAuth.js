@@ -1,14 +1,15 @@
 import { ref, computed } from 'vue'
 import authService from '@/services/authService'
 
-// Estado global de autenticación
+// Estado global de autenticación basado en token
 const user = ref(authService.getCurrentUser())
-const isAuthenticated = computed(() => !!user.value)
+const isAuthenticated = computed(() => authService.isAuthenticated())
 
 export function useAuth() {
   const login = async (credentials) => {
     const result = await authService.login(credentials)
-    user.value = result.user
+    // Actualizar usuario a partir del token (claims) si existen
+    user.value = authService.getCurrentUser()
     return result
   }
 
@@ -22,9 +23,8 @@ export function useAuth() {
   }
 
   const checkAuth = () => {
-    const currentUser = authService.getCurrentUser()
-    user.value = currentUser
-    return !!currentUser
+    user.value = authService.getCurrentUser()
+    return authService.isAuthenticated()
   }
 
   return {

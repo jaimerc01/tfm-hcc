@@ -4,10 +4,10 @@
       <h2>Iniciar Sesión</h2>
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
-          <label for="username">Usuario:</label>
+          <label for="nif">Usuario:</label>
           <input
-            id="username"
-            v-model="credentials.username"
+            id="nif"
+            v-model="credentials.nif"
             type="text"
             required
             placeholder="Ingresa tu usuario"
@@ -49,7 +49,7 @@ export default {
     const { login } = useAuth()
     
     const credentials = ref({
-      username: '',
+      nif: '',
       password: ''
     })
     

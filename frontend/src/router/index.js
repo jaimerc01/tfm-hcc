@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuth } from '@/composables/useAuth'
+import authService from '@/services/authService'
 
 // Vistas
 import HomeView from '@/views/HomeView.vue'
@@ -33,20 +33,16 @@ const router = createRouter({
 
 // Guard de navegación
 router.beforeEach((to, from, next) => {
-  const { isAuthenticated } = useAuth()
-  
-  // Rutas que requieren autenticación
-  if (to.meta.requiresAuth && !isAuthenticated.value) {
-    next({ name: 'Login' })
-    return
+  const isAuth = authService.isAuthenticated()
+
+  if (to.meta.requiresAuth && !isAuth) {
+    return next({ name: 'Login' })
   }
-  
-  // Rutas solo para invitados (como login)
-  if (to.meta.requiresGuest && isAuthenticated.value) {
-    next({ name: 'Dashboard' })
-    return
+
+  if (to.meta.requiresGuest && isAuth) {
+    return next({ name: 'Dashboard' })
   }
-  
+
   next()
 })
 

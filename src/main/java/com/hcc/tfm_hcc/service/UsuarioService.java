@@ -12,4 +12,12 @@ public interface UsuarioService {
      * @return el usuario creado
      */
     public Usuario altaUsuario(UsuarioDTO usuarioDTO);
+
+    /**
+     * Obtiene el nombre del usuario autenticado.
+     *
+     * @param token el token de autenticación del usuario
+     * @return el nombre del usuario, o null si no está autenticado
+     */
+    String getNombreUsuario();
 }

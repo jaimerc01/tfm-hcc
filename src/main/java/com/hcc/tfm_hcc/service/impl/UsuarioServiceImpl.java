@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
@@ -24,6 +26,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // No inyectar AutenticacionService aquí para evitar dependencia cíclica
+
     @Override
     public Usuario altaUsuario(UsuarioDTO usuarioDTO) {
 
@@ -36,5 +40,21 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         return usuario;
     }
-    
+
+    public String getNifUsuarioAutenticado() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
+            return null;
+        }
+        return auth.getName();
+    }
+
+    @Override
+    public String getNombreUsuario() {
+        String nif = this.getNifUsuarioAutenticado();
+        return usuarioRepository.findByNif(nif)
+                .map(Usuario::getNombre)
+                .orElse(null);
+    }
+
 }

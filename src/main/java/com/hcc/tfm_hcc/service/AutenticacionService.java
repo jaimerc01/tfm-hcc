@@ -23,5 +23,4 @@ public interface AutenticacionService {
      * @throws IncorrectCredentials si las credenciales son incorrectas o el usuario no existe
      */
     Usuario autenticar(LoginUsuarioDTO loginUsuarioDTO);
-    
 }

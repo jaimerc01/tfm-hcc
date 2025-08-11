@@ -22,4 +22,9 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
     public UsuarioDTO altaUsuario(UsuarioDTO usuarioDTO) {
         return usuarioMapper.toDto(usuarioService.altaUsuario(usuarioDTO));
     }
+
+    @Override
+    public String getNombreUsuario() {
+        return usuarioService.getNombreUsuario();
+    }
 }
