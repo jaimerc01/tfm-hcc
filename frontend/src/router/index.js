@@ -5,12 +5,15 @@ import authService from '@/services/authService'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/auth/LoginView.vue'
 import DashboardView from '@/views/dashboard/DashboardView.vue'
+import HistoriaClinicaView from '@/views/HistoriaClinicaView.vue'
+import UserDataView from '@/views/UserDataView.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: HomeView
+    component: HomeView,
+    meta: { requiresGuest: true } // Solo para usuarios no autenticados
   },
   {
     path: '/login',
@@ -23,6 +26,18 @@ const routes = [
     name: 'Dashboard',
     component: DashboardView,
     meta: { requiresAuth: true } // Requiere autenticación
+  },
+  {
+    path: '/historia-clinica',
+    name: 'HistoriaClinica',
+    component: HistoriaClinicaView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/usuario',
+    name: 'UserData',
+    component: UserDataView,
+    meta: { requiresAuth: true }
   },
 ]
 
