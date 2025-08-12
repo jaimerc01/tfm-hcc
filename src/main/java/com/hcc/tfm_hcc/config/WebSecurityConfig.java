@@ -2,6 +2,7 @@ package com.hcc.tfm_hcc.config;
 
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.JwtService;
+import com.hcc.tfm_hcc.service.AccessLogService;
 
 import java.util.List;
 
@@ -56,7 +57,7 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, AccessLogFilter accessLogFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Agregar CORS
@@ -68,8 +69,15 @@ public class WebSecurityConfig {
                 .requestMatchers("/medico/**").hasRole("MEDICO")
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            // Registrar el filtro de logging después de que la autenticación JWT se haya procesado
+            .addFilterAfter(accessLogFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    @Bean
+    public AccessLogFilter accessLogFilter(AccessLogService accessLogService) {
+        return new AccessLogFilter(accessLogService, usuarioRepository);
     }
 
     @Bean

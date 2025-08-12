@@ -1,7 +1,5 @@
 package com.hcc.tfm_hcc.controller;
 
-import com.hcc.tfm_hcc.dto.UsuarioDTO;
-
 public interface UsuarioController {
 
     /**
