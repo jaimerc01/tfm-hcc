@@ -33,6 +33,9 @@
           {{ error }}
         </div>
       </form>
+      <div class="alt-actions">
+        <router-link to="/register">¿No tienes cuenta? Crear usuario</router-link>
+      </div>
     </div>
   </div>
 </template>
@@ -149,4 +152,7 @@ export default {
   background-color: #fdf2f2;
   border-radius: 4px;
 }
+.alt-actions { margin-top:1rem; text-align:center; }
+.alt-actions a { color:#42b983; text-decoration:none; }
+.alt-actions a:hover { text-decoration:underline; }
 </style>

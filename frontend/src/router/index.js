@@ -4,6 +4,7 @@ import authService from '@/services/authService'
 // Vistas
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/auth/LoginView.vue'
+import RegisterView from '@/views/auth/RegisterView.vue'
 import DashboardView from '@/views/dashboard/DashboardView.vue'
 import HistoriaClinicaView from '@/views/HistoriaClinicaView.vue'
 import UserDataView from '@/views/UserDataView.vue'
@@ -20,6 +21,12 @@ const routes = [
     name: 'Login',
     component: LoginView,
     meta: { requiresGuest: true } // Solo para usuarios no autenticados
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterView,
+    meta: { requiresGuest: true }
   },
   {
     path: '/dashboard',

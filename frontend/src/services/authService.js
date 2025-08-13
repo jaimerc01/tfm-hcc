@@ -184,6 +184,20 @@ class AuthService {
   try { localStorage.removeItem('authToken') } catch (_) { void 0 }
   try { localStorage.removeItem('tokenExp') } catch (_) { void 0 }
   }
+
+  // Registro de nuevo usuario
+  async signup(user) {
+    // Espera un objeto con los campos necesarios por backend (nombre, apellido1, apellido2?, email, password, fechaNacimiento, nif, telefono, especialidad)
+    try {
+      const response = await this.apiClient.post('/authentication/signup', user)
+      return response?.data || null
+    } catch (error) {
+      if (error.response?.status === 409) {
+        throw new Error('Usuario ya existe')
+      }
+      throw new Error(error.response?.data?.message || 'Error al crear usuario')
+    }
+  }
 }
 
 export default new AuthService()
