@@ -2,6 +2,7 @@ package com.hcc.tfm_hcc.model;
 
 import java.util.Collection;
 import java.util.Date;
+import java.time.LocalDateTime;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -79,6 +80,11 @@ public class Usuario extends BaseEntity implements UserDetails{
     @Setter
     @Column(name = "especialidad")
     private String especialidad;
+
+    @Getter
+    @Setter
+    @Column(name = "last_password_change")
+    private LocalDateTime lastPasswordChange; // Fecha/hora del último cambio de contraseña
 
     @Override
     public String getUsername() {

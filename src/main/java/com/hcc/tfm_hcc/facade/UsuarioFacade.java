@@ -17,4 +17,16 @@ public interface UsuarioFacade {
      * @return el nombre del usuario, o null si no está autenticado
      */
     String getNombreUsuario();
+
+    /** Devuelve datos completos del usuario autenticado */
+    UsuarioDTO getUsuarioActual();
+
+    /** Cambia la contraseña del usuario autenticado */
+    void changePassword(String currentPassword, String newPassword);
+
+    /** Actualiza campos editables del usuario autenticado */
+    UsuarioDTO updateUsuarioActual(UsuarioDTO parcial);
+
+    /** Elimina la cuenta del usuario autenticado */
+    void deleteCuentaActual();
 }

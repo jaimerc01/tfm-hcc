@@ -1,5 +1,10 @@
 package com.hcc.tfm_hcc.controller;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
+
+import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
+
 public interface UsuarioController {
 
     /**
@@ -16,4 +21,20 @@ public interface UsuarioController {
      * @return el nombre del usuario, o null si no está autenticado
      */
     String getNombreUsuario();
+
+    /*
+     * Obtiene los detalles del usuario autenticado.
+     *
+     * @return los detalles del usuario, o un mensaje de error si no está autenticado
+     */
+    ResponseEntity<?> getUsuarioActual();
+
+
+    /*
+     * Cambia la contraseña del usuario autenticado.
+     *
+     * @param body el objeto que contiene la contraseña actual y la nueva
+     * @return un mensaje de éxito o un mensaje de error si la operación falla
+     */
+    ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest body);
 }

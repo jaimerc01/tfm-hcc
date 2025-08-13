@@ -20,4 +20,19 @@ public interface UsuarioService {
      * @return el nombre del usuario, o null si no está autenticado
      */
     String getNombreUsuario();
+
+    /**
+     * Obtiene el DTO completo del usuario autenticado.
+     * @return UsuarioDTO o null si no autenticado
+     */
+    UsuarioDTO getUsuarioActual();
+
+    /** Cambia contraseña del usuario autenticado */
+    void changePassword(String currentPassword, String newPassword);
+
+    /** Actualiza datos (no password) del usuario autenticado */
+    UsuarioDTO updateUsuarioActual(UsuarioDTO parcial);
+
+    /** Elimina la cuenta del usuario autenticado */
+    void deleteCuentaActual();
 }

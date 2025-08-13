@@ -27,4 +27,24 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
     public String getNombreUsuario() {
         return usuarioService.getNombreUsuario();
     }
+
+    @Override
+    public UsuarioDTO getUsuarioActual() {
+        return usuarioService.getUsuarioActual();
+    }
+
+    @Override
+    public void changePassword(String currentPassword, String newPassword) {
+        usuarioService.changePassword(currentPassword, newPassword);
+    }
+
+    @Override
+    public UsuarioDTO updateUsuarioActual(UsuarioDTO parcial) {
+        return usuarioService.updateUsuarioActual(parcial);
+    }
+
+    @Override
+    public void deleteCuentaActual() {
+        usuarioService.deleteCuentaActual();
+    }
 }

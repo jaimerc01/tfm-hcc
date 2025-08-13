@@ -198,6 +198,51 @@ class AuthService {
       throw new Error(error.response?.data?.message || 'Error al crear usuario')
     }
   }
+
+  async fetchMyData() {
+    try {
+      const response = await this.apiClient.get('/usuario/me/detalle')
+      return response?.data || null
+    } catch (e) {
+      if (e.response?.status === 401) return null
+      throw e
+    }
+  }
+
+  async updateMyData(partial) {
+    try {
+      const response = await this.apiClient.put('/usuario/me', partial)
+      return response?.data || null
+    } catch (e) {
+      if (e.response?.status === 400) throw new Error(e.response.data || 'Datos inválidos')
+      if (e.response?.status === 401) throw new Error('No autenticado')
+      throw new Error('Error al actualizar datos')
+    }
+  }
+
+  async changePassword(currentPassword, newPassword) {
+    const payload = { currentPassword, newPassword }
+    try {
+  const resp = await this.apiClient.post('/usuario/change-password', payload)
+  // Invalidate local session immediately
+  this._clearAuth()
+  return resp?.data?.id || true
+    } catch (e) {
+      if (e.response?.data) throw new Error(e.response.data)
+      throw new Error('Error al cambiar contraseña')
+    }
+  }
+
+  async deleteAccount() {
+    try {
+      await this.apiClient.delete('/usuario/me')
+      this._clearAuth()
+      return true
+    } catch (e) {
+      if (e.response?.status === 401) throw new Error('No autenticado')
+      throw new Error(e.response?.data || 'Error al eliminar cuenta')
+    }
+  }
 }
 
 export default new AuthService()

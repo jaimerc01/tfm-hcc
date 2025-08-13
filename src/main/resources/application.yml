@@ -10,9 +10,20 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   
 server:
-  port: 8081
+  port: 8081 # Puerto HTTPS (cuando SSL habilitado)
+  # Puerto HTTP adicional para redirigir a HTTPS (configurado en HttpToHttpsRedirectConfig)
+  http:
+    port: 8080
+  # Descomentar y ajustar estas propiedades en producción con un keystore válido
+  # ssl:
+  #   enabled: true
+  #   key-store: classpath:keystore/keystore.p12
+  #   key-store-password: ${SSL_KEY_STORE_PASSWORD}
+  #   key-store-type: PKCS12
+  #   key-alias: tfm-hcc
 
 security:
   jwt:
     secret-key: ${JWT_SECRET}
     expiration-time: 3600000 # 1 hour in milliseconds 
+  enforce-https: false # Cambiar a true en producción para redirigir HTTP->HTTPS

@@ -31,6 +31,9 @@ public class AutenticacionControllerImpl implements AutenticacionController {
     @Override
     @PostMapping("/signup")
     public ResponseEntity<UsuarioDTO> registrar(@RequestBody UsuarioDTO usuarioDTO) {
+        if (usuarioDTO.getFechaNacimiento() == null) {
+            return ResponseEntity.badRequest().build();
+        }
         return autenticacionFacade.registrar(usuarioDTO);
     }
 }

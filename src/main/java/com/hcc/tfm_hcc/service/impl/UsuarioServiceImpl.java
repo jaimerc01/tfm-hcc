@@ -47,7 +47,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioMapper.toEntity(usuarioDTO);
         usuario.setFechaCreacion(LocalDateTime.now());
 
-        this.usuarioRepository.save(usuario);
+    usuario.setLastPasswordChange(LocalDateTime.now());
+    this.usuarioRepository.save(usuario);
 
         // Buscar perfil PACIENTE y crear relación obligatoria
         var perfilOpt = perfilRepository.getPerfilByRol("PACIENTE");
@@ -83,6 +84,102 @@ public class UsuarioServiceImpl implements UsuarioService {
         return usuarioRepository.findByNif(nif)
                 .map(Usuario::getNombre)
                 .orElse(null);
+    }
+
+    @Override
+    public UsuarioDTO getUsuarioActual() {
+        String nif = this.getNifUsuarioAutenticado();
+        if (nif == null) return null;
+        return usuarioRepository.findByNif(nif)
+                .map(usuarioMapper::toDto)
+                .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(String currentPassword, String newPassword) {
+        String nif = this.getNifUsuarioAutenticado();
+        if (nif == null) throw new IllegalStateException("No autenticado");
+        Usuario usuario = usuarioRepository.findByNif(nif)
+                .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
+        if (!passwordEncoder.matches(currentPassword, usuario.getPassword())) {
+            throw new IllegalArgumentException("Contraseña actual incorrecta");
+        }
+    usuario.setPassword(passwordEncoder.encode(newPassword));
+    usuario.setFechaUltimaModificacion(LocalDateTime.now());
+    usuario.setLastPasswordChange(LocalDateTime.now());
+        usuarioRepository.save(usuario);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioDTO updateUsuarioActual(UsuarioDTO parcial) {
+        String nifAuth = this.getNifUsuarioAutenticado();
+        if (nifAuth == null) throw new IllegalStateException("No autenticado");
+        Usuario usuario = usuarioRepository.findByNif(nifAuth)
+                .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
+
+        // Actualizar campos permitidos si vienen no nulos
+        // Validaciones manuales adicionales (defensa extra)
+        if (parcial.getNombre() != null && parcial.getNombre().length() > 100)
+            throw new IllegalArgumentException("Nombre demasiado largo");
+        if (parcial.getApellido1() != null && parcial.getApellido1().length() > 100)
+            throw new IllegalArgumentException("Primer apellido demasiado largo");
+        if (parcial.getApellido2() != null && parcial.getApellido2().length() > 100)
+            throw new IllegalArgumentException("Segundo apellido demasiado largo");
+        if (parcial.getEmail() != null) {
+            String email = parcial.getEmail();
+            if (!email.matches("^[^@\n]+@[^@\n]+\\.[^@\n]+$")) {
+                throw new IllegalArgumentException("Formato de email inválido");
+            }
+            if (usuarioRepository.existsByEmailAndIdNot(email, usuario.getId())) {
+                throw new IllegalArgumentException("Email ya en uso");
+            }
+        }
+        if (parcial.getTelefono() != null && !parcial.getTelefono().isBlank()) {
+            if (!parcial.getTelefono().matches("^[0-9+\\-() ]{0,20}$")) {
+                throw new IllegalArgumentException("Formato de teléfono inválido");
+            }
+        }
+        if (parcial.getNif() != null) {
+            String nifNuevo = parcial.getNif();
+            if (!nifNuevo.matches("^[0-9A-Za-z]{6,15}$")) {
+                throw new IllegalArgumentException("Formato de NIF inválido");
+            }
+            if (!nifNuevo.equals(usuario.getNif()) && usuarioRepository.existsByNifAndIdNot(nifNuevo, usuario.getId())) {
+                throw new IllegalArgumentException("NIF ya en uso");
+            }
+        }
+
+        if (parcial.getNombre() != null) usuario.setNombre(parcial.getNombre());
+        if (parcial.getApellido1() != null) usuario.setApellido1(parcial.getApellido1());
+        if (parcial.getApellido2() != null) usuario.setApellido2(parcial.getApellido2());
+        if (parcial.getEmail() != null) usuario.setEmail(parcial.getEmail());
+        if (parcial.getTelefono() != null) usuario.setTelefono(parcial.getTelefono());
+        if (parcial.getFechaNacimiento() != null) usuario.setFechaNacimiento(parcial.getFechaNacimiento());
+        if (parcial.getNif() != null && !parcial.getNif().equals(usuario.getNif())) {
+            usuario.setNif(parcial.getNif());
+        }
+        usuario.setFechaUltimaModificacion(java.time.LocalDateTime.now());
+        usuarioRepository.save(usuario);
+        return usuarioMapper.toDto(usuario);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCuentaActual() {
+        String nif = this.getNifUsuarioAutenticado();
+        if (nif == null) throw new IllegalStateException("No autenticado");
+        var usuarioOpt = usuarioRepository.findByNif(nif);
+        if (usuarioOpt.isEmpty()) return; // idempotente
+        Usuario usuario = usuarioOpt.get();
+        // Eliminar relaciones PerfilUsuario primero si no hay cascade ON DELETE en DB
+        perfilUsuarioRepository.findAll().forEach(pu -> {
+            if (pu.getUsuario() != null && pu.getUsuario().getId().equals(usuario.getId())) {
+                perfilUsuarioRepository.delete(pu);
+            }
+        });
+        usuarioRepository.delete(usuario);
     }
 
 }

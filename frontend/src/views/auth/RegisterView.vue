@@ -29,8 +29,12 @@
             <input id="password" type="password" v-model="form.password" required minlength="6" />
           </div>
           <div class="form-group">
-            <label for="fechaNacimiento">Fecha Nacimiento</label>
-            <input id="fechaNacimiento" type="date" v-model="form.fechaNacimiento" />
+            <label for="password2">Repetir Contraseña *</label>
+            <input id="password2" type="password" v-model="form.password2" required minlength="6" />
+          </div>
+          <div class="form-group">
+            <label for="fechaNacimiento">Fecha Nacimiento *</label>
+            <input id="fechaNacimiento" type="date" v-model="form.fechaNacimiento" required />
           </div>
           <div class="form-group">
             <label for="telefono">Teléfono</label>
@@ -68,6 +72,7 @@ export default {
       apellido2: '',
       email: '',
       password: '',
+  password2: '',
       fechaNacimiento: '',
       nif: '',
       telefono: ''
@@ -78,13 +83,16 @@ export default {
       success.value = false
       loading.value = true
       try {
+        if (form.value.password !== form.value.password2) {
+          throw new Error('Las contraseñas no coinciden')
+        }
         // Preparar payload (convertir fecha a ISO si está rellena)
         const payload = { ...form.value }
-        if (payload.fechaNacimiento) {
-          payload.fechaNacimiento = new Date(payload.fechaNacimiento).toISOString()
-        } else {
-          delete payload.fechaNacimiento
+        delete payload.password2
+        if (!payload.fechaNacimiento) {
+          throw new Error('La fecha de nacimiento es obligatoria')
         }
+        payload.fechaNacimiento = new Date(payload.fechaNacimiento).toISOString()
         await authService.signup(payload)
         success.value = true
         setTimeout(() => router.push({ name: 'Login' }), 1200)

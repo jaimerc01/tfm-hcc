@@ -3,6 +3,7 @@ package com.hcc.tfm_hcc.service;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Map;
+import java.util.Date;
 
 public interface JwtService {
     String extractUsername(String token);
@@ -11,4 +12,5 @@ public interface JwtService {
     String generateToken(Map<String, Object> extraClaims, UserDetails userDetails);
     long getExpirationTime();
     boolean isTokenValid(String token, UserDetails userDetails);
+    Date extractIssuedAt(String token);
 }

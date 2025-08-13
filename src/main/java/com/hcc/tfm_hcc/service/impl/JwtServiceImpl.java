@@ -9,6 +9,7 @@ import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.hcc.tfm_hcc.model.Usuario;
 import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.service.JwtService;
@@ -72,7 +73,26 @@ public class JwtServiceImpl implements JwtService{
     @Override
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
+        if (!(username.equals(userDetails.getUsername())) || isTokenExpired(token)) {
+            return false;
+        }
+        // Invalidate tokens issued before lastPasswordChange
+        Date issuedAt = extractIssuedAt(token);
+        if (userDetails instanceof Usuario usuario) {
+            if (usuario.getLastPasswordChange() != null && issuedAt != null) {
+                // Convert LocalDateTime to Date comparison
+                java.time.Instant lastChangeInstant = usuario.getLastPasswordChange().atZone(java.time.ZoneId.systemDefault()).toInstant();
+                if (issuedAt.toInstant().isBefore(lastChangeInstant)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public Date extractIssuedAt(String token) {
+        return extractClaim(token, Claims::getIssuedAt);
     }
 
     private boolean isTokenExpired(String token) {

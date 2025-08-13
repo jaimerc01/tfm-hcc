@@ -21,6 +21,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -32,6 +34,9 @@ public class WebSecurityConfig {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Value("${security.enforce-https:false}")
+    private boolean enforceHttps;
 
     @Bean
     public UserDetailsService userDetailsService() {
@@ -71,7 +76,16 @@ public class WebSecurityConfig {
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             // Registrar el filtro de logging después de que la autenticación JWT se haya procesado
-            .addFilterAfter(accessLogFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterAfter(accessLogFilter, UsernamePasswordAuthenticationFilter.class)
+            .headers(headers -> headers
+                .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'"))
+                .xssProtection(xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
+                .frameOptions(frame -> frame.deny())
+                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).preload(true))
+                .referrerPolicy(ref -> ref.policy(org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER))
+            );
+
+    // Nota: Enforcement HTTPS se recomienda via reverse proxy (Nginx/Apache) para evitar APIs deprecated.
         return http.build();
     }
 
@@ -84,7 +98,7 @@ public class WebSecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("http://localhost:8080")); // Frontend Vue.js
+    configuration.setAllowedOrigins(List.of("http://localhost:8080", "https://localhost:8080")); // Frontend Vue.js (HTTP y HTTPS dev)
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Incluir OPTIONS
         configuration.setAllowedHeaders(List.of("*")); // Permitir todos los headers
         configuration.setAllowCredentials(true); // Permitir credenciales
