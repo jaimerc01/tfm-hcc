@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.service.UsuarioService;
@@ -46,5 +47,15 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
     @Override
     public void deleteCuentaActual() {
         usuarioService.deleteCuentaActual();
+    }
+
+    @Override
+    public java.util.List<UserExportDTO.AccesoDTO> getMisLogs(java.time.LocalDateTime desde, java.time.LocalDateTime hasta) {
+        return usuarioService.getMisLogs(desde, hasta);
+    }
+
+    @Override
+    public UserExportDTO exportUsuario() {
+        return usuarioService.exportUsuario();
     }
 }

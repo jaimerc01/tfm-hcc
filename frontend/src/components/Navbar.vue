@@ -11,6 +11,7 @@
         <router-link class="nav__link" :to="{ name: 'Dashboard' }" @click="close">Inicio</router-link>
         <router-link class="nav__link" :to="{ name: 'HistoriaClinica' }" @click="close">Historia clínica</router-link>
         <router-link class="nav__link" :to="{ name: 'UserData' }" @click="close">Datos del usuario</router-link>
+  <router-link class="nav__link" :to="{ name: 'PrivacyPolicy' }" @click="close">Privacidad</router-link>
 
         <button class="nav__logout" @click="handleLogout">Cerrar sesión</button>
       </div>
@@ -50,7 +51,7 @@ export default {
 .nav__content { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; }
 .nav__brand { color: #fff; text-decoration: none; font-weight: 600; font-size: 1.1rem; }
 .nav__toggle { display: none; background: transparent; border: none; color: #fff; font-size: 1.25rem; cursor: pointer; }
-.nav__links { display: flex; gap: 1rem; align-items: center; }
+.nav__links { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
 .nav__link { color: #ecf0f1; text-decoration: none; }
 .nav__link.router-link-exact-active { color: #42b983; }
 .nav__logout { margin-left: 0.5rem; background: #e74c3c; color: #fff; border: none; padding: 0.5rem 0.75rem; border-radius: 4px; cursor: pointer; }

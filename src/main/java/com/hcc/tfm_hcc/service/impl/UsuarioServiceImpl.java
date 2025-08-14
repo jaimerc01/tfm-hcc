@@ -13,9 +13,11 @@ import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.model.PerfilUsuario;
+import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.repository.PerfilRepository;
 import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.repository.AccessLogRepository;
 import com.hcc.tfm_hcc.service.UsuarioService;
 
 @Service
@@ -35,6 +37,9 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Autowired
     private PerfilUsuarioRepository perfilUsuarioRepository;
+
+    @Autowired
+    private AccessLogRepository accessLogRepository;
 
     // No inyectar AutenticacionService aquí para evitar dependencia cíclica
 
@@ -173,13 +178,73 @@ public class UsuarioServiceImpl implements UsuarioService {
         var usuarioOpt = usuarioRepository.findByNif(nif);
         if (usuarioOpt.isEmpty()) return; // idempotente
         Usuario usuario = usuarioOpt.get();
-        // Eliminar relaciones PerfilUsuario primero si no hay cascade ON DELETE en DB
-        perfilUsuarioRepository.findAll().forEach(pu -> {
-            if (pu.getUsuario() != null && pu.getUsuario().getId().equals(usuario.getId())) {
-                perfilUsuarioRepository.delete(pu);
-            }
-        });
-        usuarioRepository.delete(usuario);
+    // Soft delete + anonimización básica
+    usuario.setEstadoCuenta("ELIMINADO");
+    usuario.setFechaEliminacion(LocalDateTime.now());
+    usuario.setNombre("_eliminado_");
+    usuario.setApellido1(null);
+    usuario.setApellido2(null);
+    usuario.setEmail("anon-" + usuario.getId() + "@local");
+    usuario.setTelefono(null);
+    usuario.setNif("DEL-" + usuario.getId().toString().substring(0,8));
+    usuario.setEspecialidad(null);
+    usuario.setFechaUltimaModificacion(LocalDateTime.now());
+    usuarioRepository.save(usuario);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<UserExportDTO.AccesoDTO> getMisLogs(java.time.LocalDateTime desde, java.time.LocalDateTime hasta) {
+        String nif = this.getNifUsuarioAutenticado();
+        if (nif == null) throw new IllegalStateException("No autenticado");
+        var dto = usuarioRepository.findByNif(nif).map(usuarioMapper::toDto).orElse(null);
+        if (dto == null) throw new IllegalStateException("Usuario no encontrado");
+        var logs = (desde != null && hasta != null)
+            ? accessLogRepository.findByUsuarioIdAndTimestampBetweenOrderByTimestampDesc(dto.getId(), desde, hasta)
+            : accessLogRepository.findByUsuarioIdOrderByTimestampDesc(dto.getId());
+        return logs.stream().map(l -> UserExportDTO.AccesoDTO.builder()
+            .timestamp(l.getTimestamp())
+            .metodo(l.getMetodo())
+            .ruta(l.getRuta())
+            .estado(l.getEstado())
+            .duracionMs(l.getDuracionMs())
+            .ip(l.getIp())
+            .userAgent(l.getUserAgent())
+            .build()).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserExportDTO exportUsuario() {
+        String nif = this.getNifUsuarioAutenticado();
+        if (nif == null) throw new IllegalStateException("No autenticado");
+        var dto = usuarioRepository.findByNif(nif).map(usuarioMapper::toDto).orElse(null);
+        if (dto == null) throw new IllegalStateException("Usuario no encontrado");
+        var logs = accessLogRepository.findByUsuarioIdOrderByTimestampDesc(dto.getId());
+        var accesos = logs.stream().limit(500).map(l -> UserExportDTO.AccesoDTO.builder()
+            .timestamp(l.getTimestamp())
+            .metodo(l.getMetodo())
+            .ruta(l.getRuta())
+            .estado(l.getEstado())
+            .duracionMs(l.getDuracionMs())
+            .ip(l.getIp())
+            .userAgent(l.getUserAgent())
+            .build()).toList();
+        return UserExportDTO.builder()
+            .id(dto.getId())
+            .nombre(dto.getNombre())
+            .apellido1(dto.getApellido1())
+            .apellido2(dto.getApellido2())
+            .email(dto.getEmail())
+            .nif(dto.getNif())
+            .telefono(dto.getTelefono())
+            .fechaNacimiento(dto.getFechaNacimiento())
+            .fechaCreacion(dto.getFechaCreacion())
+            .fechaUltimaModificacion(dto.getFechaUltimaModificacion())
+            .estadoCuenta(usuarioRepository.findByNif(dto.getNif()).map(u->u.getEstadoCuenta()).orElse(null))
+            .fechaEliminacion(usuarioRepository.findByNif(dto.getNif()).map(u->u.getFechaEliminacion()).orElse(null))
+            .accesos(accesos)
+            .build();
     }
 
 }

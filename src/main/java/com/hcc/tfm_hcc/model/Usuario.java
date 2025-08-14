@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.model;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.time.LocalDateTime;
 
@@ -15,6 +16,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import jakarta.persistence.Transient;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -83,8 +85,21 @@ public class Usuario extends BaseEntity implements UserDetails{
 
     @Getter
     @Setter
+    @Column(name = "estado_cuenta")
+    private String estadoCuenta; // ACTIVO | ELIMINADO
+
+    @Getter
+    @Setter
+    @Column(name = "fecha_eliminacion")
+    private LocalDateTime fechaEliminacion;
+
+    @Getter
+    @Setter
     @Column(name = "last_password_change")
     private LocalDateTime lastPasswordChange; // Fecha/hora del último cambio de contraseña
+
+    @Transient
+    private transient Collection<? extends GrantedAuthority> authorities = Collections.emptyList();
 
     @Override
     public String getUsername() {
@@ -113,8 +128,11 @@ public class Usuario extends BaseEntity implements UserDetails{
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Implementar lógica para obtener los roles del usuario
-        return java.util.Collections.emptyList(); // Retornar una lista vacía por defecto
+        return (authorities != null) ? authorities : Collections.emptyList();
+    }
+
+    public void setAuthorities(Collection<? extends GrantedAuthority> authorities) {
+        this.authorities = (authorities != null) ? authorities : Collections.emptyList();
     }
 
 }  

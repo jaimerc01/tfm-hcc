@@ -56,4 +56,16 @@ public class UsuarioDTO {
     @Setter
     private LocalDateTime fechaUltimaModificacion;
 
+    @Getter
+    @Setter
+    private LocalDateTime lastPasswordChange;
+
+    @Getter
+    @Setter
+    private String estadoCuenta;
+
+    @Getter
+    @Setter
+    private LocalDateTime fechaEliminacion;
+
 }

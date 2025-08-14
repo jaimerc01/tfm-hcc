@@ -7,6 +7,7 @@ import LoginView from '@/views/auth/LoginView.vue'
 import RegisterView from '@/views/auth/RegisterView.vue'
 import DashboardView from '@/views/dashboard/DashboardView.vue'
 import HistoriaClinicaView from '@/views/HistoriaClinicaView.vue'
+import PrivacyPolicyView from '@/views/PrivacyPolicyView.vue'
 import UserDataView from '@/views/UserDataView.vue'
 
 const routes = [
@@ -44,6 +45,12 @@ const routes = [
     path: '/usuario',
     name: 'UserData',
     component: UserDataView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/privacidad',
+    name: 'PrivacyPolicy',
+    component: PrivacyPolicyView,
     meta: { requiresAuth: true }
   },
 ]

@@ -15,6 +15,10 @@ import com.hcc.tfm_hcc.facade.UsuarioFacade;
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.dto.UpdateUsuarioRequest;
+// import com.hcc.tfm_hcc.repository.AccessLogRepository;
+// import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import java.time.LocalDateTime;
+// import java.util.stream.Collectors;
 import jakarta.validation.Valid;
 
 @RestController
@@ -23,6 +27,7 @@ public class UsuarioControllerImpl implements UsuarioController{
 
     @Autowired
     private UsuarioFacade usuarioFacade;
+    // Delegado a la capa de servicio/fachada; no se usa directamente aquí
 
     // @Override
     // @PostMapping("/alta")
@@ -41,7 +46,6 @@ public class UsuarioControllerImpl implements UsuarioController{
     public ResponseEntity<?> getUsuarioActual() {
         var dto = usuarioFacade.getUsuarioActual();
         if (dto == null) return ResponseEntity.status(401).build();
-        // Por seguridad puedes limpiar password antes de devolver
         if (dto.getPassword() != null) dto.setPassword(null);
         return ResponseEntity.ok(dto);
     }
@@ -104,5 +108,22 @@ public class UsuarioControllerImpl implements UsuarioController{
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Error al eliminar cuenta");
         }
+    }
+
+    @GetMapping("/logs")
+    public ResponseEntity<?> misLogs(String desde, String hasta) {
+        var dto = usuarioFacade.getUsuarioActual();
+        if (dto == null) return ResponseEntity.status(401).build();
+        LocalDateTime d = null, h = null;
+        try { if (desde != null) d = LocalDateTime.parse(desde); } catch (Exception ignored) {}
+        try { if (hasta != null) h = LocalDateTime.parse(hasta); } catch (Exception ignored) {}
+        return ResponseEntity.ok(usuarioFacade.getMisLogs(d, h));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<?> exportUsuario() {
+        var dto = usuarioFacade.getUsuarioActual();
+        if (dto == null) return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(usuarioFacade.exportUsuario());
     }
 }

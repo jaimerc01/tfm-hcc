@@ -1,6 +1,9 @@
 package com.hcc.tfm_hcc.facade;
 
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.dto.UserExportDTO;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public interface UsuarioFacade {
     /**
@@ -29,4 +32,10 @@ public interface UsuarioFacade {
 
     /** Elimina la cuenta del usuario autenticado */
     void deleteCuentaActual();
+
+    /** Devuelve los accesos del usuario autenticado opcionalmente filtrados por rango */
+    List<UserExportDTO.AccesoDTO> getMisLogs(LocalDateTime desde, LocalDateTime hasta);
+
+    /** Genera el export de datos del usuario autenticado */
+    UserExportDTO exportUsuario();
 }

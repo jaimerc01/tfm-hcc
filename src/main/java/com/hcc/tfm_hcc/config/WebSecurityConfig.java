@@ -1,6 +1,8 @@
 package com.hcc.tfm_hcc.config;
 
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
+import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.service.JwtService;
 import com.hcc.tfm_hcc.service.AccessLogService;
 
@@ -34,14 +36,24 @@ public class WebSecurityConfig {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+    @Autowired
+    private PerfilUsuarioRepository perfilUsuarioRepository;
 
     @Value("${security.enforce-https:false}")
     private boolean enforceHttps;
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return nif -> usuarioRepository.findByNif(nif)
+        return nif -> {
+            Usuario usuario = usuarioRepository.findByNif(nif)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            var perfiles = perfilUsuarioRepository.getPerfilesByNif(nif);
+            var authorities = perfiles.stream()
+                .map(p -> new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + p.getRol()))
+                .toList();
+            usuario.setAuthorities(authorities);
+            return usuario;
+        };
     }
 
     @Bean

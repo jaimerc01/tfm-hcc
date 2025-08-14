@@ -19,6 +19,7 @@
         </dl>
         <div class="top-actions">
           <button class="edit-btn" @click="startEdit">Editar datos</button>
+          <button class="export-btn" @click="exportData" :disabled="exportLoading">{{ exportLoading ? 'Exportando...' : 'Descargar mis datos' }}</button>
         </div>
       </template>
       <template v-else>
@@ -75,7 +76,13 @@
   <div v-if="showDelete" class="modal-backdrop">
     <div class="modal">
       <h3>Confirmar eliminación</h3>
-      <p>Esta acción es permanente. Se eliminarán tus datos y no podrás recuperarlos. ¿Deseas continuar?</p>
+      <p>Esta acción es permanente. Se realizará un borrado lógico (anonimización). Los datos clínicos asociados (cuando existan) no se eliminarán automáticamente.</p>
+      <div class="reauth-box">
+        <label>Contraseña actual
+          <input type="password" v-model="reauth.password" autocomplete="current-password" />
+        </label>
+        <p class="reauth-hint">Introduce tu contraseña para confirmar.</p>
+      </div>
       <div class="modal-actions">
         <button :disabled="deleteLoading" @click="confirmDelete">{{ deleteLoading ? 'Eliminando...' : 'Sí, borrar' }}</button>
         <button :disabled="deleteLoading" @click="closeDelete" class="secondary">Cancelar</button>
@@ -111,6 +118,8 @@ export default {
   const pwLoading = ref(false)
   const pwError = ref('')
   const pwSuccess = ref(false)
+  const exportLoading = ref(false)
+  const reauth = ref({ password: '' })
 
     const load = async () => {
       loading.value = true
@@ -154,13 +163,44 @@ export default {
     }
     const cancelPw = () => { showPwForm.value = false; pw.value = { current:'', new1:'', new2:'' }; pwError.value=''; pwSuccess.value=false }
 
+    const exportData = async () => {
+      exportLoading.value = true
+      try {
+        const token = authService.getToken()
+        const headers = { 'Authorization': 'Bearer ' + token }
+        if (reauth.value.password) headers['X-Current-Password'] = reauth.value.password
+        const resp = await fetch((process.env.VUE_APP_API_URL || 'http://localhost:8081') + '/usuario/export', { headers })
+        if (resp.status === 401 && resp.headers.get('X-Reauth-Required') === 'true') {
+          throw new Error('Debes introducir tu contraseña para exportar')
+        }
+        if (!resp.ok) throw new Error('Error al exportar')
+        const json = await resp.json()
+        const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' })
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = 'export_usuario_' + new Date().toISOString().slice(0,10) + '.json'
+        a.click()
+        URL.revokeObjectURL(a.href)
+      } catch (e) {
+        alert(e.message || 'Error al exportar')
+      } finally {
+        exportLoading.value = false
+      }
+    }
+
     const openDelete = () => { deleteError.value=''; showDelete.value = true }
     const closeDelete = () => { if (!deleteLoading.value) showDelete.value = false }
     const confirmDelete = async () => {
       deleteError.value=''
       deleteLoading.value = true
       try {
-        await authService.deleteAccount()
+        const token = authService.getToken()
+        const resp = await fetch((process.env.VUE_APP_API_URL || 'http://localhost:8081') + '/usuario/me', { method:'DELETE', headers: { 'Authorization':'Bearer '+token, 'X-Current-Password': reauth.value.password || '' }})
+        if (resp.status === 401 && resp.headers.get('X-Reauth-Required') === 'true') {
+            throw new Error('Debes introducir tu contraseña para eliminar la cuenta')
+        }
+        if (!resp.ok && resp.status !== 204) throw new Error('Error al eliminar')
+        authService._clearAuth?.()
         router.push({ name: 'Login' })
       } catch (e) {
         deleteError.value = e.message || 'Error al eliminar'
@@ -225,7 +265,7 @@ export default {
     }
 
     onMounted(load)
-  return { user, loading, error, formatDate, formatDateTime, showPwForm, pw, pwLoading, pwError, pwSuccess, submitPw, cancelPw, editMode, form, startEdit, cancelEdit, submitEdit, editLoading, editError, editSuccess, nifChanged, showDelete, openDelete, closeDelete, confirmDelete, deleteLoading, deleteError }
+  return { user, loading, error, formatDate, formatDateTime, showPwForm, pw, pwLoading, pwError, pwSuccess, submitPw, cancelPw, editMode, form, startEdit, cancelEdit, submitEdit, editLoading, editError, editSuccess, nifChanged, showDelete, openDelete, closeDelete, confirmDelete, deleteLoading, deleteError, exportData, exportLoading, reauth }
   }
 }
 </script>
@@ -235,6 +275,8 @@ export default {
 .data-card { background:#fff; border:1px solid #e2e2e2; border-radius:8px; padding:1rem 1.25rem; max-width:640px; }
  .top-actions { margin-top:1rem; }
  .edit-btn { background:#2563eb; color:#fff; border:none; padding:.55rem .9rem; border-radius:4px; cursor:pointer; }
+ .export-btn { background:#6d28d9; color:#fff; border:none; padding:.55rem .9rem; border-radius:4px; cursor:pointer; }
+ .export-btn:hover:not(:disabled) { background:#5b21b6; }
  .edit-form { margin-top:.75rem; background:#f8fafc; border:1px solid #dbe2e8; padding:1rem; border-radius:6px; }
  .edit-grid { display:grid; gap:.75rem; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
  .edit-grid label { display:flex; flex-direction:column; font-size:.85rem; font-weight:600; color:#444; }
@@ -276,4 +318,7 @@ dd { margin:0; flex:1; color:#222; }
  .modal-actions button { background:#dc2626; color:#fff; border:none; padding:.6rem 1rem; border-radius:4px; cursor:pointer; }
  .modal-actions button.secondary { background:#888; }
  .delete-error { color:#b91c1c; margin-top:.75rem; }
+.reauth-box { margin-top:.75rem; display:flex; flex-direction:column; gap:.5rem; }
+.reauth-box input { padding:.45rem .6rem; border:1px solid #cbd5e1; border-radius:4px; width:100%; }
+.reauth-hint { font-size:.75rem; color:#555; margin:0; }
 </style>

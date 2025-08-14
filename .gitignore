@@ -69,3 +69,6 @@ Thumbs.db
 # Logs
 *.log
 logs/
+
+# Carpeta uploads
+/uploads/*
