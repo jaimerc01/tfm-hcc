@@ -9,6 +9,8 @@ import DashboardView from '@/views/dashboard/DashboardView.vue'
 import HistoriaClinicaView from '@/views/HistoriaClinicaView.vue'
 import PrivacyPolicyView from '@/views/PrivacyPolicyView.vue'
 import UserDataView from '@/views/UserDataView.vue'
+import MedicoView from '@/views/MedicoView.vue'
+import AdminView from '@/views/AdminView.vue'
 
 const routes = [
   {
@@ -48,6 +50,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/medico',
+    name: 'Medico',
+    component: MedicoView,
+    meta: { requiresAuth: true, requiresRole: 'MEDICO' }
+  },
+  {
+    path: '/admin',
+    name: 'Admin',
+    component: AdminView,
+    meta: { requiresAuth: true, requiresRole: 'ADMINISTRADOR' }
+  },
+  {
     path: '/privacidad',
     name: 'PrivacyPolicy',
     component: PrivacyPolicyView,
@@ -63,6 +77,8 @@ const router = createRouter({
 // Guard de navegación
 router.beforeEach((to, from, next) => {
   const isAuth = authService.isAuthenticated()
+  const claims = authService.getCurrentUser() || {}
+  const roles = (claims && (claims.authorities || claims.roles)) || []
 
   if (to.meta.requiresAuth && !isAuth) {
     return next({ name: 'Login' })
@@ -70,6 +86,16 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresGuest && isAuth) {
     return next({ name: 'Dashboard' })
+  }
+
+  if (to.meta.requiresRole) {
+    const required = String(to.meta.requiresRole)
+    const has = Array.isArray(roles)
+      ? roles.some(r => String(r).toUpperCase().includes(required.toUpperCase()))
+      : false
+    if (!has) {
+      return next({ name: 'Dashboard' })
+    }
   }
 
   next()

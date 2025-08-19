@@ -32,16 +32,19 @@ public class AutenticacionServiceImpl implements AutenticacionService {
 
     @Override
     public Usuario autenticar(LoginUsuarioDTO loginUsuarioDTO) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginUsuarioDTO.getNif(),
-                        loginUsuarioDTO.getPassword()
-                )
+        var authentication = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(
+                loginUsuarioDTO.getNif(),
+                loginUsuarioDTO.getPassword()
+            )
         );
-
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Usuario u) {
+            return u; // Usuario ya viene con authorities desde UserDetailsService
+        }
+        // Fallback a repositorio (no debería ocurrir)
         return userRepository.findByNif(loginUsuarioDTO.getNif())
-                .orElseThrow(() -> new IncorrectCredentials("Credenciales incorrectas o usuario no existe"));
-
+            .orElseThrow(() -> new IncorrectCredentials("Credenciales incorrectas o usuario no existe"));
     }
 
 }

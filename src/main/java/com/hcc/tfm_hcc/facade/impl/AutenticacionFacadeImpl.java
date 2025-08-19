@@ -29,7 +29,13 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
     @Override
     public ResponseEntity<LoginResponse> autenticar(LoginUsuarioDTO loginUsuarioDTO) throws IncorrectCredentials {
         Usuario usuarioAutenticado = autenticacionService.autenticar(loginUsuarioDTO);
-        String jwtToken = jwtService.generateToken(usuarioAutenticado);
+        // Incluir authorities en el token para que el frontend pueda hacer guards sin llamadas extra
+        java.util.Map<String, Object> claims = new java.util.HashMap<>();
+        var authorities = usuarioAutenticado.getAuthorities();
+        if (authorities != null) {
+            claims.put("authorities", authorities.stream().map(a -> a.getAuthority()).toList());
+        }
+        String jwtToken = jwtService.generateToken(claims, usuarioAutenticado);
 
         LoginResponse loginResponse = new LoginResponse();
         loginResponse.setToken(jwtToken);

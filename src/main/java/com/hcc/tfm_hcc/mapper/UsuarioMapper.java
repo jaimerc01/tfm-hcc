@@ -13,5 +13,6 @@ public interface UsuarioMapper extends BaseMapper {
     UsuarioDTO toDto(Usuario usuario);
 
     @Mapping(target = "id", source = "id", qualifiedByName = "stringToUuid")
+    @Mapping(target = "authorities", ignore = true)
     Usuario toEntity(UsuarioDTO usuarioDto);
 }

@@ -9,7 +9,9 @@
 
       <div class="nav__links" :class="{ 'nav__links--open': open }">
         <router-link class="nav__link" :to="{ name: 'Dashboard' }" @click="close">Inicio</router-link>
-        <router-link class="nav__link" :to="{ name: 'HistoriaClinica' }" @click="close">Historia clínica</router-link>
+  <router-link class="nav__link" :to="{ name: 'HistoriaClinica' }" @click="close">Historia clínica</router-link>
+  <router-link v-if="isMedico" class="nav__link" :to="{ name: 'Medico' }" @click="close">Zona médica</router-link>
+  <router-link v-if="isAdmin" class="nav__link" :to="{ name: 'Admin' }" @click="close">Administración</router-link>
         <router-link class="nav__link" :to="{ name: 'UserData' }" @click="close">Datos del usuario</router-link>
   <router-link class="nav__link" :to="{ name: 'PrivacyPolicy' }" @click="close">Privacidad</router-link>
 
@@ -23,9 +25,10 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import authService from '@/services/authService'
 
 export default {
   name: 'AppNavbar',
@@ -33,6 +36,16 @@ export default {
     const open = ref(false)
     const router = useRouter()
     const { logout } = useAuth()
+    const isMedico = computed(() => {
+      const claims = authService.getCurrentUser() || {}
+      const roles = claims.authorities || claims.roles || []
+      return Array.isArray(roles) && roles.some(r => String(r).toUpperCase().includes('MEDICO'))
+    })
+    const isAdmin = computed(() => {
+      const claims = authService.getCurrentUser() || {}
+      const roles = claims.authorities || claims.roles || []
+      return Array.isArray(roles) && roles.some(r => String(r).toUpperCase().includes('ADMINISTRADOR'))
+    })
 
     const close = () => { open.value = false }
     const handleLogout = async () => {
@@ -41,7 +54,7 @@ export default {
       router.push({ name: 'Login' })
     }
 
-    return { open, close, handleLogout }
+  return { open, close, handleLogout, isMedico, isAdmin }
   }
 }
 </script>
