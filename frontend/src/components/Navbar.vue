@@ -11,7 +11,12 @@
         <router-link class="nav__link" :to="{ name: 'Dashboard' }" @click="close">Inicio</router-link>
   <router-link class="nav__link" :to="{ name: 'HistoriaClinica' }" @click="close">Historia clínica</router-link>
   <router-link v-if="isMedico" class="nav__link" :to="{ name: 'Medico' }" @click="close">Zona médica</router-link>
-  <router-link v-if="isAdmin" class="nav__link" :to="{ name: 'Admin' }" @click="close">Administración</router-link>
+  <div v-if="isAdmin" class="nav__dropdown">
+    <router-link class="nav__link" :to="{ name: 'Admin' }" @click="close">Administración</router-link>
+    <div class="nav__dropdown-content">
+      <router-link class="nav__link" :to="{ name: 'AdminMedicos' }" @click="close">Gestionar médicos</router-link>
+    </div>
+  </div>
         <router-link class="nav__link" :to="{ name: 'UserData' }" @click="close">Datos del usuario</router-link>
   <router-link class="nav__link" :to="{ name: 'PrivacyPolicy' }" @click="close">Privacidad</router-link>
 
@@ -79,3 +84,10 @@ export default {
   .nav__backdrop { position: fixed; inset: 56px 0 0 0; background: rgba(0,0,0,0.25); }
 }
 </style>
+
+/* Dropdown styles */
+.nav__dropdown { position: relative; display: inline-block; }
+.nav__dropdown-content { display: none; position: absolute; background: #34495e; min-width: 180px; z-index: 1; }
+.nav__dropdown:hover .nav__dropdown-content { display: block; }
+.nav__dropdown-content .nav__link { display: block; padding: 0.5rem 1rem; color: #ecf0f1; }
+.nav__dropdown-content .nav__link:hover { background: #22313a; color: #42b983; }

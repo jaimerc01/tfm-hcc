@@ -43,7 +43,10 @@
 <script>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+
 import { useAuth } from '@/composables/useAuth'
+import { validateNIF } from '@/utils/validateNIF'
+
 
 export default {
   name: 'LoginView',
@@ -63,6 +66,11 @@ export default {
       try {
         isLoading.value = true
         error.value = ''
+        if (!validateNIF(credentials.value.nif)) {
+          error.value = 'El NIF introducido no es válido.'
+          isLoading.value = false
+          return
+        }
         
         await login(credentials.value)
         router.push('/dashboard')

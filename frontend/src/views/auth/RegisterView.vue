@@ -1,3 +1,4 @@
+
 <template>
   <div class="register-container">
     <div class="register-card">
@@ -41,13 +42,6 @@
             <input id="telefono" v-model="form.telefono" />
           </div>
         </div>
-
-        <div class="actions">
-          <button type="submit" class="primary" :disabled="loading">{{ loading ? 'Creando...' : 'Crear Usuario' }}</button>
-          <button type="button" class="secondary" @click="goLogin" :disabled="loading">Volver a Login</button>
-        </div>
-        <p v-if="error" class="error">{{ error }}</p>
-        <p v-if="success" class="success">Usuario creado correctamente. Redirigiendo...</p>
       </form>
     </div>
   </div>
@@ -57,6 +51,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import authService from '@/services/authService'
+import { validateNIF } from '@/utils/validateNIF'
 
 export default {
   name: 'RegisterView',
@@ -72,7 +67,7 @@ export default {
       apellido2: '',
       email: '',
       password: '',
-  password2: '',
+      password2: '',
       fechaNacimiento: '',
       nif: '',
       telefono: ''
@@ -81,11 +76,16 @@ export default {
     const handleSignup = async () => {
       error.value = ''
       success.value = false
+      if (!validateNIF(form.value.nif)) {
+        error.value = 'El NIF introducido no es válido.'
+        return
+      }
+      if (form.value.password !== form.value.password2) {
+        error.value = 'Las contraseñas no coinciden.'
+        return
+      }
       loading.value = true
       try {
-        if (form.value.password !== form.value.password2) {
-          throw new Error('Las contraseñas no coinciden')
-        }
         // Preparar payload (convertir fecha a ISO si está rellena)
         const payload = { ...form.value }
         delete payload.password2
@@ -106,22 +106,12 @@ export default {
     const goLogin = () => router.push({ name: 'Login' })
 
     return { form, handleSignup, loading, error, success, goLogin }
+
   }
 }
 </script>
 
-<style scoped>
-.register-container { min-height: 100vh; display:flex; justify-content:center; align-items:center; background:#f5f5f5; }
-.register-card { background:#fff; padding:2rem; border-radius:8px; width:100%; max-width:760px; box-shadow:0 2px 10px rgba(0,0,0,.1); }
-.grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:1rem; }
-.form-group { display:flex; flex-direction:column; }
-.form-group label { font-weight:600; margin-bottom:4px; }
-.form-group input { padding:.6rem .7rem; border:1px solid #ddd; border-radius:4px; }
-.actions { display:flex; gap:.75rem; margin-top:1.5rem; }
-button.primary { background:#42b983; color:#fff; border:none; padding:.75rem 1.1rem; border-radius:4px; cursor:pointer; }
-button.primary:hover:not(:disabled) { background:#369870; }
-button.secondary { background:#eee; border:none; padding:.75rem 1.1rem; border-radius:4px; cursor:pointer; }
-button.secondary:hover { background:#ddd; }
+<style>
 .error { margin-top:1rem; color:#e74c3c; }
 .success { margin-top:1rem; color:#2e7d32; }
 </style>

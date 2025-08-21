@@ -11,6 +11,7 @@ import PrivacyPolicyView from '@/views/PrivacyPolicyView.vue'
 import UserDataView from '@/views/UserDataView.vue'
 import MedicoView from '@/views/MedicoView.vue'
 import AdminView from '@/views/AdminView.vue'
+import AdminMedicosView from '@/views/AdminMedicosView.vue'
 
 const routes = [
   {
@@ -59,6 +60,12 @@ const routes = [
     path: '/admin',
     name: 'Admin',
     component: AdminView,
+    meta: { requiresAuth: true, requiresRole: 'ADMINISTRADOR' }
+  },
+  {
+    path: '/admin/medicos',
+    name: 'AdminMedicos',
+    component: AdminMedicosView,
     meta: { requiresAuth: true, requiresRole: 'ADMINISTRADOR' }
   },
   {

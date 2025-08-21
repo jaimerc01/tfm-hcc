@@ -96,6 +96,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import authService from '@/services/authService'
+import { validateNIF } from '@/utils/validateNIF'
+
 
 export default {
   name: 'UserDataView',
@@ -240,7 +242,7 @@ export default {
         // Validaciones frontend
         if (!form.value.nombre?.trim()) throw new Error('El nombre es obligatorio')
         if (!form.value.apellido1?.trim()) throw new Error('El primer apellido es obligatorio')
-        if (!/^[0-9A-Za-z]{6,15}$/.test(form.value.nif)) throw new Error('Formato de NIF inválido')
+  if (!validateNIF(form.value.nif)) throw new Error('El NIF introducido no es válido.')
         if (!/^([^@\n]+)@([^@\n]+)\.[^@\n]+$/.test(form.value.email)) throw new Error('Formato de email inválido')
         if (form.value.telefono && !/^[0-9+\-() ]{0,20}$/.test(form.value.telefono)) throw new Error('Formato de teléfono inválido')
         const payload = { ...form.value }
