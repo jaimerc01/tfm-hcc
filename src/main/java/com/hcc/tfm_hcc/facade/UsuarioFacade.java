@@ -38,4 +38,7 @@ public interface UsuarioFacade {
 
     /** Genera el export de datos del usuario autenticado */
     UserExportDTO exportUsuario();
+
+    java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion> listarMisSolicitudes();
+    com.hcc.tfm_hcc.model.SolicitudAsignacion actualizarEstadoSolicitud(Long solicitudId, String nuevoEstado);
 }

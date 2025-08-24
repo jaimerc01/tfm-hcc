@@ -120,6 +120,30 @@ public class UsuarioControllerImpl implements UsuarioController{
         return ResponseEntity.ok(usuarioFacade.getMisLogs(d, h));
     }
 
+    @GetMapping("/solicitud/mis")
+    public ResponseEntity<java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion>> listarMisSolicitudes() {
+        var dto = usuarioFacade.getUsuarioActual();
+        if (dto == null) return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(usuarioFacade.listarMisSolicitudes());
+    }
+
+    @PostMapping("/solicitud/{id}/estado")
+    public ResponseEntity<?> actualizarEstadoSolicitud(@org.springframework.web.bind.annotation.PathVariable("id") Long id, @RequestBody java.util.Map<String, String> body) {
+        var dto = usuarioFacade.getUsuarioActual();
+        if (dto == null) return ResponseEntity.status(401).build();
+        String nuevoEstado = body.get("estado");
+        try {
+            var updated = usuarioFacade.actualizarEstadoSolicitud(id, nuevoEstado);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error actualizando estado");
+        }
+    }
+
     @GetMapping("/export")
     public ResponseEntity<?> exportUsuario() {
         var dto = usuarioFacade.getUsuarioActual();

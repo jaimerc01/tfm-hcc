@@ -1,23 +1,63 @@
 package com.hcc.tfm_hcc.service.impl;
 
-import com.hcc.tfm_hcc.dto.UsuarioDTO;
-import com.hcc.tfm_hcc.mapper.UsuarioMapper;
-import com.hcc.tfm_hcc.model.PerfilUsuario;
-import com.hcc.tfm_hcc.model.Usuario;
-import com.hcc.tfm_hcc.repository.PerfilRepository;
-import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
-import com.hcc.tfm_hcc.repository.UsuarioRepository;
-import com.hcc.tfm_hcc.service.MedicoService;
-import com.hcc.tfm_hcc.service.UsuarioService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.hcc.tfm_hcc.dto.PacienteDTO;
+import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.mapper.UsuarioMapper;
+import com.hcc.tfm_hcc.model.PerfilUsuario;
+import com.hcc.tfm_hcc.model.SolicitudAsignacion;
+import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.repository.PerfilRepository;
+import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
+import com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository;
+import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.MedicoService;
+import com.hcc.tfm_hcc.service.UsuarioService;
+import com.hcc.tfm_hcc.util.FechaUtils;
+
 @Service
 public class MedicoServiceImpl implements MedicoService {
+    @Autowired
+    private SolicitudAsignacionRepository solicitudAsignacionRepository;
+    // Internal helper that creates a solicitud given both nifMedico and nifPaciente
+    private SolicitudAsignacion crearSolicitudAsignacionConMedico(String nifMedico, String nifPaciente) {
+        Usuario medico = usuarioRepository.findByNif(nifMedico).orElse(null);
+        Usuario paciente = usuarioRepository.findByNif(nifPaciente).orElse(null);
+        if (medico == null || paciente == null) return null;
+        // Check for existing pending solicitud
+        boolean exists = solicitudAsignacionRepository.existsByMedicoNifAndPacienteNifAndEstado(nifMedico, nifPaciente, "PENDIENTE");
+        if (exists) {
+            throw new com.hcc.tfm_hcc.exception.SolicitudExistenteException("Ya existe una solicitud pendiente para este médico y paciente");
+        }
+        SolicitudAsignacion solicitud = new SolicitudAsignacion();
+        solicitud.setMedico(medico);
+        solicitud.setPaciente(paciente);
+        solicitud.setEstado("PENDIENTE");
+        solicitud.setFechaCreacion(java.time.LocalDateTime.now());
+        return solicitudAsignacionRepository.save(solicitud);
+    }
+
+    @Override
+    public SolicitudAsignacion crearSolicitudAsignacion(String nifPaciente) {
+        String nifMedico = com.hcc.tfm_hcc.util.SecurityUtils.getCurrentUserNif();
+        if (nifMedico == null) return null;
+    return crearSolicitudAsignacionConMedico(nifMedico, nifPaciente);
+    }
+
+    @Override
+    public java.util.List<SolicitudAsignacion> listarSolicitudesPendientes() {
+        String nifMedico = com.hcc.tfm_hcc.util.SecurityUtils.getCurrentUserNif();
+        if (nifMedico == null) return java.util.Collections.emptyList();
+        return solicitudAsignacionRepository.findByMedicoNifAndEstado(nifMedico, "PENDIENTE");
+    }
+    
     @Autowired
     private UsuarioRepository usuarioRepository;
     @Autowired
@@ -28,6 +68,26 @@ public class MedicoServiceImpl implements MedicoService {
     private PerfilRepository perfilRepository;
     @Autowired
     private PerfilUsuarioRepository perfilUsuarioRepository;
+
+    @Override
+    public PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento) {
+        return usuarioRepository.findByNif(dni)
+            .filter(usuario -> {
+                if (usuario.getFechaNacimiento() == null) return false;
+                String fechaUsuario = FechaUtils.toIsoDate(usuario.getFechaNacimiento());
+                return fechaUsuario.equals(fechaNacimiento);
+            })
+            .map(usuario -> {
+                PacienteDTO dto = new PacienteDTO();
+                dto.setNombre(usuario.getNombre());
+                dto.setApellido1(usuario.getApellido1());
+                dto.setApellido2(usuario.getApellido2());
+                dto.setNif(usuario.getNif());
+                dto.setFechaNacimiento(FechaUtils.toIsoDate(usuario.getFechaNacimiento()));
+                return dto;
+            })
+            .orElse(null);
+    }
 
     @Override
     public List<UsuarioDTO> listarMedicos() {

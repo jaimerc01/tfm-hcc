@@ -58,4 +58,14 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
     public UserExportDTO exportUsuario() {
         return usuarioService.exportUsuario();
     }
+
+    @Override
+    public java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion> listarMisSolicitudes() {
+        return usuarioService.listarMisSolicitudes();
+    }
+
+    @Override
+    public com.hcc.tfm_hcc.model.SolicitudAsignacion actualizarEstadoSolicitud(Long solicitudId, String nuevoEstado) {
+        return usuarioService.actualizarEstadoSolicitud(solicitudId, nuevoEstado);
+    }
 }

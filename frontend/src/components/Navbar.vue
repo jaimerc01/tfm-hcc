@@ -11,6 +11,7 @@
         <router-link class="nav__link" :to="{ name: 'Dashboard' }" @click="close">Inicio</router-link>
   <router-link class="nav__link" :to="{ name: 'HistoriaClinica' }" @click="close">Historia clínica</router-link>
   <router-link v-if="isMedico" class="nav__link" :to="{ name: 'Medico' }" @click="close">Zona médica</router-link>
+  <router-link v-if="isPaciente" class="nav__link" :to="{ name: 'MisSolicitudes' }" @click="close">Mis solicitudes</router-link>
   <div v-if="isAdmin" class="nav__dropdown">
     <router-link class="nav__link" :to="{ name: 'Admin' }" @click="close">Administración</router-link>
     <div class="nav__dropdown-content">
@@ -51,6 +52,11 @@ export default {
       const roles = claims.authorities || claims.roles || []
       return Array.isArray(roles) && roles.some(r => String(r).toUpperCase().includes('ADMINISTRADOR'))
     })
+    const isPaciente = computed(() => {
+      const claims = authService.getCurrentUser() || {}
+      const roles = claims.authorities || claims.roles || []
+      return Array.isArray(roles) && roles.some(r => String(r).toUpperCase().includes('PACIENTE'))
+    })
 
     const close = () => { open.value = false }
     const handleLogout = async () => {
@@ -59,7 +65,7 @@ export default {
       router.push({ name: 'Login' })
     }
 
-  return { open, close, handleLogout, isMedico, isAdmin }
+  return { open, close, handleLogout, isMedico, isAdmin, isPaciente }
   }
 }
 </script>

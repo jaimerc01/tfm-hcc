@@ -37,4 +37,7 @@ public interface UsuarioController {
      * @return un mensaje de éxito o un mensaje de error si la operación falla
      */
     ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest body);
+
+    ResponseEntity<java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion>> listarMisSolicitudes();
+    ResponseEntity<?> actualizarEstadoSolicitud(Long solicitudId, java.util.Map<String, String> body);
 }

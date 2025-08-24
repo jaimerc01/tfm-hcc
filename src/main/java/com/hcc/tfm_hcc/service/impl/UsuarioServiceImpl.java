@@ -41,6 +41,12 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Autowired
     private AccessLogRepository accessLogRepository;
 
+    @Autowired
+    private com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository solicitudAsignacionRepository;
+
+    @Autowired
+    private com.hcc.tfm_hcc.repository.MedicoPacienteRepository medicoPacienteRepository;
+
     // No inyectar AutenticacionService aquí para evitar dependencia cíclica
 
     @Override
@@ -245,6 +251,46 @@ public class UsuarioServiceImpl implements UsuarioService {
             .fechaEliminacion(usuarioRepository.findByNif(dto.getNif()).map(u->u.getFechaEliminacion()).orElse(null))
             .accesos(accesos)
             .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion> listarMisSolicitudes() {
+        String nif = this.getNifUsuarioAutenticado();
+        if (nif == null) throw new IllegalStateException("No autenticado");
+        return solicitudAsignacionRepository.findByPacienteNifAndEstado(nif, "PENDIENTE");
+    }
+
+    @Override
+    @Transactional
+    public com.hcc.tfm_hcc.model.SolicitudAsignacion actualizarEstadoSolicitud(Long solicitudId, String nuevoEstado) {
+        String nif = this.getNifUsuarioAutenticado();
+        if (nif == null) throw new IllegalStateException("No autenticado");
+        var opt = solicitudAsignacionRepository.findById(solicitudId);
+        if (opt.isEmpty()) throw new IllegalArgumentException("Solicitud no encontrada");
+        com.hcc.tfm_hcc.model.SolicitudAsignacion solicitud = opt.get();
+        if (!solicitud.getPaciente().getNif().equals(nif)) throw new IllegalStateException("No autorizado para modificar esta solicitud");
+        if (!nuevoEstado.equalsIgnoreCase("ACEPTADA") && !nuevoEstado.equalsIgnoreCase("RECHAZADA")) {
+            throw new IllegalArgumentException("Estado inválido");
+        }
+    solicitud.setEstado(nuevoEstado.toUpperCase());
+    var saved = solicitudAsignacionRepository.save(solicitud);
+
+    // Si la nueva estado es ACEPTADA, crear relación MedicoPaciente si no existe
+    if ("ACEPTADA".equalsIgnoreCase(saved.getEstado())) {
+        var medico = saved.getMedico();
+        var paciente = saved.getPaciente();
+        if (medico != null && paciente != null) {
+            boolean exists = medicoPacienteRepository.existsByMedicoIdAndPacienteId(medico.getId(), paciente.getId());
+            if (!exists) {
+                com.hcc.tfm_hcc.model.MedicoPaciente rel = new com.hcc.tfm_hcc.model.MedicoPaciente();
+                rel.setMedico(medico);
+                rel.setPaciente(paciente);
+                medicoPacienteRepository.save(rel);
+            }
+        }
+    }
+    return saved;
     }
 
 }

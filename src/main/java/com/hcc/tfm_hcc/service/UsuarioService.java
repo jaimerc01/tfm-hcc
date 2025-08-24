@@ -44,4 +44,8 @@ public interface UsuarioService {
 
     /** Genera el export de datos del usuario autenticado */
     UserExportDTO exportUsuario();
+
+    // Patient-side: list my solicitudes and accept/reject one
+    java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion> listarMisSolicitudes();
+    com.hcc.tfm_hcc.model.SolicitudAsignacion actualizarEstadoSolicitud(Long solicitudId, String nuevoEstado);
 }

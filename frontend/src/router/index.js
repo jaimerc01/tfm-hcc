@@ -12,6 +12,7 @@ import UserDataView from '@/views/UserDataView.vue'
 import MedicoView from '@/views/MedicoView.vue'
 import AdminView from '@/views/AdminView.vue'
 import AdminMedicosView from '@/views/AdminMedicosView.vue'
+import MisSolicitudesView from '@/views/MisSolicitudesView.vue'
 
 const routes = [
   {
@@ -48,6 +49,12 @@ const routes = [
     path: '/usuario',
     name: 'UserData',
     component: UserDataView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/mis-solicitudes',
+    name: 'MisSolicitudes',
+    component: MisSolicitudesView,
     meta: { requiresAuth: true }
   },
   {
