@@ -23,4 +23,7 @@ public class MedicoPaciente extends BaseEntity{
     @JoinColumn(name = "id_paciente", referencedColumnName = "id", updatable = false)
     private Usuario paciente;
 
+    @JoinColumn(name = "estado", nullable = false)
+    private String estado;
+
 }

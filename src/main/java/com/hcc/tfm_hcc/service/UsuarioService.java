@@ -1,9 +1,12 @@
 package com.hcc.tfm_hcc.service;
 
-import com.hcc.tfm_hcc.dto.UsuarioDTO;
-import com.hcc.tfm_hcc.dto.UserExportDTO;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.hcc.tfm_hcc.dto.UserExportDTO;
+import com.hcc.tfm_hcc.dto.UserExportDTO.AccesoDTO;
+import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.model.Usuario;
 
 public interface UsuarioService {
@@ -40,12 +43,12 @@ public interface UsuarioService {
     void deleteCuentaActual();
 
     /** Devuelve los accesos del usuario autenticado opcionalmente filtrados por rango */
-    List<UserExportDTO.AccesoDTO> getMisLogs(LocalDateTime desde, LocalDateTime hasta);
+    List<AccesoDTO> getMisLogs(LocalDateTime desde, LocalDateTime hasta);
 
     /** Genera el export de datos del usuario autenticado */
     UserExportDTO exportUsuario();
 
     // Patient-side: list my solicitudes and accept/reject one
-    java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion> listarMisSolicitudes();
-    com.hcc.tfm_hcc.model.SolicitudAsignacion actualizarEstadoSolicitud(Long solicitudId, String nuevoEstado);
+    List<SolicitudAsignacion> listarMisSolicitudes();
+    SolicitudAsignacion actualizarEstadoSolicitud(String solicitudId, String nuevoEstado);
 }

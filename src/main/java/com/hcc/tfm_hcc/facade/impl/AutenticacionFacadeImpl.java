@@ -13,6 +13,8 @@ import com.hcc.tfm_hcc.model.LoginResponse;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.service.AutenticacionService;
 import com.hcc.tfm_hcc.service.JwtService;
+import java.util.Map;
+import java.util.HashMap;
 
 @Component
 public class AutenticacionFacadeImpl implements AutenticacionFacade {
@@ -30,7 +32,7 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
     public ResponseEntity<LoginResponse> autenticar(LoginUsuarioDTO loginUsuarioDTO) throws IncorrectCredentials {
         Usuario usuarioAutenticado = autenticacionService.autenticar(loginUsuarioDTO);
         // Incluir authorities en el token para que el frontend pueda hacer guards sin llamadas extra
-        java.util.Map<String, Object> claims = new java.util.HashMap<>();
+    Map<String, Object> claims = new HashMap<>();
         var authorities = usuarioAutenticado.getAuthorities();
         if (authorities != null) {
             claims.put("authorities", authorities.stream().map(a -> a.getAuthority()).toList());

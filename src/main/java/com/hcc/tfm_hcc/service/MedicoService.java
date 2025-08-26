@@ -16,5 +16,8 @@ public interface MedicoService {
     PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento);
     // Create assignment request for the current authenticated medico using only patient nif
     SolicitudAsignacion crearSolicitudAsignacion(String nifPaciente);
-    java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion> listarSolicitudesPendientes();
+    List<SolicitudAsignacion> listarSolicitudesPendientes();
+    List<SolicitudAsignacion> listarSolicitudesEnviadas();
+    // asignar o revocar perfil MEDICO a un usuario existente
+    void setPerfilMedico(UUID id, boolean asignar);
 }

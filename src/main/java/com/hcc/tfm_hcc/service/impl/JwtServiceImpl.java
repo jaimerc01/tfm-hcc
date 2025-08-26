@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.Base64;
 
 import javax.crypto.SecretKey;
 
@@ -110,6 +111,6 @@ public class JwtServiceImpl implements JwtService{
     }
 
     private SecretKey getSignInKey() {
-        return Keys.hmacShaKeyFor(java.util.Base64.getDecoder().decode(secretKey));
+    return Keys.hmacShaKeyFor(Base64.getDecoder().decode(secretKey));
     }
 }

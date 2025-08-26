@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import java.util.Collections;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.PerfilRepository;
 import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
 import com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository;
+import com.hcc.tfm_hcc.repository.MedicoPacienteRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.MedicoService;
 import com.hcc.tfm_hcc.service.UsuarioService;
@@ -52,10 +54,17 @@ public class MedicoServiceImpl implements MedicoService {
     }
 
     @Override
-    public java.util.List<SolicitudAsignacion> listarSolicitudesPendientes() {
+    public List<SolicitudAsignacion> listarSolicitudesPendientes() {
         String nifMedico = com.hcc.tfm_hcc.util.SecurityUtils.getCurrentUserNif();
-        if (nifMedico == null) return java.util.Collections.emptyList();
+        if (nifMedico == null) return Collections.emptyList();
         return solicitudAsignacionRepository.findByMedicoNifAndEstado(nifMedico, "PENDIENTE");
+    }
+
+    @Override
+    public List<SolicitudAsignacion> listarSolicitudesEnviadas() {
+        String nifMedico = com.hcc.tfm_hcc.util.SecurityUtils.getCurrentUserNif();
+        if (nifMedico == null) return Collections.emptyList();
+        return solicitudAsignacionRepository.findByMedicoNifOrderByFechaCreacionDesc(nifMedico);
     }
     
     @Autowired
@@ -68,6 +77,8 @@ public class MedicoServiceImpl implements MedicoService {
     private PerfilRepository perfilRepository;
     @Autowired
     private PerfilUsuarioRepository perfilUsuarioRepository;
+    @Autowired
+    private MedicoPacienteRepository medicoPacienteRepository;
 
     @Override
     public PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento) {
@@ -140,5 +151,58 @@ public class MedicoServiceImpl implements MedicoService {
             .collect(Collectors.toList());
         perfilUsuarioRepository.deleteAll(relaciones);
         usuarioRepository.delete(usuario);
+    }
+
+    @Override
+    public void setPerfilMedico(UUID id, boolean asignar) {
+        var usuarioOpt = usuarioRepository.findById(id);
+        if (usuarioOpt.isEmpty()) throw new IllegalArgumentException("Usuario no encontrado");
+        Usuario usuario = usuarioOpt.get();
+        var perfilMedicoOpt = perfilRepository.getPerfilByRol("MEDICO");
+        var perfilPacienteOpt = perfilRepository.getPerfilByRol("PACIENTE");
+        if (perfilMedicoOpt.isEmpty() || perfilPacienteOpt.isEmpty()) throw new IllegalStateException("Perfiles requeridos no configurados");
+
+        var perfilMedico = perfilMedicoOpt.get();
+        var perfilPaciente = perfilPacienteOpt.get();
+
+        if (asignar) {
+            // añadir relación PerfilUsuario MEDICO si no existe
+            boolean already = StreamSupport.stream(perfilUsuarioRepository.findAll().spliterator(), false)
+                .anyMatch(pu -> pu.getUsuario().getId().equals(id) && pu.getPerfil().getRol().equalsIgnoreCase("MEDICO"));
+            if (!already) {
+                PerfilUsuario pu = new PerfilUsuario();
+                pu.setPerfil(perfilMedico);
+                pu.setUsuario(usuario);
+                pu.setFechaCreacion(java.time.LocalDateTime.now());
+                perfilUsuarioRepository.save(pu);
+            }
+        } else {
+            // Si tiene relaciones MedicoPaciente, marcarlas como REVOCADA
+            var relacionesMP = medicoPacienteRepository.findByMedicoIdAndEstadoNot(id, "REVOCADA");
+            if (relacionesMP != null && !relacionesMP.isEmpty()) {
+                for (var rel : relacionesMP) {
+                    rel.setEstado("REVOCADA");
+                    rel.setFechaUltimaModificacion(java.time.LocalDateTime.now());
+                }
+                medicoPacienteRepository.saveAll(relacionesMP);
+            }
+            // revocar perfil MEDICO
+            var relaciones = StreamSupport.stream(perfilUsuarioRepository.findAll().spliterator(), false)
+                .filter(pu -> pu.getUsuario().getId().equals(id) && pu.getPerfil().getRol().equalsIgnoreCase("MEDICO"))
+                .collect(Collectors.toList());
+            if (!relaciones.isEmpty()) {
+                perfilUsuarioRepository.deleteAll(relaciones);
+            }
+            // garantizar que tenga perfil PACIENTE
+            boolean hasPaciente = StreamSupport.stream(perfilUsuarioRepository.findAll().spliterator(), false)
+                .anyMatch(pu -> pu.getUsuario().getId().equals(id) && pu.getPerfil().getRol().equalsIgnoreCase("PACIENTE"));
+            if (!hasPaciente) {
+                PerfilUsuario pu2 = new PerfilUsuario();
+                pu2.setPerfil(perfilPaciente);
+                pu2.setUsuario(usuario);
+                pu2.setFechaCreacion(java.time.LocalDateTime.now());
+                perfilUsuarioRepository.save(pu2);
+            }
+        }
     }
 }

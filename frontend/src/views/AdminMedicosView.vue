@@ -27,6 +27,7 @@
           <td>
             <button @click="edit(m)">Editar</button>
             <button @click="eliminar(m.id)">Eliminar</button>
+            <button @click="quitarPerfil(m.id)" title="Quitar perfil MEDICO">Quitar perfil</button>
           </td>
         </tr>
       </tbody>
@@ -113,6 +114,15 @@ export default {
         await this.cargar();
       } catch (e) {
         this.error = 'Error eliminando médico';
+      }
+    },
+    async quitarPerfil(id) {
+      if (!confirm('¿Quitar el perfil MEDICO de este usuario?')) return;
+      try {
+        await medicoService.setPerfilMedico(id, false);
+        await this.cargar();
+      } catch (e) {
+        this.error = 'Error quitando perfil';
       }
     },
     cancelar() {

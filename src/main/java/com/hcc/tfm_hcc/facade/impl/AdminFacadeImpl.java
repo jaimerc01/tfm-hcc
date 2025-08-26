@@ -47,4 +47,16 @@ public class AdminFacadeImpl implements AdminFacade {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @Override
+    public ResponseEntity<Void> setPerfilMedico(UUID id, boolean asignar) {
+        try {
+            medicoService.setPerfilMedico(id, asignar);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
 }

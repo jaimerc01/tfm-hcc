@@ -1,23 +1,30 @@
 package com.hcc.tfm_hcc.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.hcc.tfm_hcc.dto.UserExportDTO;
+import com.hcc.tfm_hcc.dto.UserExportDTO.AccesoDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
-import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.model.MedicoPaciente;
 import com.hcc.tfm_hcc.model.PerfilUsuario;
-import com.hcc.tfm_hcc.dto.UserExportDTO;
+import com.hcc.tfm_hcc.model.SolicitudAsignacion;
+import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.repository.AccessLogRepository;
+import com.hcc.tfm_hcc.repository.MedicoPacienteRepository;
 import com.hcc.tfm_hcc.repository.PerfilRepository;
 import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
+import com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
-import com.hcc.tfm_hcc.repository.AccessLogRepository;
 import com.hcc.tfm_hcc.service.UsuarioService;
 
 @Service
@@ -42,10 +49,10 @@ public class UsuarioServiceImpl implements UsuarioService {
     private AccessLogRepository accessLogRepository;
 
     @Autowired
-    private com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository solicitudAsignacionRepository;
+    private SolicitudAsignacionRepository solicitudAsignacionRepository;
 
     @Autowired
-    private com.hcc.tfm_hcc.repository.MedicoPacienteRepository medicoPacienteRepository;
+    private MedicoPacienteRepository medicoPacienteRepository;
 
     // No inyectar AutenticacionService aquí para evitar dependencia cíclica
 
@@ -58,8 +65,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioMapper.toEntity(usuarioDTO);
         usuario.setFechaCreacion(LocalDateTime.now());
 
-    usuario.setLastPasswordChange(LocalDateTime.now());
-    this.usuarioRepository.save(usuario);
+        usuario.setLastPasswordChange(LocalDateTime.now());
+        this.usuarioRepository.save(usuario);
 
         // Buscar perfil PACIENTE y crear relación obligatoria
         var perfilOpt = perfilRepository.getPerfilByRol("PACIENTE");
@@ -171,7 +178,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (parcial.getNif() != null && !parcial.getNif().equals(usuario.getNif())) {
             usuario.setNif(parcial.getNif());
         }
-        usuario.setFechaUltimaModificacion(java.time.LocalDateTime.now());
+        usuario.setFechaUltimaModificacion(LocalDateTime.now());
         usuarioRepository.save(usuario);
         return usuarioMapper.toDto(usuario);
     }
@@ -200,7 +207,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<UserExportDTO.AccesoDTO> getMisLogs(java.time.LocalDateTime desde, java.time.LocalDateTime hasta) {
+    public List<AccesoDTO> getMisLogs(LocalDateTime desde, LocalDateTime hasta) {
         String nif = this.getNifUsuarioAutenticado();
         if (nif == null) throw new IllegalStateException("No autenticado");
         var dto = usuarioRepository.findByNif(nif).map(usuarioMapper::toDto).orElse(null);
@@ -208,7 +215,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         var logs = (desde != null && hasta != null)
             ? accessLogRepository.findByUsuarioIdAndTimestampBetweenOrderByTimestampDesc(dto.getId(), desde, hasta)
             : accessLogRepository.findByUsuarioIdOrderByTimestampDesc(dto.getId());
-        return logs.stream().map(l -> UserExportDTO.AccesoDTO.builder()
+        return logs.stream().map(l -> AccesoDTO.builder()
             .timestamp(l.getTimestamp())
             .metodo(l.getMetodo())
             .ruta(l.getRuta())
@@ -255,25 +262,28 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion> listarMisSolicitudes() {
+    public List<SolicitudAsignacion> listarMisSolicitudes() {
         String nif = this.getNifUsuarioAutenticado();
         if (nif == null) throw new IllegalStateException("No autenticado");
-        return solicitudAsignacionRepository.findByPacienteNifAndEstado(nif, "PENDIENTE");
+    // devolver historial completo de solicitudes recibidas por el paciente, ordenado por fecha
+    return solicitudAsignacionRepository.findByPacienteNifOrderByFechaCreacionDesc(nif);
     }
 
     @Override
     @Transactional
-    public com.hcc.tfm_hcc.model.SolicitudAsignacion actualizarEstadoSolicitud(Long solicitudId, String nuevoEstado) {
+    public SolicitudAsignacion actualizarEstadoSolicitud(String solicitudId, String nuevoEstado) {
         String nif = this.getNifUsuarioAutenticado();
         if (nif == null) throw new IllegalStateException("No autenticado");
-        var opt = solicitudAsignacionRepository.findById(solicitudId);
+        UUID solicitudIdUUID = UUID.fromString(solicitudId);
+        var opt = solicitudAsignacionRepository.findById(solicitudIdUUID);
         if (opt.isEmpty()) throw new IllegalArgumentException("Solicitud no encontrada");
-        com.hcc.tfm_hcc.model.SolicitudAsignacion solicitud = opt.get();
+        SolicitudAsignacion solicitud = opt.get();
         if (!solicitud.getPaciente().getNif().equals(nif)) throw new IllegalStateException("No autorizado para modificar esta solicitud");
         if (!nuevoEstado.equalsIgnoreCase("ACEPTADA") && !nuevoEstado.equalsIgnoreCase("RECHAZADA")) {
             throw new IllegalArgumentException("Estado inválido");
         }
     solicitud.setEstado(nuevoEstado.toUpperCase());
+    solicitud.setFechaUltimaModificacion(LocalDateTime.now());
     var saved = solicitudAsignacionRepository.save(solicitud);
 
     // Si la nueva estado es ACEPTADA, crear relación MedicoPaciente si no existe
@@ -283,7 +293,9 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (medico != null && paciente != null) {
             boolean exists = medicoPacienteRepository.existsByMedicoIdAndPacienteId(medico.getId(), paciente.getId());
             if (!exists) {
-                com.hcc.tfm_hcc.model.MedicoPaciente rel = new com.hcc.tfm_hcc.model.MedicoPaciente();
+                MedicoPaciente rel = new MedicoPaciente();
+                rel.setFechaCreacion(LocalDateTime.now());
+                rel.setEstado("ACTIVA");
                 rel.setMedico(medico);
                 rel.setPaciente(paciente);
                 medicoPacienteRepository.save(rel);

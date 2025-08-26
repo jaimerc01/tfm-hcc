@@ -54,7 +54,6 @@ export default {
   name: 'MedicoView',
   data() {
     return {
-      alive: false,
       error: '',
   solicitudesPendientes: [],
       dni: '',
@@ -73,17 +72,8 @@ export default {
     }
   },
   async created() {
-    try {
-      const token = localStorage.getItem('authToken')
-      const base = process.env.VUE_APP_API_URL || 'http://localhost:8081'
-      const { data } = await axios.get(base + '/medico/ping', { headers: { Authorization: `Bearer ${token}` } })
-      this.alive = data === 'OK-MEDICO'
-    } catch (e) {
-      // keep error but still allow search UI if user has MEDICO role
-      this.error = 'Sin permisos o no autenticado'
-    }
-    // Load pending solicitudes if current user has MEDICO role (show even if ping failed)
-    if (this.isMedico) await this.cargarSolicitudesPendientes()
+  // Load pending solicitudes if current user has MEDICO role
+  if (this.isMedico) await this.cargarSolicitudesPendientes()
   },
   methods: {
     async buscarPaciente() {

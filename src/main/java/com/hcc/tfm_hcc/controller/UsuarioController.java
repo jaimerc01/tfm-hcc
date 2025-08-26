@@ -1,9 +1,13 @@
 package com.hcc.tfm_hcc.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
+import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
 public interface UsuarioController {
 
@@ -38,6 +42,6 @@ public interface UsuarioController {
      */
     ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest body);
 
-    ResponseEntity<java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion>> listarMisSolicitudes();
-    ResponseEntity<?> actualizarEstadoSolicitud(Long solicitudId, java.util.Map<String, String> body);
+    ResponseEntity<List<SolicitudAsignacion>> listarMisSolicitudes();
+    ResponseEntity<?> actualizarEstadoSolicitud(String solicitudId, Map<String, String> body);
 }

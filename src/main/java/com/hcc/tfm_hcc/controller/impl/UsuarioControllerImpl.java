@@ -1,24 +1,28 @@
 package com.hcc.tfm_hcc.controller.impl;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.hcc.tfm_hcc.controller.UsuarioController;
-import com.hcc.tfm_hcc.facade.UsuarioFacade;
+import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
-import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.dto.UpdateUsuarioRequest;
-// import com.hcc.tfm_hcc.repository.AccessLogRepository;
-// import com.hcc.tfm_hcc.repository.UsuarioRepository;
-import java.time.LocalDateTime;
-// import java.util.stream.Collectors;
+import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.facade.UsuarioFacade;
+
 import jakarta.validation.Valid;
 
 @RestController
@@ -27,22 +31,17 @@ public class UsuarioControllerImpl implements UsuarioController{
 
     @Autowired
     private UsuarioFacade usuarioFacade;
-    // Delegado a la capa de servicio/fachada; no se usa directamente aquí
-
-    // @Override
-    // @PostMapping("/alta")
-    // public String altaUsuario(@RequestBody UsuarioDTO usuarioDTO) {
-    //     return usuarioFacade.altaUsuario(usuarioDTO);
-    // }
 
     @Override
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public String getNombreUsuario() {
         return usuarioFacade.getNombreUsuario();
     }
 
     @Override
     @GetMapping("/me/detalle")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getUsuarioActual() {
         var dto = usuarioFacade.getUsuarioActual();
         if (dto == null) return ResponseEntity.status(401).build();
@@ -52,6 +51,7 @@ public class UsuarioControllerImpl implements UsuarioController{
 
     @Override
     @PostMapping("/change-password")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest body) {
         if (body.getNewPassword() == null || body.getNewPassword().length() < 6) {
             return ResponseEntity.badRequest().body("Nueva contraseña demasiado corta");
@@ -62,7 +62,7 @@ public class UsuarioControllerImpl implements UsuarioController{
             if (dto == null) {
                 return ResponseEntity.status(401).build();
             }
-            return ResponseEntity.ok(java.util.Map.of("id", dto.getId()));
+            return ResponseEntity.ok(Map.of("id", dto.getId()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body(e.getMessage());
         } catch (Exception e) {
@@ -71,6 +71,7 @@ public class UsuarioControllerImpl implements UsuarioController{
     }
 
     @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> updateUsuarioActual(@Valid @RequestBody UpdateUsuarioRequest req) {
         try {
             UsuarioDTO parcial = new UsuarioDTO();
@@ -99,6 +100,7 @@ public class UsuarioControllerImpl implements UsuarioController{
     }
 
     @DeleteMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> deleteCuenta() {
         try {
             usuarioFacade.deleteCuentaActual();
@@ -111,6 +113,7 @@ public class UsuarioControllerImpl implements UsuarioController{
     }
 
     @GetMapping("/logs")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> misLogs(String desde, String hasta) {
         var dto = usuarioFacade.getUsuarioActual();
         if (dto == null) return ResponseEntity.status(401).build();
@@ -121,14 +124,16 @@ public class UsuarioControllerImpl implements UsuarioController{
     }
 
     @GetMapping("/solicitud/mis")
-    public ResponseEntity<java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion>> listarMisSolicitudes() {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<SolicitudAsignacion>> listarMisSolicitudes() {
         var dto = usuarioFacade.getUsuarioActual();
         if (dto == null) return ResponseEntity.status(401).build();
         return ResponseEntity.ok(usuarioFacade.listarMisSolicitudes());
     }
 
     @PostMapping("/solicitud/{id}/estado")
-    public ResponseEntity<?> actualizarEstadoSolicitud(@org.springframework.web.bind.annotation.PathVariable("id") Long id, @RequestBody java.util.Map<String, String> body) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> actualizarEstadoSolicitud(@PathVariable("id") String id, @RequestBody Map<String, String> body) {
         var dto = usuarioFacade.getUsuarioActual();
         if (dto == null) return ResponseEntity.status(401).build();
         String nuevoEstado = body.get("estado");
@@ -145,6 +150,7 @@ public class UsuarioControllerImpl implements UsuarioController{
     }
 
     @GetMapping("/export")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> exportUsuario() {
         var dto = usuarioFacade.getUsuarioActual();
         if (dto == null) return ResponseEntity.status(401).build();

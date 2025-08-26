@@ -8,8 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 
 public interface AdminController {
-    ResponseEntity<String> ping();
-
     @GetMapping("/medicos")
     ResponseEntity<List<UsuarioDTO>> listarMedicos();
 
@@ -21,4 +19,7 @@ public interface AdminController {
 
     @DeleteMapping("/medicos/{id}")
     ResponseEntity<Void> eliminarMedico(@PathVariable("id") UUID id);
+
+    @PutMapping("/medicos/{id}/perfil-medico")
+    ResponseEntity<Void> setPerfilMedico(@PathVariable("id") UUID id, @RequestParam("asignar") boolean asignar);
 }

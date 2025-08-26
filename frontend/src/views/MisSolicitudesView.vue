@@ -35,6 +35,28 @@
       </li>
     </ul>
 
+    <div v-if="!loading && solicitudesEnviadas && solicitudesEnviadas.length">
+      <h2>Solicitudes enviadas</h2>
+      <ul>
+        <li v-for="s in solicitudesEnviadas" :key="'env-'+s.id" class="solicitud-item">
+          <div class="solicitud-main">
+            <div>
+              <b>De médico:</b> {{ s.medico?.nombre || '-' }} ({{ s.medico?.nif || '-' }})
+            </div>
+            <div>
+              <b>Paciente:</b> {{ s.paciente?.nombre || '-' }} ({{ s.paciente?.nif || '-' }})
+            </div>
+            <div>
+              <b>Estado:</b> {{ s.estado }}
+            </div>
+            <div>
+              <b>Creada:</b> {{ formatDate(s.fechaCreacion) || '-' }}
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+
     <!-- Confirm modal -->
     <div v-if="confirmOpen" class="modal-overlay">
       <div class="modal">
@@ -50,12 +72,14 @@
 
 <script>
 import axios from 'axios'
+import authService from '../services/authService'
 
 export default {
   name: 'MisSolicitudesView',
   data() {
     return {
       solicitudes: [],
+  solicitudesEnviadas: [],
       loading: false,
       error: '',
       messages: {},
@@ -79,6 +103,23 @@ export default {
         const base = process.env.VUE_APP_API_URL || 'http://localhost:8081'
         const resp = await axios.get(`${base}/usuario/solicitud/mis`, { headers: { Authorization: `Bearer ${token}` } })
         this.solicitudes = Array.isArray(resp.data) ? resp.data : []
+        // if user is a medico, also load solicitudes they have sent
+        const claims = authService.getCurrentUser()
+        const roles = (claims && (claims.authorities || claims.roles || claims.scope)) || []
+        const isMedico = Array.isArray(roles)
+          ? roles.some(r => String(r).toUpperCase().includes('MEDICO'))
+          : (typeof roles === 'string' && String(roles).toUpperCase().includes('MEDICO'))
+        if (isMedico) {
+          try {
+            const r2 = await axios.get(`${base}/medico/solicitud/enviadas`, { headers: { Authorization: `Bearer ${token}` } })
+            this.solicitudesEnviadas = Array.isArray(r2.data) ? r2.data : []
+          } catch (e) {
+            // non-blocking: ignore sent list errors but keep a console message
+            // eslint-disable-next-line no-console
+            console.warn('No se pudieron cargar solicitudes enviadas', e)
+            this.solicitudesEnviadas = []
+          }
+        }
       } catch (e) {
         this.error = (e && e.response && (e.response.data || e.response.statusText)) || 'Error cargando solicitudes'
         this.solicitudes = []

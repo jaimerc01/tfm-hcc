@@ -7,6 +7,7 @@ import com.hcc.tfm_hcc.dto.PacienteDTO;
 import com.hcc.tfm_hcc.facade.MedicoFacade;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.service.MedicoService;
+import java.util.List;
 
 @Service
 public class MedicoFacadeImpl implements MedicoFacade {
@@ -15,8 +16,13 @@ public class MedicoFacadeImpl implements MedicoFacade {
         return medicoService.crearSolicitudAsignacion(nifPaciente);
     }
     @Override
-    public java.util.List<SolicitudAsignacion> listarSolicitudesPendientes() {
+    public List<SolicitudAsignacion> listarSolicitudesPendientes() {
         return medicoService.listarSolicitudesPendientes();
+    }
+
+    @Override
+    public List<SolicitudAsignacion> listarSolicitudesEnviadas() {
+        return medicoService.listarSolicitudesEnviadas();
     }
     @Autowired
     private MedicoService medicoService;

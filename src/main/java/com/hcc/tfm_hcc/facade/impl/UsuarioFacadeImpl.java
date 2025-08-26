@@ -1,12 +1,16 @@
 package com.hcc.tfm_hcc.facade.impl;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO;
+import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
+import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.service.UsuarioService;
 
 @Component
@@ -50,7 +54,7 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
     }
 
     @Override
-    public java.util.List<UserExportDTO.AccesoDTO> getMisLogs(java.time.LocalDateTime desde, java.time.LocalDateTime hasta) {
+    public List<UserExportDTO.AccesoDTO> getMisLogs(LocalDateTime desde, LocalDateTime hasta) {
         return usuarioService.getMisLogs(desde, hasta);
     }
 
@@ -60,12 +64,12 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
     }
 
     @Override
-    public java.util.List<com.hcc.tfm_hcc.model.SolicitudAsignacion> listarMisSolicitudes() {
+    public List<SolicitudAsignacion> listarMisSolicitudes() {
         return usuarioService.listarMisSolicitudes();
     }
 
     @Override
-    public com.hcc.tfm_hcc.model.SolicitudAsignacion actualizarEstadoSolicitud(Long solicitudId, String nuevoEstado) {
+    public SolicitudAsignacion actualizarEstadoSolicitud(String solicitudId, String nuevoEstado) {
         return usuarioService.actualizarEstadoSolicitud(solicitudId, nuevoEstado);
     }
 }

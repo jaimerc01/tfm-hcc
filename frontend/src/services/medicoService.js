@@ -28,4 +28,9 @@ export default {
   async eliminar(id) {
     await api.delete(`/admin/medicos/${id}`);
   }
+  ,
+  async setPerfilMedico(id, asignar) {
+    // PUT /admin/medicos/{id}/perfil-medico?asignar=true|false
+    await api.put(`/admin/medicos/${id}/perfil-medico`, null, { params: { asignar } });
+  }
 };

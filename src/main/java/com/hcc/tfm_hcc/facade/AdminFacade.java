@@ -10,4 +10,5 @@ public interface AdminFacade {
     ResponseEntity<UsuarioDTO> crearMedico(UsuarioDTO medicoDTO);
     ResponseEntity<UsuarioDTO> actualizarMedico(UUID id, UsuarioDTO medicoDTO);
     ResponseEntity<Void> eliminarMedico(UUID id);
+    ResponseEntity<Void> setPerfilMedico(UUID id, boolean asignar);
 }
