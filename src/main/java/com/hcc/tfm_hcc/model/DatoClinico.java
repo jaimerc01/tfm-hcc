@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "dato_clinico")
+@Data
 public class DatoClinico extends BaseEntity{
 
     private static final long serialVersionUID = 6L;
@@ -27,6 +29,7 @@ public class DatoClinico extends BaseEntity{
 
     @Column(name = "observacion")
     private String observacion;
+
 
     @ManyToOne
     @JoinColumn(name = "id_historial_clinico", nullable = false)

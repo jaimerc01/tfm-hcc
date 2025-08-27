@@ -2,6 +2,79 @@
   <div class="page">
     <h1>Historia clínica</h1>
 
+    <section class="subsections">
+      <div class="subnav" role="tablist" aria-label="Secciones de historia clínica">
+        <button :class="{active: activeSection==='identificacion'}" @click="activeSection='identificacion'" role="tab" :aria-selected="activeSection==='identificacion'">Identificación básica</button>
+        <button :class="{active: activeSection==='antecedentes'}" @click="activeSection='antecedentes'" role="tab" :aria-selected="activeSection==='antecedentes'">Antecedentes personales y familiares</button>
+        <button :class="{active: activeSection==='alergias'}" @click="activeSection='alergias'" role="tab" :aria-selected="activeSection==='alergias'">Alergias e intolerancias</button>
+      </div>
+
+      <transition name="fade-slide" mode="out-in">
+        <div v-if="activeSection==='identificacion'" key="identificacion" class="section-panel card simple-form" role="tabpanel">
+          <h3>Identificación básica</h3>
+          <label>Nombre completo</label>
+          <input type="text" v-model="identNombre" placeholder="Nombre y apellidos" />
+
+          <div class="row">
+            <div>
+              <label>NIF / NIE</label>
+              <input type="text" v-model="identNif" placeholder="12345678A" />
+            </div>
+            <div>
+              <label>Fecha de nacimiento</label>
+              <input type="date" v-model="identFechaNacimiento" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label>Teléfono</label>
+              <input type="tel" v-model="identTelefono" placeholder="600 000 000" />
+            </div>
+            <div>
+              <label>Email (opcional)</label>
+              <input type="email" v-model="identEmail" placeholder="tu@correo.com" />
+            </div>
+          </div>
+
+          <p class="hint">Los datos se guardan y se usan sólo para identificar tu historial; escribe lo que aparece en tus documentos.</p>
+          <div class="form-actions">
+            <button @click="saveIdentificacion" :disabled="savingIdent">{{ savingIdent ? 'Guardando…' : 'Guardar identificación' }}</button>
+            <span v-if="msgIdent" class="success">{{ msgIdent }}</span>
+          </div>
+        </div>
+
+        <div v-else-if="activeSection==='antecedentes'" key="antecedentes" class="section-panel card" role="tabpanel">
+          <h3>Antecedentes personales y familiares</h3>
+          <textarea v-model="antecedentesFamiliares" rows="6" placeholder='Describe aquí, con tus palabras, enfermedades importantes en ti o en tu familia (por ejemplo: diabetes en padre, hipertensión, etc.)'></textarea>
+          <p class="hint">Ejemplo: "Padre: diabetes tipo 2; Madre: hipertensión. Yo: asma en la infancia". No hace falta usar términos médicos exactos.</p>
+          <div class="form-actions">
+            <button @click="saveAntecedentes" :disabled="savingAntecedentes">{{ savingAntecedentes ? 'Guardando…' : 'Guardar antecedentes' }}</button>
+            <span v-if="msgAnte" class="success">{{ msgAnte }}</span>
+          </div>
+        </div>
+
+        <div v-else key="alergias" class="section-panel card" role="tabpanel">
+          <h3>Alergias e intolerancias</h3>
+          <textarea v-model="alergias" rows="4" placeholder='Ejemplo: Penicilina — reacción: erupción — gravedad: moderada. Separa alergias por línea.'></textarea>
+          <p class="hint">Puedes escribir cada alergia en una línea: sustancia — reacción — gravedad.</p>
+          <div v-if="alergiasList && alergiasList.length" class="existing-allergies">
+            <h4>Listado de alergias registradas</h4>
+            <ul>
+              <li v-for="a in alergiasList" :key="a.id">
+                <strong>{{ a.observacion || (a.tipo + (a.valor ? (' — ' + a.valor + (a.unidad ? ' ' + a.unidad : '')) : '')) }}</strong>
+                <div class="meta small">Tipo: {{ a.tipo }} <span v-if="a.unidad">• {{ a.valor }} {{ a.unidad }}</span></div>
+              </li>
+            </ul>
+          </div>
+          <div class="form-actions">
+            <button @click="saveAlergias" :disabled="savingAlergias">{{ savingAlergias ? 'Guardando…' : 'Guardar alergias' }}</button>
+            <span v-if="msgAler" class="success">{{ msgAler }}</span>
+          </div>
+        </div>
+      </transition>
+    </section>
+
     <section class="upload">
       <form @submit.prevent="onUpload">
         <input type="file" @change="onFileChange" />
@@ -41,10 +114,89 @@ export default {
       uploading: false,
       removingId: null,
       error: null,
+      // Identification fields (user-friendly)
+      identNombre: '',
+      identNif: '',
+      identFechaNacimiento: '',
+      identTelefono: '',
+      identEmail: '',
+      antecedentesFamiliares: '',
+  alergias: '',
+  alergiasList: [],
+      savingIdent: false,
+      savingAntecedentes: false,
+      savingAlergias: false,
+      msgIdent: '',
+      msgAnte: '',
+      msgAler: '',
+  activeSection: 'identificacion',
     }
   },
-  created() { this.load() },
+  created() { this.load(); this.loadHistoria() },
   methods: {
+    async loadHistoria() {
+      try {
+        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
+        const res = await svc.getMine()
+        const dto = res.data || {}
+        // If backend returns identification JSON, try to parse and populate fields; otherwise leave blank
+        try {
+          const id = dto.identificacionJson ? (typeof dto.identificacionJson === 'string' ? JSON.parse(dto.identificacionJson) : dto.identificacionJson) : {}
+          this.identNombre = id.nombre || ''
+          this.identNif = id.nif || ''
+          this.identFechaNacimiento = id.fechaNacimiento || ''
+          this.identTelefono = id.contacto || ''
+          this.identEmail = id.email || ''
+        } catch (e) { /* ignore parse errors */ }
+  this.antecedentesFamiliares = dto.antecedentesFamiliares || ''
+  this.alergias = dto.alergiasJson || ''
+  // map datosClinicos into a simple allergies list for display
+  this.alergiasList = Array.isArray(dto.datosClinicos) ? dto.datosClinicos.filter(d => (d.tipo || '').toUpperCase().includes('ALERGIA')) : []
+      } catch (e) { console.error('No se pudo cargar historia', e) }
+    },
+
+    async saveIdentificacion() {
+      this.savingIdent = true
+      try {
+        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
+        // assemble a simple identification JSON from user-friendly fields
+        const payload = {
+          nombre: this.identNombre,
+          nif: this.identNif,
+          fechaNacimiento: this.identFechaNacimiento,
+          contacto: this.identTelefono,
+          email: this.identEmail
+        }
+        await svc.updateIdentificacion(JSON.stringify(payload))
+        await this.loadHistoria()
+        this.msgIdent = 'Identificación guardada.'
+        setTimeout(() => this.msgIdent = '', 3000)
+      } catch (e) { this.error = 'Error guardando identificación' } finally { this.savingIdent = false }
+    },
+
+    async saveAntecedentes() {
+      this.savingAntecedentes = true
+      try {
+        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
+        await svc.updateAntecedentes(this.antecedentesFamiliares)
+        await this.loadHistoria()
+        this.msgAnte = 'Antecedentes guardados.'
+        setTimeout(() => this.msgAnte = '', 3000)
+      } catch (e) { this.error = 'Error guardando antecedentes' } finally { this.savingAntecedentes = false }
+    },
+
+    async saveAlergias() {
+      this.savingAlergias = true
+      try {
+        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
+        await svc.updateAlergias(this.alergias)
+        await this.loadHistoria()
+  this.msgAler = 'Alergias guardadas.'
+  // clear textarea after saving to indicate stored
+  this.alergias = ''
+        setTimeout(() => this.msgAler = '', 3000)
+      } catch (e) { this.error = 'Error guardando alergias' } finally { this.savingAlergias = false }
+    },
     async load() {
       try {
         this.items = await svc.list()
@@ -102,13 +254,16 @@ export default {
     }
   }
 }
+
+/* transition for panels */
 </script>
 
 <style scoped>
-.upload { margin: 1rem 0; }
 .error { color: #b00020; }
 .list ul { list-style: none; padding: 0; }
 .item { display: flex; align-items: center; justify-content: space-between; padding: .5rem 0; border-bottom: 1px solid #eee; }
 .meta small { color: #666; margin-left: .5rem; }
 .actions a { margin-right: .75rem; }
+.row { display:flex; gap:1rem }
+.row > div { flex:1 }
 </style>

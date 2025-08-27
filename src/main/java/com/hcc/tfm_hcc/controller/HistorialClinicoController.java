@@ -9,9 +9,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 
-public interface HistoriaClinicaController {
+public interface HistorialClinicoController {
     List<ArchivoClinicoDTO> listMine();
     ResponseEntity<?> upload(MultipartFile file) throws IOException;
     ResponseEntity<?> download(UUID id);
     ResponseEntity<?> delete(UUID id) throws IOException;
+    ResponseEntity<?> getMiHistoria();
+    ResponseEntity<?> actualizarIdentificacion(String identificacionJson);
+    ResponseEntity<?> actualizarAntecedentes(String antecedentesFamiliares);
+    ResponseEntity<?> actualizarAlergias(String alergiasJson);
 }

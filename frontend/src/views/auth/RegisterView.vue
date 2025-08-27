@@ -113,5 +113,4 @@ export default {
 
 <style>
 .error { margin-top:1rem; color:#e74c3c; }
-.success { margin-top:1rem; color:#2e7d32; }
 </style>

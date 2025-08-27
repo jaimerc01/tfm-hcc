@@ -190,8 +190,5 @@ button[type="submit"]:hover {
 .asignar-btn:hover {
   background: #256029;
 }
-.success {
-  color: #388e3c;
-  margin-top: 0.5rem;
-}
+.success { margin-top: 0.5rem; }
 </style>
