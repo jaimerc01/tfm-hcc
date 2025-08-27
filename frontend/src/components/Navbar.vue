@@ -8,6 +8,7 @@
       </button>
 
       <div class="nav__links" :class="{ 'nav__links--open': open }">
+      <notifications-dropdown />
         <router-link class="nav__link" :to="{ name: 'Dashboard' }" @click="close">Inicio</router-link>
   <router-link class="nav__link" :to="{ name: 'HistoriaClinica' }" @click="close">Historia clínica</router-link>
   <router-link v-if="isMedico" class="nav__link" :to="{ name: 'Medico' }" @click="close">Zona médica</router-link>
@@ -35,9 +36,11 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import authService from '@/services/authService'
+import NotificationsDropdown from '@/components/NotificationsDropdown.vue'
 
 export default {
   name: 'AppNavbar',
+  components: { NotificationsDropdown },
   setup() {
     const open = ref(false)
     const router = useRouter()

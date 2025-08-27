@@ -20,6 +20,8 @@ import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
 import com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository;
 import com.hcc.tfm_hcc.repository.MedicoPacienteRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.repository.NotificacionRepository;
+import com.hcc.tfm_hcc.model.Notificacion;
 import com.hcc.tfm_hcc.service.MedicoService;
 import com.hcc.tfm_hcc.service.UsuarioService;
 import com.hcc.tfm_hcc.util.FechaUtils;
@@ -28,6 +30,8 @@ import com.hcc.tfm_hcc.util.FechaUtils;
 public class MedicoServiceImpl implements MedicoService {
     @Autowired
     private SolicitudAsignacionRepository solicitudAsignacionRepository;
+    @Autowired
+    private NotificacionRepository notificacionRepository;
     // Internal helper that creates a solicitud given both nifMedico and nifPaciente
     private SolicitudAsignacion crearSolicitudAsignacionConMedico(String nifMedico, String nifPaciente) {
         Usuario medico = usuarioRepository.findByNif(nifMedico).orElse(null);
@@ -43,7 +47,19 @@ public class MedicoServiceImpl implements MedicoService {
         solicitud.setPaciente(paciente);
         solicitud.setEstado("PENDIENTE");
         solicitud.setFechaCreacion(java.time.LocalDateTime.now());
-        return solicitudAsignacionRepository.save(solicitud);
+        var saved = solicitudAsignacionRepository.save(solicitud);
+
+        // Crear notificación para el paciente
+        try {
+            Notificacion n = new Notificacion();
+            n.setMensaje("Has recibido una solicitud de asignación del médico " + (medico.getNombre()!=null ? medico.getNombre() : medico.getNif()));
+            n.setLeida(false);
+            n.setUsuario(paciente);
+            n.setFechaCreacion(java.time.LocalDateTime.now());
+            notificacionRepository.save(n);
+        } catch (Exception ignored) {}
+
+        return saved;
     }
 
     @Override
@@ -146,6 +162,20 @@ public class MedicoServiceImpl implements MedicoService {
         var usuarioOpt = usuarioRepository.findById(id);
         if (usuarioOpt.isEmpty()) throw new IllegalArgumentException("No existe el médico");
         Usuario usuario = usuarioOpt.get();
+        // Notificar a pacientes asociados que el médico ha sido eliminado
+        var relacionesMP = medicoPacienteRepository.findByMedicoIdAndEstadoNot(id, "REVOCADA");
+        if (relacionesMP != null && !relacionesMP.isEmpty()) {
+            for (var rel : relacionesMP) {
+                try {
+                    Notificacion n = new Notificacion();
+                    n.setMensaje("Tu médico " + (usuario.getNombre()!=null?usuario.getNombre():usuario.getNif()) + " ya no está disponible");
+                    n.setLeida(false);
+                    n.setUsuario(rel.getPaciente());
+                    n.setFechaCreacion(java.time.LocalDateTime.now());
+                    notificacionRepository.save(n);
+                } catch (Exception ignored) {}
+            }
+        }
         var relaciones = StreamSupport.stream(perfilUsuarioRepository.findAll().spliterator(), false)
             .filter(pu -> pu.getUsuario().getId().equals(id) && pu.getPerfil().getRol().equalsIgnoreCase("MEDICO"))
             .collect(Collectors.toList());
@@ -183,6 +213,14 @@ public class MedicoServiceImpl implements MedicoService {
                 for (var rel : relacionesMP) {
                     rel.setEstado("REVOCADA");
                     rel.setFechaUltimaModificacion(java.time.LocalDateTime.now());
+                    try {
+                        Notificacion n = new Notificacion();
+                        n.setMensaje("Tu médico " + (usuario.getNombre()!=null?usuario.getNombre():usuario.getNif()) + " ya no está asociado a tu cuenta");
+                        n.setLeida(false);
+                        n.setUsuario(rel.getPaciente());
+                        n.setFechaCreacion(java.time.LocalDateTime.now());
+                        notificacionRepository.save(n);
+                    } catch (Exception ignored) {}
                 }
                 medicoPacienteRepository.saveAll(relacionesMP);
             }

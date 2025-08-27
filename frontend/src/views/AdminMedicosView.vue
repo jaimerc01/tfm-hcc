@@ -1,7 +1,7 @@
 <template>
   <div class="admin-medicos">
-    <h2>Gestión de Médicos</h2>
-    <button @click="showForm = true; editMedico = null">Añadir médico</button>
+  <h2>Gestión de Médicos</h2>
+  <button @click="startAdd">Añadir médico</button>
     <table v-if="medicos.length" class="medicos-table">
       <thead>
         <tr>
@@ -55,6 +55,20 @@
         <div v-if="error" class="error-message">{{ error }}</div>
       </div>
     </div>
+
+    <div v-if="showNifStep" class="medico-form-modal">
+      <div class="medico-form">
+        <h3>Buscar usuario por NIF</h3>
+        <form @submit.prevent="checkNif">
+          <input v-model="form.nif" placeholder="NIF" required />
+          <div class="form-actions">
+            <button type="submit">Buscar</button>
+            <button type="button" @click="cancelar">Cancelar</button>
+          </div>
+        </form>
+        <div v-if="error" class="error-message">{{ error }}</div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -69,7 +83,8 @@ export default {
   data() {
     return {
       medicos: [],
-      showForm: false,
+    showForm: false,
+    showNifStep: false,
       editMedico: null,
       form: {
         nombre: '', apellido1: '', apellido2: '', email: '', nif: '', especialidad: '', telefono: '', fechaNacimiento: '', password: '', estadoCuenta: 'ACTIVO'
@@ -88,14 +103,14 @@ export default {
       if (isNaN(d)) return '';
       return d.toISOString().slice(0, 10);
     },
-    async cargar() {
+  async cargar() {
       try {
         this.medicos = await medicoService.listar();
       } catch (e) {
         this.error = 'Error cargando médicos';
       }
     },
-    edit(m) {
+  edit(m) {
       this.editMedico = m;
       // Normalizar fechaNacimiento a yyyy-MM-dd para el input date
       let fecha = '';
@@ -116,6 +131,39 @@ export default {
         this.error = 'Error eliminando médico';
       }
     },
+    startAdd() {
+      this.form = { nombre: '', apellido1: '', apellido2: '', email: '', nif: '', especialidad: '', telefono: '', fechaNacimiento: '', password: '', estadoCuenta: 'ACTIVO' }
+      this.showNifStep = true;
+      this.showForm = false;
+      this.editMedico = null;
+      this.error = '';
+    },
+    async checkNif() {
+      if (!validateNIF(this.form.nif)) {
+        this.error = 'El NIF introducido no es válido';
+        return;
+      }
+      try {
+        const res = await medicoService.checkByNif(this.form.nif)
+        // Usuario existe: asignar perfil MEDICO
+        if (res && res.data) {
+          const user = res.data
+          await medicoService.setPerfilMedico(user.id, true)
+          await this.cargar()
+          this.cancelar()
+          return
+        }
+      } catch (e) {
+        // 404 -> no existe usuario: continuar con formulario completo
+        if (e.response && e.response.status === 404) {
+          this.showNifStep = false
+          this.showForm = true
+          this.error = ''
+          return
+        }
+        this.error = 'Error comprobando NIF'
+      }
+    },
     async quitarPerfil(id) {
       if (!confirm('¿Quitar el perfil MEDICO de este usuario?')) return;
       try {
@@ -127,6 +175,7 @@ export default {
     },
     cancelar() {
       this.showForm = false;
+      this.showNifStep = false;
       this.editMedico = null;
       this.error = '';
     },
@@ -138,7 +187,7 @@ export default {
       }
 
       try {
-        if (this.editMedico) {
+  if (this.editMedico) {
           await medicoService.actualizar(this.editMedico.id, this.form);
         } else {
           // Forzar estadoCuenta ACTIVO al crear

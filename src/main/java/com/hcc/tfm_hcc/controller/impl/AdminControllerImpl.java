@@ -27,6 +27,12 @@ public class AdminControllerImpl implements AdminController {
         return adminFacade.listarMedicos();
     }
 
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @GetMapping("/usuarios/by-nif")
+    public ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(@RequestParam("nif") String nif) {
+        return adminFacade.buscarUsuarioPorNif(nif);
+    }
+
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PostMapping("/medicos")

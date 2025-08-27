@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +23,7 @@ import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
 import com.hcc.tfm_hcc.dto.UpdateUsuarioRequest;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
+import com.hcc.tfm_hcc.facade.NotificacionFacade;
 
 import jakarta.validation.Valid;
 
@@ -31,6 +33,9 @@ public class UsuarioControllerImpl implements UsuarioController{
 
     @Autowired
     private UsuarioFacade usuarioFacade;
+
+    @Autowired
+    private NotificacionFacade notificacionFacade;
 
     @Override
     @GetMapping("/me")
@@ -129,6 +134,72 @@ public class UsuarioControllerImpl implements UsuarioController{
         var dto = usuarioFacade.getUsuarioActual();
         if (dto == null) return ResponseEntity.status(401).build();
         return ResponseEntity.ok(usuarioFacade.listarMisSolicitudes());
+    }
+
+    @GetMapping("/notificaciones")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> listarMisNotificaciones(@RequestParam(value = "page", defaultValue = "0") int page,
+                                                    @RequestParam(value = "size", defaultValue = "5") int size) {
+        var dto = usuarioFacade.getUsuarioActual();
+        if (dto == null) return ResponseEntity.status(401).build();
+        try {
+            var resp = notificacionFacade.listarNotificacionesUsuarioActual(page, size);
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error obteniendo notificaciones");
+        }
+    }
+
+    @GetMapping("/notificaciones/no-leidas")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> contarNotificacionesNoLeidas() {
+        var dto = usuarioFacade.getUsuarioActual();
+        if (dto == null) return ResponseEntity.status(401).build();
+        try {
+            long count = notificacionFacade.contarNoLeidasUsuarioActual();
+            return ResponseEntity.ok(java.util.Map.of("noLeidas", count));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error obteniendo contador de notificaciones");
+        }
+    }
+
+    @PostMapping("/notificaciones/marcar-todas")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> marcarTodasNotificacionesLeidas() {
+        var dto = usuarioFacade.getUsuarioActual();
+        if (dto == null) return ResponseEntity.status(401).build();
+        try {
+            notificacionFacade.marcarTodasComoLeidasUsuarioActual();
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error marcando notificaciones");
+        }
+    }
+
+    @PutMapping("/notificaciones/{id}/leida")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> marcarNotificacionLeida(@PathVariable("id") String id) {
+        var dto = usuarioFacade.getUsuarioActual();
+        if (dto == null) return ResponseEntity.status(401).build();
+        try {
+            notificacionFacade.marcarNotificacionComoLeida(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error marcando notificación");
+        }
+    }
+
+    @DeleteMapping("/notificaciones/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> eliminarNotificacion(@PathVariable("id") String id) {
+        var dto = usuarioFacade.getUsuarioActual();
+        if (dto == null) return ResponseEntity.status(401).build();
+        try {
+            notificacionFacade.eliminarNotificacionUsuarioActual(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error eliminando notificación");
+        }
     }
 
     @PostMapping("/solicitud/{id}/estado")

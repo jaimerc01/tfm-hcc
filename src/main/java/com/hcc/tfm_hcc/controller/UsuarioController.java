@@ -44,4 +44,8 @@ public interface UsuarioController {
 
     ResponseEntity<List<SolicitudAsignacion>> listarMisSolicitudes();
     ResponseEntity<?> actualizarEstadoSolicitud(String solicitudId, Map<String, String> body);
+
+    // Notificaciones
+    ResponseEntity<?> listarMisNotificaciones(int page, int size);
+    ResponseEntity<?> marcarTodasNotificacionesLeidas();
 }

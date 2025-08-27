@@ -1,8 +1,10 @@
 package com.hcc.tfm_hcc.facade.impl;
 
-import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.facade.AdminFacade;
 import com.hcc.tfm_hcc.service.MedicoService;
+import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.mapper.UsuarioMapper;
+import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,12 @@ import java.util.UUID;
 public class AdminFacadeImpl implements AdminFacade {
     @Autowired
     private MedicoService medicoService;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private UsuarioMapper usuarioMapper;
 
     @Override
     public ResponseEntity<List<UsuarioDTO>> listarMedicos() {
@@ -55,6 +63,19 @@ public class AdminFacadeImpl implements AdminFacade {
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @Override
+    public ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(String nif) {
+        try {
+            var opt = usuarioRepository.findByNif(nif);
+            if (opt.isPresent()) {
+                return ResponseEntity.ok(usuarioMapper.toDto(opt.get()));
+            }
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
         }

@@ -17,6 +17,9 @@ export default {
     const { data } = await api.get('/admin/medicos');
     return data;
   },
+  async checkByNif(nif) {
+    return api.get('/admin/usuarios/by-nif', { params: { nif } })
+  },
   async crear(medico) {
     const { data } = await api.post('/admin/medicos', medico);
     return data;

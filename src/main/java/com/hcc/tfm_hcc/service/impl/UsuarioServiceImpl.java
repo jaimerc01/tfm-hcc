@@ -21,6 +21,8 @@ import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.AccessLogRepository;
 import com.hcc.tfm_hcc.repository.MedicoPacienteRepository;
+import com.hcc.tfm_hcc.repository.NotificacionRepository;
+import com.hcc.tfm_hcc.model.Notificacion;
 import com.hcc.tfm_hcc.repository.PerfilRepository;
 import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
 import com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository;
@@ -50,6 +52,9 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Autowired
     private SolicitudAsignacionRepository solicitudAsignacionRepository;
+
+    @Autowired
+    private NotificacionRepository notificacionRepository;
 
     @Autowired
     private MedicoPacienteRepository medicoPacienteRepository;
@@ -302,6 +307,23 @@ public class UsuarioServiceImpl implements UsuarioService {
             }
         }
     }
+
+    // Notificar al médico que el paciente ha resuelto la solicitud
+    try {
+        var medico = saved.getMedico();
+        var paciente = saved.getPaciente();
+        if (medico != null) {
+            Notificacion n = new Notificacion();
+            String mensaje = "El paciente " + (paciente != null && paciente.getNombre() != null ? paciente.getNombre() : "un paciente") + " ha ";
+            mensaje += "".equalsIgnoreCase(saved.getEstado()) ? "actualizado" : saved.getEstado().toLowerCase();
+            mensaje += " la solicitud.";
+            n.setMensaje(mensaje);
+            n.setLeida(false);
+            n.setUsuario(medico);
+            n.setFechaCreacion(LocalDateTime.now());
+            notificacionRepository.save(n);
+        }
+    } catch (Exception ignored) {}
     return saved;
     }
 

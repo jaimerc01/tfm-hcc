@@ -7,9 +7,11 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Data;
 
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
+@Data
 @Entity
 @Table(name = "notificacion")
 public class Notificacion extends BaseEntity{

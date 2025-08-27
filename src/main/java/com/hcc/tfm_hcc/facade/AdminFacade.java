@@ -11,4 +11,5 @@ public interface AdminFacade {
     ResponseEntity<UsuarioDTO> actualizarMedico(UUID id, UsuarioDTO medicoDTO);
     ResponseEntity<Void> eliminarMedico(UUID id);
     ResponseEntity<Void> setPerfilMedico(UUID id, boolean asignar);
+    ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(String nif);
 }
