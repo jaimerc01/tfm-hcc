@@ -8,6 +8,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
+import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 
 public interface HistorialClinicoFacade {
     List<ArchivoClinicoDTO> listMine();
@@ -17,8 +18,12 @@ public interface HistorialClinicoFacade {
     void delete(UUID id) throws IOException;
     
     // Historial data endpoints merged here
-    com.hcc.tfm_hcc.dto.HistorialClinicoDTO obtenerMiHistoria();
-    com.hcc.tfm_hcc.dto.HistorialClinicoDTO actualizarIdentificacion(String identificacionJson);
-    com.hcc.tfm_hcc.dto.HistorialClinicoDTO actualizarAntecedentes(String antecedentesFamiliares);
-    com.hcc.tfm_hcc.dto.HistorialClinicoDTO actualizarAlergias(String alergiasJson);
+    HistorialClinicoDTO obtenerMiHistoria();
+    HistorialClinicoDTO actualizarIdentificacion(String identificacionJson);
+    HistorialClinicoDTO actualizarAntecedentes(String antecedentesFamiliares);
+    HistorialClinicoDTO actualizarAlergias(String alergiasJson);
+    HistorialClinicoDTO actualizarAnalisisSangre(String analisisJson);
+    void borrarDatoClinico(UUID id);
+    HistorialClinicoDTO borrarAntecedente(int index);
+    HistorialClinicoDTO editarAntecedente(int index, String texto);
 }

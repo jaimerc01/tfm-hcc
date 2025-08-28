@@ -65,26 +65,6 @@ export default {
 </script>
 
 <style scoped>
-.dashboard {
-  padding: 2rem;
-  text-align: center;
-}
-
-.user-info {
-  margin-top: 2rem;
-}
-
-.logout-btn {
-  background-color: #e74c3c;
-  color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.logout-btn:hover {
-  background-color: #c0392b;
-}
+.logout-btn { background-color:#e74c3c; color:white; padding:.75rem 1.5rem; border:none; border-radius:4px; cursor:pointer; font-size:1rem }
+.logout-btn:hover { background-color:#c0392b }
 </style>

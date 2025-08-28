@@ -9,5 +9,6 @@ public class DatoClinicoDTO {
     private String valor;
     private String unidad;
     private String observacion;
+    private String createdAt;
 }
     

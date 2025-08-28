@@ -7,73 +7,59 @@
         <button :class="{active: activeSection==='identificacion'}" @click="activeSection='identificacion'" role="tab" :aria-selected="activeSection==='identificacion'">Identificación básica</button>
         <button :class="{active: activeSection==='antecedentes'}" @click="activeSection='antecedentes'" role="tab" :aria-selected="activeSection==='antecedentes'">Antecedentes personales y familiares</button>
         <button :class="{active: activeSection==='alergias'}" @click="activeSection='alergias'" role="tab" :aria-selected="activeSection==='alergias'">Alergias e intolerancias</button>
+        <button :class="{active: activeSection==='analisis'}" @click="activeSection='analisis'" role="tab" :aria-selected="activeSection==='analisis'">Análisis de sangre</button>
       </div>
 
       <transition name="fade-slide" mode="out-in">
         <div v-if="activeSection==='identificacion'" key="identificacion" class="section-panel card simple-form" role="tabpanel">
           <h3>Identificación básica</h3>
-          <label>Nombre completo</label>
+          <label class="form-label">Nombre completo</label>
           <input type="text" v-model="identNombre" placeholder="Nombre y apellidos" />
 
-          <div class="row">
+          <div class="form-row">
             <div>
-              <label>NIF / NIE</label>
+              <label class="form-label">NIF / NIE</label>
               <input type="text" v-model="identNif" placeholder="12345678A" />
             </div>
             <div>
-              <label>Fecha de nacimiento</label>
+              <label class="form-label">Fecha de nacimiento</label>
               <input type="date" v-model="identFechaNacimiento" />
             </div>
           </div>
 
-          <div class="row">
+          <div class="form-row">
             <div>
-              <label>Teléfono</label>
+              <label class="form-label">Teléfono</label>
               <input type="tel" v-model="identTelefono" placeholder="600 000 000" />
             </div>
             <div>
-              <label>Email (opcional)</label>
+              <label class="form-label">Email (opcional)</label>
               <input type="email" v-model="identEmail" placeholder="tu@correo.com" />
             </div>
           </div>
 
           <p class="hint">Los datos se guardan y se usan sólo para identificar tu historial; escribe lo que aparece en tus documentos.</p>
-          <div class="form-actions">
+          <div class="form-actions form-actions--right">
             <button @click="saveIdentificacion" :disabled="savingIdent">{{ savingIdent ? 'Guardando…' : 'Guardar identificación' }}</button>
             <span v-if="msgIdent" class="success">{{ msgIdent }}</span>
           </div>
         </div>
 
-        <div v-else-if="activeSection==='antecedentes'" key="antecedentes" class="section-panel card" role="tabpanel">
-          <h3>Antecedentes personales y familiares</h3>
-          <textarea v-model="antecedentesFamiliares" rows="6" placeholder='Describe aquí, con tus palabras, enfermedades importantes en ti o en tu familia (por ejemplo: diabetes en padre, hipertensión, etc.)'></textarea>
-          <p class="hint">Ejemplo: "Padre: diabetes tipo 2; Madre: hipertensión. Yo: asma en la infancia". No hace falta usar términos médicos exactos.</p>
-          <div class="form-actions">
-            <button @click="saveAntecedentes" :disabled="savingAntecedentes">{{ savingAntecedentes ? 'Guardando…' : 'Guardar antecedentes' }}</button>
-            <span v-if="msgAnte" class="success">{{ msgAnte }}</span>
-          </div>
+        <div v-else-if="activeSection==='antecedentes'" key="antecedentes">
+          <AntecedentesSection />
         </div>
 
-        <div v-else key="alergias" class="section-panel card" role="tabpanel">
-          <h3>Alergias e intolerancias</h3>
-          <textarea v-model="alergias" rows="4" placeholder='Ejemplo: Penicilina — reacción: erupción — gravedad: moderada. Separa alergias por línea.'></textarea>
-          <p class="hint">Puedes escribir cada alergia en una línea: sustancia — reacción — gravedad.</p>
-          <div v-if="alergiasList && alergiasList.length" class="existing-allergies">
-            <h4>Listado de alergias registradas</h4>
-            <ul>
-              <li v-for="a in alergiasList" :key="a.id">
-                <strong>{{ a.observacion || (a.tipo + (a.valor ? (' — ' + a.valor + (a.unidad ? ' ' + a.unidad : '')) : '')) }}</strong>
-                <div class="meta small">Tipo: {{ a.tipo }} <span v-if="a.unidad">• {{ a.valor }} {{ a.unidad }}</span></div>
-              </li>
-            </ul>
-          </div>
-          <div class="form-actions">
-            <button @click="saveAlergias" :disabled="savingAlergias">{{ savingAlergias ? 'Guardando…' : 'Guardar alergias' }}</button>
-            <span v-if="msgAler" class="success">{{ msgAler }}</span>
-          </div>
+        <div v-else-if="activeSection==='alergias'" key="alergias">
+          <AlergiasSection />
+        </div>
+
+        <div v-else-if="activeSection==='analisis'" key="analisis">
+          <AnalisisSangreSection />
         </div>
       </transition>
     </section>
+
+  
 
     <section class="upload">
       <form @submit.prevent="onUpload">
@@ -104,9 +90,13 @@
 
 <script>
 import svc from '@/services/archivoClinicoService'
+import AntecedentesSection from '@/components/AntecedentesSection.vue'
+import AlergiasSection from '@/components/AlergiasSection.vue'
+import AnalisisSangreSection from '@/components/AnalisisSangreSection.vue'
 
 export default {
   name: 'HistoriaClinicaView',
+  components: { AntecedentesSection, AlergiasSection, AnalisisSangreSection },
   data() {
     return {
       items: [],
@@ -120,19 +110,15 @@ export default {
       identFechaNacimiento: '',
       identTelefono: '',
       identEmail: '',
-      antecedentesFamiliares: '',
-  alergias: '',
-  alergiasList: [],
       savingIdent: false,
-      savingAntecedentes: false,
-      savingAlergias: false,
       msgIdent: '',
-      msgAnte: '',
-      msgAler: '',
-  activeSection: 'identificacion',
+      activeSection: 'identificacion'
     }
   },
-  created() { this.load(); this.loadHistoria() },
+  created() {
+    this.load()
+    this.loadHistoria()
+  },
   methods: {
     async loadHistoria() {
       try {
@@ -148,10 +134,7 @@ export default {
           this.identTelefono = id.contacto || ''
           this.identEmail = id.email || ''
         } catch (e) { /* ignore parse errors */ }
-  this.antecedentesFamiliares = dto.antecedentesFamiliares || ''
-  this.alergias = dto.alergiasJson || ''
-  // map datosClinicos into a simple allergies list for display
-  this.alergiasList = Array.isArray(dto.datosClinicos) ? dto.datosClinicos.filter(d => (d.tipo || '').toUpperCase().includes('ALERGIA')) : []
+        // children components handle antecedentes and alergias UI/state
       } catch (e) { console.error('No se pudo cargar historia', e) }
     },
 
@@ -159,7 +142,6 @@ export default {
       this.savingIdent = true
       try {
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
-        // assemble a simple identification JSON from user-friendly fields
         const payload = {
           nombre: this.identNombre,
           nif: this.identNif,
@@ -174,29 +156,6 @@ export default {
       } catch (e) { this.error = 'Error guardando identificación' } finally { this.savingIdent = false }
     },
 
-    async saveAntecedentes() {
-      this.savingAntecedentes = true
-      try {
-        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
-        await svc.updateAntecedentes(this.antecedentesFamiliares)
-        await this.loadHistoria()
-        this.msgAnte = 'Antecedentes guardados.'
-        setTimeout(() => this.msgAnte = '', 3000)
-      } catch (e) { this.error = 'Error guardando antecedentes' } finally { this.savingAntecedentes = false }
-    },
-
-    async saveAlergias() {
-      this.savingAlergias = true
-      try {
-        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
-        await svc.updateAlergias(this.alergias)
-        await this.loadHistoria()
-  this.msgAler = 'Alergias guardadas.'
-  // clear textarea after saving to indicate stored
-  this.alergias = ''
-        setTimeout(() => this.msgAler = '', 3000)
-      } catch (e) { this.error = 'Error guardando alergias' } finally { this.savingAlergias = false }
-    },
     async load() {
       try {
         this.items = await svc.list()
@@ -204,9 +163,11 @@ export default {
         this.error = 'No se pudieron cargar los archivos'
       }
     },
+
     onFileChange(e) {
       this.file = e.target.files && e.target.files[0] ? e.target.files[0] : null
     },
+
     async onUpload() {
       if (!this.file) return
       this.uploading = true
@@ -221,6 +182,7 @@ export default {
         this.uploading = false
       }
     },
+
     async remove(it) {
       this.removingId = it.id
       try {
@@ -232,6 +194,7 @@ export default {
         this.removingId = null
       }
     },
+
     async download(it) {
       try {
         const { blob, filename } = await svc.download(it.id)
@@ -245,6 +208,7 @@ export default {
         this.error = 'No se pudo descargar'
       }
     },
+
     formatSize(bytes) {
       if (!bytes && bytes !== 0) return ''
       const units = ['B','KB','MB','GB']
@@ -259,11 +223,8 @@ export default {
 </script>
 
 <style scoped>
-.error { color: #b00020; }
 .list ul { list-style: none; padding: 0; }
 .item { display: flex; align-items: center; justify-content: space-between; padding: .5rem 0; border-bottom: 1px solid #eee; }
 .meta small { color: #666; margin-left: .5rem; }
 .actions a { margin-right: .75rem; }
-.row { display:flex; gap:1rem }
-.row > div { flex:1 }
 </style>

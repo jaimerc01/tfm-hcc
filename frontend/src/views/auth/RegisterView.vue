@@ -112,5 +112,5 @@ export default {
 </script>
 
 <style>
-.error { margin-top:1rem; color:#e74c3c; }
+  .error { margin-top:1rem }
 </style>

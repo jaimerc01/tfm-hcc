@@ -146,7 +146,7 @@ export default {
 </script>
 
 <style scoped>
-.error { color: #b00020 }
+
 .search-form {
   margin: 2rem 0;
   padding: 1rem;

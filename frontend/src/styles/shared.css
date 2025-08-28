@@ -1,8 +1,10 @@
+@import './variables.css';
+
 /* Shared UI helpers used across multiple views */
 
 /* Simple form helpers */
-.simple-form label { display:block; margin:.5rem 0 .25rem; font-weight:600 }
-.simple-form input, .simple-form textarea { width:100%; padding:.5rem; box-sizing:border-box; border:1px solid #ddd; border-radius:4px }
+.simple-form label { display:block; margin:calc(var(--spacing) / 2) 0 calc(var(--spacing) / 4); font-weight:600 }
+.simple-form input, .simple-form textarea { width:100%; padding:.5rem; box-sizing:border-box; border:1px solid var(--border); border-radius:var(--radius) }
 .simple-form input[type="text"],
 .simple-form input[type="email"],
 .simple-form input[type="tel"],
@@ -16,16 +18,41 @@
 
 /* Sub-navigation tabs used in Historia view */
 .subnav { display:flex; gap:.5rem; margin:1rem 0 }
-.subnav button { padding:.5rem 1rem; border:1px solid #ddd; background:#fff; border-radius:6px; cursor:pointer }
-.subnav button.active { background:#007acc; color:#fff; border-color:#007acc }
+.subnav button { padding:.5rem 1rem; border:1px solid var(--border); background:var(--card-bg); border-radius:var(--radius); cursor:pointer }
+.subnav button.active { background:var(--primary-color); color:var(--on-primary); border-color:var(--primary-color) }
 
 /* Small helpers */
 .upload { margin: 1rem 0; }
-.hint { color:#666; font-size:.9rem; margin-top:.5rem }
+.hint { color:var(--muted); font-size:.9rem; margin-top:.5rem }
 .form-actions { margin-top:.5rem }
 
+/* Toast used across components */
+.toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  background: #2b7a0b;
+  color: white;
+  padding: .6rem .9rem;
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+
 /* Panel styles and transition */
-.section-panel { padding: 16px; border-radius: 6px; background: #fff; }
+.section-panel { padding: 16px; border-radius: var(--radius); background: var(--card-bg); }
+
+/* Common helpers used by multiple views */
+.error { color: #b00020; }
+.row { display:flex; gap:1rem; }
+.row > div { flex:1 }
+
+/* Additional shared helpers discovered by style checker */
+.success { color: #166534; }
+.nav-link:hover { background-color: #369870; }
+.login-btn:hover:not(:disabled) { background-color: #369870; }
+.dashboard, .home { padding: 2rem; text-align: center; }
+.user-info, .navigation { margin-top: 2rem; }
+.solicitud-actions { margin-top: 0.5rem; }
 
 .fade-slide-enter-active, .fade-slide-leave-active { transition: all 300ms cubic-bezier(.22,.8,.26,1); }
 .fade-slide-enter-from { opacity: 0; transform: translateY(8px); }

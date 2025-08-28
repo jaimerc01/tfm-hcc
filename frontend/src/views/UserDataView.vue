@@ -25,15 +25,15 @@
       <template v-else>
         <form class="edit-form" @submit.prevent="submitEdit">
           <div class="edit-grid">
-            <label>Nombre<input type="text" v-model="form.nombre" required /></label>
-            <label>Primer Apellido<input type="text" v-model="form.apellido1" required /></label>
-            <label>Segundo Apellido<input type="text" v-model="form.apellido2" /></label>
-            <label>NIF<input type="text" v-model="form.nif" required /></label>
-            <label>Email<input type="email" v-model="form.email" required /></label>
-            <label>Teléfono<input type="text" v-model="form.telefono" /></label>
-            <label>Fecha Nacimiento<input type="date" v-model="form.fechaNacimiento" /></label>
+            <label class="form-label">Nombre<input type="text" v-model="form.nombre" required /></label>
+            <label class="form-label">Primer Apellido<input type="text" v-model="form.apellido1" required /></label>
+            <label class="form-label">Segundo Apellido<input type="text" v-model="form.apellido2" /></label>
+            <label class="form-label">NIF<input type="text" v-model="form.nif" required /></label>
+            <label class="form-label">Email<input type="email" v-model="form.email" required /></label>
+            <label class="form-label">Teléfono<input type="text" v-model="form.telefono" /></label>
+            <label class="form-label">Fecha Nacimiento<input type="date" v-model="form.fechaNacimiento" /></label>
           </div>
-          <div class="edit-actions">
+          <div class="form-actions form-actions--right">
             <button type="submit" :disabled="editLoading">{{ editLoading ? 'Guardando...' : 'Guardar cambios' }}</button>
             <button type="button" @click="cancelEdit" :disabled="editLoading">Cancelar</button>
           </div>
@@ -46,48 +46,40 @@
         <button v-if="!showPwForm" class="pw-btn" @click="showPwForm=true">Cambiar contraseña</button>
         <form v-else class="pw-form" @submit.prevent="submitPw">
           <div class="pw-grid">
-            <label>
+            <label class="form-label">
               Actual
               <input type="password" v-model="pw.current" required />
             </label>
-            <label>
+            <label class="form-label">
               Nueva
               <input type="password" v-model="pw.new1" minlength="6" required />
             </label>
-            <label>
+            <label class="form-label">
               Repetir Nueva
               <input type="password" v-model="pw.new2" minlength="6" required />
             </label>
           </div>
-          <div class="pw-actions">
+          <div class="form-actions form-actions--right">
             <button type="submit" :disabled="pwLoading">{{ pwLoading ? 'Guardando...' : 'Guardar' }}</button>
             <button type="button" @click="cancelPw" :disabled="pwLoading">Cancelar</button>
           </div>
           <p v-if="pwError" class="pw-error">{{ pwError }}</p>
-          <p v-if="pwSuccess" class="pw-success">Contraseña actualizada</p>
+          <p v-if="pwSuccess" class="pw-success">Contraseña cambiada</p>
+          <p class="reauth-hint">Introduce tu contraseña para confirmar.</p>
         </form>
       </div>
-      <div class="danger-zone">
-        <h3>Zona peligrosa</h3>
-        <button class="delete-btn" @click="openDelete">Borrar mi cuenta</button>
+
+      <div v-if="showDelete" class="modal-backdrop" role="dialog" aria-modal="true">
+        <div class="modal">
+          <h3>Confirmar eliminación</h3>
+          <p>¿Estás seguro que quieres eliminar tu cuenta? Esta acción es irreversible.</p>
+          <div class="modal-actions">
+            <button :disabled="deleteLoading" @click="confirmDelete">{{ deleteLoading ? 'Eliminando...' : 'Sí, borrar' }}</button>
+            <button :disabled="deleteLoading" @click="closeDelete" class="secondary">Cancelar</button>
+          </div>
+          <p v-if="deleteError" class="delete-error">{{ deleteError }}</p>
+        </div>
       </div>
-    </div>
-  </div>
-  <div v-if="showDelete" class="modal-backdrop">
-    <div class="modal">
-      <h3>Confirmar eliminación</h3>
-      <p>Esta acción es permanente. Se realizará un borrado lógico (anonimización). Los datos clínicos asociados (cuando existan) no se eliminarán automáticamente.</p>
-      <div class="reauth-box">
-        <label>Contraseña actual
-          <input type="password" v-model="reauth.password" autocomplete="current-password" />
-        </label>
-        <p class="reauth-hint">Introduce tu contraseña para confirmar.</p>
-      </div>
-      <div class="modal-actions">
-        <button :disabled="deleteLoading" @click="confirmDelete">{{ deleteLoading ? 'Eliminando...' : 'Sí, borrar' }}</button>
-        <button :disabled="deleteLoading" @click="closeDelete" class="secondary">Cancelar</button>
-      </div>
-      <p v-if="deleteError" class="delete-error">{{ deleteError }}</p>
     </div>
   </div>
 </template>
@@ -295,7 +287,7 @@ dl { margin:0; }
 dt { width:200px; font-weight:600; color:#444; }
 dd { margin:0; flex:1; color:#222; }
 .loading { color:#555; }
-.error { color:#c0392b; background:#fdecea; padding:.75rem; border-radius:4px; max-width:640px; }
+  .error { background:#fdecea; padding:.75rem; border-radius:4px; max-width:640px; }
 .pw-section { margin-top:1.5rem; }
 .pw-btn { background:#2563eb; color:#fff; border:none; padding:.6rem 1rem; border-radius:4px; cursor:pointer; }
 .pw-btn:hover { background:#1d4ed8; }

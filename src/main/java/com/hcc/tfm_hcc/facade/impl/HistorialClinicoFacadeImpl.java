@@ -10,11 +10,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
+import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
-import com.hcc.tfm_hcc.service.HistorialClinicoService;
 import com.hcc.tfm_hcc.mapper.ArchivoClinicoMapper;
 import com.hcc.tfm_hcc.model.ArchivoClinico;
 import com.hcc.tfm_hcc.service.ArchivoClinicoService;
+import com.hcc.tfm_hcc.service.HistorialClinicoService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,23 +35,43 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
     }
 
     @Override
-    public com.hcc.tfm_hcc.dto.HistorialClinicoDTO obtenerMiHistoria() {
+    public HistorialClinicoDTO obtenerMiHistoria() {
         return historiaClinicaService.obtenerHistoriaUsuarioActual();
     }
 
     @Override
-    public com.hcc.tfm_hcc.dto.HistorialClinicoDTO actualizarIdentificacion(String identificacionJson) {
+    public HistorialClinicoDTO actualizarIdentificacion(String identificacionJson) {
         return historiaClinicaService.actualizarIdentificacion(identificacionJson);
     }
 
     @Override
-    public com.hcc.tfm_hcc.dto.HistorialClinicoDTO actualizarAntecedentes(String antecedentesFamiliares) {
+    public HistorialClinicoDTO actualizarAntecedentes(String antecedentesFamiliares) {
         return historiaClinicaService.actualizarAntecedentes(antecedentesFamiliares);
     }
 
     @Override
-    public com.hcc.tfm_hcc.dto.HistorialClinicoDTO actualizarAlergias(String alergiasJson) {
+    public HistorialClinicoDTO actualizarAlergias(String alergiasJson) {
         return historiaClinicaService.actualizarAlergias(alergiasJson);
+    }
+
+    @Override
+    public HistorialClinicoDTO actualizarAnalisisSangre(String analisisJson) {
+        return historiaClinicaService.actualizarAnalisisSangre(analisisJson);
+    }
+
+    @Override
+    public void borrarDatoClinico(UUID id) {
+        historiaClinicaService.borrarDatoClinico(id);
+    }
+
+    @Override
+    public HistorialClinicoDTO borrarAntecedente(int index) {
+        return historiaClinicaService.borrarAntecedente(index);
+    }
+
+    @Override
+    public HistorialClinicoDTO editarAntecedente(int index, String texto) {
+        return historiaClinicaService.editarAntecedente(index, texto);
     }
 
     @Override

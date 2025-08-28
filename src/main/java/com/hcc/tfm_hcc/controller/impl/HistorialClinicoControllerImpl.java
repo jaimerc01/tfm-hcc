@@ -2,6 +2,10 @@ package com.hcc.tfm_hcc.controller.impl;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.net.URLDecoder;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
@@ -14,6 +18,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -116,11 +121,20 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
     }
 
     @Override
-    @PostMapping("/me/antecedentes")
+    @PostMapping(path = "/me/antecedentes", consumes = { MediaType.TEXT_PLAIN_VALUE, MediaType.APPLICATION_FORM_URLENCODED_VALUE })
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> actualizarAntecedentes(@RequestBody String antecedentesFamiliares) {
         try {
-            HistorialClinicoDTO res = historialClinicoFacade.actualizarAntecedentes(antecedentesFamiliares);
+            String payload = antecedentesFamiliares;
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            HttpServletRequest req = attrs != null ? attrs.getRequest() : null;
+            String contentType = req != null ? req.getContentType() : null;
+            if (contentType != null && contentType.contains(MediaType.APPLICATION_FORM_URLENCODED_VALUE)) {
+                payload = URLDecoder.decode(antecedentesFamiliares, StandardCharsets.UTF_8);
+            } else if ((antecedentesFamiliares != null) && (antecedentesFamiliares.contains("%") || antecedentesFamiliares.contains("+"))) {
+                try { payload = URLDecoder.decode(antecedentesFamiliares, StandardCharsets.UTF_8); } catch (Exception ignored) {}
+            }
+            HistorialClinicoDTO res = historialClinicoFacade.actualizarAntecedentes(payload);
             return ResponseEntity.ok(res);
         } catch (Exception e) {
             return ResponseEntity.status(500).body(e.getMessage());
@@ -128,12 +142,95 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
     }
 
     @Override
-    @PostMapping("/me/alergias")
+    @PostMapping(path = "/me/alergias", consumes = { MediaType.TEXT_PLAIN_VALUE, MediaType.APPLICATION_FORM_URLENCODED_VALUE })
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> actualizarAlergias(@RequestBody String alergiasJson) {
         try {
-            HistorialClinicoDTO res = historialClinicoFacade.actualizarAlergias(alergiasJson);
+            String payload = alergiasJson;
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            HttpServletRequest req = attrs != null ? attrs.getRequest() : null;
+            String contentType = req != null ? req.getContentType() : null;
+            if (contentType != null && contentType.contains(MediaType.APPLICATION_FORM_URLENCODED_VALUE)) {
+                payload = URLDecoder.decode(alergiasJson, StandardCharsets.UTF_8);
+            } else if ((alergiasJson != null) && (alergiasJson.contains("%") || alergiasJson.contains("+"))) {
+                try { payload = URLDecoder.decode(alergiasJson, StandardCharsets.UTF_8); } catch (Exception ignored) {}
+            }
+            HistorialClinicoDTO res = historialClinicoFacade.actualizarAlergias(payload);
             return ResponseEntity.ok(res);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(e.getMessage());
+        }
+    }
+
+    @Override
+    @PostMapping(path = "/me/analisis-sangre", consumes = { MediaType.TEXT_PLAIN_VALUE, MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> actualizarAnalisisSangre(@RequestBody String analisisJson) {
+        try {
+            String payload = analisisJson;
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            HttpServletRequest req = attrs != null ? attrs.getRequest() : null;
+            String contentType = req != null ? req.getContentType() : null;
+            if (contentType != null && contentType.contains(MediaType.APPLICATION_FORM_URLENCODED_VALUE)) {
+                payload = URLDecoder.decode(analisisJson, StandardCharsets.UTF_8);
+            } else if ((analisisJson != null) && (analisisJson.contains("%") || analisisJson.contains("+"))) {
+                try { payload = URLDecoder.decode(analisisJson, StandardCharsets.UTF_8); } catch (Exception ignored) {}
+            }
+            HistorialClinicoDTO res = historialClinicoFacade.actualizarAnalisisSangre(payload);
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(e.getMessage());
+        }
+    }
+
+    @Override
+    @DeleteMapping("/me/datos/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> borrarDatoClinico(@PathVariable("id") UUID id) {
+        try {
+            historialClinicoFacade.borrarDatoClinico(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(e.getMessage());
+        }
+    }
+
+    @Override
+    @DeleteMapping("/me/antecedentes/{index}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> borrarAntecedente(@PathVariable("index") int index) {
+        try {
+            HistorialClinicoDTO res = historialClinicoFacade.borrarAntecedente(index);
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(e.getMessage());
+        }
+    }
+
+    @Override
+    @PutMapping(path = "/me/antecedentes/{index}", consumes = { MediaType.TEXT_PLAIN_VALUE, MediaType.APPLICATION_FORM_URLENCODED_VALUE })
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> editarAntecedente(@PathVariable("index") int index, @RequestBody String texto) {
+        try {
+            String payload = texto;
+            ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            HttpServletRequest req = attrs != null ? attrs.getRequest() : null;
+            String contentType = req != null ? req.getContentType() : null;
+            if (contentType != null && contentType.contains(MediaType.APPLICATION_FORM_URLENCODED_VALUE)) {
+                payload = URLDecoder.decode(texto, StandardCharsets.UTF_8);
+            } else if ((texto != null) && (texto.contains("%") || texto.contains("+"))) {
+                try { payload = URLDecoder.decode(texto, StandardCharsets.UTF_8); } catch (Exception ignored) {}
+            }
+            HistorialClinicoDTO res = historialClinicoFacade.editarAntecedente(index, payload);
+            return ResponseEntity.ok(res);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(500).body(e.getMessage());
         }

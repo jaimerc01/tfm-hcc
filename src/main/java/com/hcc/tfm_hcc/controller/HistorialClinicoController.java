@@ -18,4 +18,8 @@ public interface HistorialClinicoController {
     ResponseEntity<?> actualizarIdentificacion(String identificacionJson);
     ResponseEntity<?> actualizarAntecedentes(String antecedentesFamiliares);
     ResponseEntity<?> actualizarAlergias(String alergiasJson);
+    ResponseEntity<?> actualizarAnalisisSangre(String analisisJson);
+    ResponseEntity<?> borrarDatoClinico(java.util.UUID id);
+    ResponseEntity<?> borrarAntecedente(int index);
+    ResponseEntity<?> editarAntecedente(int index, String texto);
 }

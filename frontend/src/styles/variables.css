@@ -1,0 +1,11 @@
+/* Design tokens (colors, spacing, breakpoints) */
+:root {
+  --primary-color: #007acc;
+  --on-primary: #ffffff;
+  --muted: #666666;
+  --card-bg: #ffffff;
+  --border: #dddddd;
+  --success: #2b7a0b;
+  --spacing: 1rem;
+  --radius: 6px;
+}

@@ -189,11 +189,8 @@ export default {
 </script>
 
 <style scoped>
-.error { color: #b00020 }
-.success { color: #388e3c }
 .solicitud-item { border: 1px solid #eee; padding: 0.8rem; margin-bottom: 0.8rem; border-radius: 6px }
 .solicitud-main { display:flex; gap:1rem; flex-wrap:wrap }
-.solicitud-actions { margin-top:0.5rem }
 .accept { background:#388e3c;color:#fff;border:none;padding:0.4rem 0.8rem;border-radius:4px;margin-right:0.5rem }
 .reject { background:#b00020;color:#fff;border:none;padding:0.4rem 0.8rem;border-radius:4px }
 

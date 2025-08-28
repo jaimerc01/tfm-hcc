@@ -1,0 +1,27 @@
+/* Form utilities and documented helpers
+
+Usage notes:
+- Use the `.form-row` helper to group inputs horizontally with a consistent gap.
+- Use `.form-actions` for action buttons inside forms. It's already referenced in components.
+- Use `.hint` for helper text under inputs (linked with `aria-describedby`).
+- Add `.form-label` for consistent label styling when not using `.simple-form`.
+- These are intentionally small and composable to avoid duplication.
+*/
+
+@import './variables.css';
+
+.form-row { display:flex; gap:var(--spacing); align-items:flex-start }
+.form-row > * { flex:1 }
+
+.form-label { display:block; margin:calc(var(--spacing) / 2) 0 calc(var(--spacing) / 4); font-weight:600 }
+
+/* .form-actions exists in shared.css but we keep semantic docs here */
+.form-actions { display:flex; gap:.5rem; align-items:center }
+
+.hint { color:var(--muted); font-size:.9rem; margin-top:.5rem }
+
+/* small helper for right-aligned action area */
+.form-actions--right { justify-content:flex-end }
+
+/* utility to visually-hide elements for screen readers */
+.visually-hidden { position:absolute !important; height:1px; width:1px; overflow:hidden; clip:rect(1px, 1px, 1px, 1px); white-space:nowrap }

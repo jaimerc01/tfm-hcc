@@ -14,5 +14,4 @@ export default {
 </script>
 
 <style scoped>
-.error { color: #b00020 }
 </style>
