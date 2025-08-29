@@ -9,49 +9,95 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+/**
+ * Entidad que representa un registro de acceso (log) en el sistema HCC.
+ * Almacena información detallada sobre cada solicitud HTTP realizada
+ * por los usuarios del sistema para fines de auditoría y monitoreo.
+ * 
+ * <p>Esta entidad registra:</p>
+ * <ul>
+ *   <li>Información temporal del acceso (timestamp)</li>
+ *   <li>Identificación del usuario que realizó la solicitud</li>
+ *   <li>Detalles técnicos de la solicitud HTTP</li>
+ *   <li>Métricas de rendimiento y estado de respuesta</li>
+ * </ul>
+ * 
+ * @author Sistema HCC
+ * @version 1.0
+ * @since 1.0
+ */
 @Entity
+@Data
 @Table(name = "log_acceso")
+@NoArgsConstructor
 public class AccessLog {
 
+    /**
+     * Identificador único del registro de acceso.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    @Getter @Setter
+    /**
+     * Fecha y hora exacta cuando se realizó el acceso.
+     */
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
 
-    @Getter @Setter
+    /**
+     * ID del usuario que realizó el acceso.
+     * Almacena el identificador único del usuario para trazabilidad.
+     */
     @Column(name = "id_usuario")
-    private String usuarioId; // UUID en texto
+    private String usuarioId;
 
-    @Getter @Setter
+    /**
+     * Método HTTP utilizado en la solicitud (GET, POST, PUT, DELETE, etc.).
+     */
     @Column(name = "metodo", length = 10)
     private String metodo;
 
-    @Getter @Setter
+    /**
+     * Ruta o endpoint accedido en la solicitud.
+     */
     @Column(name = "ruta", length = 500)
     private String ruta;
 
-    @Getter @Setter
+    /**
+     * Código de estado HTTP de la respuesta (200, 404, 500, etc.).
+     */
     @Column(name = "estado")
     private Integer estado;
 
-    @Getter @Setter
+    /**
+     * Dirección IP desde la cual se realizó la solicitud.
+     */
     @Column(name = "ip", length = 50)
     private String ip;
 
-    @Getter @Setter
+    /**
+     * User-Agent del navegador o cliente que realizó la solicitud.
+     */
     @Column(name = "user_agent", length = 500)
     private String userAgent;
 
-    @Getter @Setter
+    /**
+     * Duración en milisegundos que tomó procesar la solicitud.
+     */
     @Column(name = "duracion_ms")
     private Long duracionMs;
 
-    public UUID getId() { return id; }
+    /**
+     * Obtiene el ID único del registro de acceso.
+     * 
+     * @return UUID del registro de acceso
+     */
+    public UUID getId() { 
+        return id; 
+    }
 }

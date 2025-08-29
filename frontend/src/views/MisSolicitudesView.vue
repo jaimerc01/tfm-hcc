@@ -111,7 +111,7 @@ export default {
           : (typeof roles === 'string' && String(roles).toUpperCase().includes('MEDICO'))
         if (isMedico) {
           try {
-            const r2 = await axios.get(`${base}/medico/solicitud/enviadas`, { headers: { Authorization: `Bearer ${token}` } })
+            const r2 = await axios.get(`${base}/medico/solicitudes-asignacion/enviadas`, { headers: { Authorization: `Bearer ${token}` } })
             this.solicitudesEnviadas = Array.isArray(r2.data) ? r2.data : []
           } catch (e) {
             // non-blocking: ignore sent list errors but keep a console message

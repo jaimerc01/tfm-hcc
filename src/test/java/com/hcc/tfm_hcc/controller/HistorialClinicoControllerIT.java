@@ -1,5 +1,6 @@
 package com.hcc.tfm_hcc.controller;
 
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -7,8 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.UUID;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -18,10 +19,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hcc.tfm_hcc.controller.impl.HistorialClinicoControllerImpl;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
-
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class HistorialClinicoControllerIT {
@@ -34,7 +34,7 @@ public class HistorialClinicoControllerIT {
     private HistorialClinicoFacade historialClinicoFacade;
 
     @InjectMocks
-    private com.hcc.tfm_hcc.controller.impl.HistorialClinicoControllerImpl controller;
+    private HistorialClinicoControllerImpl controller;
 
     @BeforeEach
     void setup() {

@@ -91,7 +91,7 @@ export default {
         const token = localStorage.getItem('authToken')
         const base = process.env.VUE_APP_API_URL || 'http://localhost:8081'
         const { data } = await axios.get(
-          `${base}/medico/paciente/buscar`,
+          `${base}/medico/pacientes/buscar`,
           {
             params: { dni: this.dni, fechaNacimiento: this.fechaNacimiento },
             headers: { Authorization: `Bearer ${token}` }
@@ -111,7 +111,7 @@ export default {
       try {
         const token = localStorage.getItem('authToken')
         const base = process.env.VUE_APP_API_URL || 'http://localhost:8081'
-        const { data } = await axios.get(`${base}/medico/solicitud/pendientes`, { headers: { Authorization: `Bearer ${token}` } })
+        const { data } = await axios.get(`${base}/medico/solicitudes-asignacion/pendientes`, { headers: { Authorization: `Bearer ${token}` } })
         this.solicitudesPendientes = Array.isArray(data) ? data : []
       } catch (e) {
         this.solicitudesPendientes = []
@@ -125,8 +125,9 @@ export default {
         const base = process.env.VUE_APP_API_URL || 'http://localhost:8081'
         const nifPaciente = this.paciente.nif
         // Do not send nifMedico; backend should determine medico from the auth token
-        await axios.get(
-          `${base}/medico/solicitud/asignacion`,
+        await axios.post(
+          `${base}/medico/solicitudes-asignacion`,
+          null,
           {
             params: { nifPaciente },
             headers: { Authorization: `Bearer ${token}` }

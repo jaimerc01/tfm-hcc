@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StopWatch;
 
 import com.hcc.tfm_hcc.model.AccessLog;
+import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.AccessLogService;
 
@@ -57,25 +58,23 @@ public class AccessLogFilter implements Filter {
 
         StopWatch sw = new StopWatch();
         sw.start();
+        String usuario = null;
         try {
             chain.doFilter(request, response);
         } finally {
             sw.stop();
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String usuarioId = null;
         if (auth != null 
             && !(auth instanceof AnonymousAuthenticationToken)
             && auth.getPrincipal() instanceof UserDetails userDetails) {
         String nif = userDetails.getUsername();
-        usuarioId = usuarioRepository.findByNif(nif)
-            .map(u -> u.getId() != null ? u.getId().toString() : null)
-            .orElse(null);
+        usuario = usuarioRepository.findByNif(nif).isPresent() ? usuarioRepository.findByNif(nif).get().getId().toString() : null;
         }
 
             try {
                 AccessLog log = new AccessLog();
                 log.setTimestamp(LocalDateTime.now());
-                log.setUsuarioId(usuarioId);
+                log.setUsuarioId(usuario);
                 log.setMetodo(httpReq.getMethod());
                 log.setRuta(httpReq.getRequestURI());
                 log.setEstado(httpRes.getStatus());
