@@ -24,8 +24,8 @@
       <div class="col-value">
         <label class="form-label">Valor</label>
         <input class="value-input" :class="{invalid: !validation.isValid && String(value).trim() !== ''}" type="text" v-model="value" placeholder="Ej: 95" />
-        <div class="hint small" v-if="!validation.isValid && String(value).trim() !== ''">{{ validation.message }}</div>
-        <div class="hint small" v-else>Rango: {{ analytes.find(x => x.key === selected).min }}–{{ analytes.find(x => x.key === selected).max }} {{ unitForSelected }}</div>
+        <div class="hint small" v-if="!validation.isValid && String(value).trim() !== ''" id="validation-error">{{ validation.message }}</div>
+        <div class="hint small" v-else id="range-hint">{{ rangeHintText }}</div>
       </div>
       <div class="col-unit">
         <label class="form-label">Unidad</label>
@@ -38,7 +38,15 @@
       </div>
       <div class="actions-col">
         <label class="form-label">&nbsp;</label>
-        <button @click="addEntry" :disabled="!canAdd">Añadir</button>
+        <button 
+          type="button"
+          class="btn-success"
+          @click="addEntry" 
+          :disabled="!canAdd || saving"
+          :aria-label="saving ? 'Guardando análisis de sangre...' : 'Añadir análisis de sangre a la historia clínica'"
+          :aria-describedby="!validation.isValid ? 'validation-error' : 'range-hint'">
+          {{ saving ? 'Guardando…' : 'Añadir' }}
+        </button>
       </div>
     </div>
 
@@ -51,16 +59,28 @@
             <td>{{ e.label }}</td>
             <td>{{ e.value }} {{ e.unit }}</td>
             <td>{{ formatDate(e.createdAt) }}</td>
-            <td><button @click="removeEntry(idx)">Eliminar</button></td>
+            <td><button 
+              type="button"
+              @click="removeEntry(idx)"
+              :aria-label="`Eliminar resultado de ${e.label} del ${formatDate(e.createdAt)}`"
+              class="delete-btn">
+              Eliminar
+            </button></td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <div class="form-actions">
-      <button @click="saveAnalisis" :disabled="saving || entries.length===0">{{ saving ? 'Guardando…' : 'Guardar resultados' }}</button>
-      <button @click="clearAll" :disabled="saving && entries.length===0">Borrar todo</button>
-      <span v-if="msg" class="success">{{ msg }}</span>
+    <div class="form-actions" v-if="entries.length > 0">
+      <button 
+        type="button"
+        @click="clearAll" 
+        :disabled="saving"
+        :aria-label="`Borrar todos los ${entries.length} resultados de análisis de sangre`"
+        class="danger-btn">
+        Borrar todo
+      </button>
+      <span v-if="msg" class="success" role="status" aria-live="polite">{{ msg }}</span>
     </div>
 
     <div :class="['toast', showToast ? 'show' : '']">Guardado</div>
@@ -75,12 +95,68 @@ export default {
   data() {
     return {
       analytes: [
-        { key: 'glucosa', label: 'Glucosa', unit: 'mg/dL', min: 0, max: 1000, decimals: 0 },
-        { key: 'hemoglobina', label: 'Hemoglobina', unit: 'g/dL', min: 0, max: 25, decimals: 1 },
-        { key: 'colesterol', label: 'Colesterol total', unit: 'mg/dL', min: 0, max: 1000, decimals: 0 },
-        { key: 'trigliceridos', label: 'Triglicéridos', unit: 'mg/dL', min: 0, max: 2000, decimals: 0 },
-        { key: 'creatinina', label: 'Creatinina', unit: 'mg/dL', min: 0, max: 50, decimals: 2 },
-        { key: 'hematocrito', label: 'Hematocrito', unit: '%', min: 0, max: 100, decimals: 1 }
+        { 
+          key: 'glucosa', 
+          label: 'Glucosa', 
+          unit: 'mg/dL', 
+          // Rangos de validación del formulario (amplios)
+          validationMin: 0, 
+          validationMax: 1000, 
+          decimals: 0,
+          // Rangos recomendados (se actualizarán desde servidor)
+          recommendedMin: null,
+          recommendedMax: null
+        },
+        { 
+          key: 'hemoglobina', 
+          label: 'Hemoglobina', 
+          unit: 'g/dL', 
+          validationMin: 0, 
+          validationMax: 25, 
+          decimals: 1,
+          recommendedMin: null,
+          recommendedMax: null
+        },
+        { 
+          key: 'colesterol', 
+          label: 'Colesterol total', 
+          unit: 'mg/dL', 
+          validationMin: 0, 
+          validationMax: 500, // Aumentado para permitir valores altos como 250-300
+          decimals: 0,
+          recommendedMin: null,
+          recommendedMax: null
+        },
+        { 
+          key: 'trigliceridos', 
+          label: 'Triglicéridos', 
+          unit: 'mg/dL', 
+          validationMin: 0, 
+          validationMax: 2000, 
+          decimals: 0,
+          recommendedMin: null,
+          recommendedMax: null
+        },
+        { 
+          key: 'creatinina', 
+          label: 'Creatinina', 
+          unit: 'mg/dL', 
+          validationMin: 0, 
+          validationMax: 50, 
+          decimals: 2,
+          recommendedMin: null,
+          recommendedMax: null
+        },
+        { 
+          key: 'hematocrito', 
+          label: 'Hematocrito', 
+          unit: '%', 
+          validationMin: 0, 
+          validationMax: 100, 
+          decimals: 1,
+          recommendedMin: null,
+          recommendedMax: null
+        }
       ],
   selected: 'glucosa',
   value: '',
@@ -107,6 +183,18 @@ export default {
       const a = this.analytes.find(x => x.key === this.selected)
       return a ? a.unit : ''
     },
+    rangeHintText() {
+      const a = this.analytes.find(x => x.key === this.selected)
+      if (!a) return ''
+      
+      // Si hay rangos recomendados del servidor, mostrarlos
+      if (a.recommendedMin !== null && a.recommendedMax !== null) {
+        return `Rango recomendado: ${a.recommendedMin}–${a.recommendedMax} ${a.unit}`
+      }
+      
+      // Si no hay rangos recomendados, mostrar mensaje genérico
+      return `Introduce el valor del análisis en ${a.unit}`
+    },
   canAdd() { return this.value !== null && String(this.value).trim() !== '' && this.validation.isValid },
     validation() {
       const a = this.analytes.find(x => x.key === this.selected)
@@ -117,8 +205,8 @@ export default {
       const normalized = raw.replace(',', '.')
       const num = Number(normalized)
       if (Number.isNaN(num)) return { isValid: false, message: 'Valor no numérico' }
-      if (a.min != null && num < a.min) return { isValid: false, message: `Valor mínimo ${a.min} ${a.unit}` }
-      if (a.max != null && num > a.max) return { isValid: false, message: `Valor máximo ${a.max} ${a.unit}` }
+      if (a.validationMin != null && num < a.validationMin) return { isValid: false, message: `Valor mínimo ${a.validationMin} ${a.unit}` }
+      if (a.validationMax != null && num > a.validationMax) return { isValid: false, message: `Valor máximo ${a.validationMax} ${a.unit}` }
       return { isValid: true, message: '' , value: num }
     }
   },
@@ -145,15 +233,22 @@ export default {
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
         const res = await svc.getMine()
         const dto = res.data || {}
+        
         // backend may return a JSON array for analisisSangre; try to parse
         if (dto.analisisSangre) {
           try {
             const parsed = typeof dto.analisisSangre === 'string' ? JSON.parse(dto.analisisSangre) : dto.analisisSangre
             if (Array.isArray(parsed)) {
-              // Map server DTO shape { tipo, valor, unidad, createdAt, id } to component shape
+              // Map server DTO shape { tipo, valor, unidad, createdAt, id, rango } to component shape
               this.entries = parsed.map(p => {
                 const mappedKey = p.key || this.mapTipoToKey(p.tipo)
                 const analyte = this.analytes.find(x => x.key === mappedKey)
+                
+                // Actualizar los rangos de los analytes con datos del servidor
+                if (p.rango && analyte) {
+                  this.updateAnalyteRanges(analyte, p.rango)
+                }
+                
                 return {
                   id: p.id || null,
                   key: mappedKey || p.key || null,
@@ -161,7 +256,8 @@ export default {
                   // backend may send 'valor' (string/number) so normalize to string for display
                   value: (p.value !== undefined && p.value !== null) ? String(p.value) : (p.valor !== undefined && p.valor !== null) ? String(p.valor) : '',
                   unit: analyte ? analyte.unit : (p.unit || p.unidad || ''),
-                  createdAt: p.createdAt || p.fechaCreacion || null
+                  createdAt: p.createdAt || p.fechaCreacion || null,
+                  rango: p.rango || null // Guardar información del rango
                 }
               })
               // draw chart after loading entries
@@ -175,25 +271,70 @@ export default {
       } catch (e) { console.error('No se pudo cargar análisis', e); this.error = 'No se pudo cargar análisis' }
     },
 
-    addEntry() {
-      if (!this.canAdd) return
-      const a = this.analytes.find(x => x.key === this.selected)
-      // format numeric value according to decimals
-      const num = this.validation.value
-      const formatted = (a.decimals != null) ? num.toFixed(a.decimals) : String(num)
-      // use provided inputDate if valid, otherwise now
-      let createdAt = new Date().toISOString()
-      try {
-        if (this.inputDate && String(this.inputDate).trim() !== '') {
-          const dt = new Date(this.inputDate)
-          if (!Number.isNaN(dt.getTime())) createdAt = dt.toISOString()
-        }
-      } catch (e) { /* ignore and use now */ }
+    /**
+     * Actualiza los rangos de un analyte con datos del servidor
+     */
+    updateAnalyteRanges(analyte, rangoData) {
+      if (!rangoData) return
+      
+      // Actualizar rangos recomendados con valores del servidor
+      if (rangoData.valorInferiorNumerico !== undefined && rangoData.valorInferiorNumerico !== null) {
+        analyte.recommendedMin = rangoData.valorInferiorNumerico
+      }
+      if (rangoData.valorSuperiorNumerico !== undefined && rangoData.valorSuperiorNumerico !== null) {
+        analyte.recommendedMax = rangoData.valorSuperiorNumerico
+      }
+      
+      // Guardar referencia al rango para uso posterior
+      analyte.rangoData = rangoData
+    },
 
-      this.entries.push({ key: a.key, label: a.label, value: formatted, unit: a.unit, createdAt })
-      this.value = ''
-      this.inputDate = this.localNowForInput()
-  this.drawChart()
+    async addEntry() {
+      if (!this.canAdd) return
+      
+      this.saving = true
+      try {
+        const a = this.analytes.find(x => x.key === this.selected)
+        // format numeric value according to decimals
+        const num = this.validation.value
+        const formatted = (a.decimals != null) ? num.toFixed(a.decimals) : String(num)
+        // use provided inputDate if valid, otherwise now
+        let createdAt = new Date().toISOString()
+        try {
+          if (this.inputDate && String(this.inputDate).trim() !== '') {
+            const dt = new Date(this.inputDate)
+            if (!Number.isNaN(dt.getTime())) createdAt = dt.toISOString()
+          }
+        } catch (e) { /* ignore and use now */ }
+
+        const newEntry = { key: a.key, label: a.label, value: formatted, unit: a.unit, createdAt }
+        
+        // Add to local array first
+        this.entries.push(newEntry)
+        
+        // Save immediately to server
+        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
+        const payload = this.entries.length ? JSON.stringify(this.entries) : ''
+        await svc.updateAnalisisSangre(payload)
+        
+        // Clear form and update UI
+        this.value = ''
+        this.inputDate = this.localNowForInput()
+        this.drawChart()
+        
+        // Show success message
+        this.msg = 'Resultado añadido y guardado.'
+        this.showTemporaryToast()
+        setTimeout(() => this.msg = '', 3000)
+        
+      } catch (e) {
+        // If save failed, remove the entry from local array
+        this.entries.pop()
+        console.error('Error guardando análisis', e)
+        this.error = 'Error guardando el resultado'
+      } finally {
+        this.saving = false
+      }
     },
 
     async removeEntry(i) {
@@ -212,19 +353,6 @@ export default {
         this.entries.splice(i, 1)
       }
       this.drawChart()
-    },
-
-    async saveAnalisis() {
-      this.saving = true
-      try {
-        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
-        // send structured data as JSON string in the text/plain body
-        const payload = this.entries.length ? JSON.stringify(this.entries) : ''
-        await svc.updateAnalisisSangre(payload)
-        this.msg = 'Resultados guardados.'
-        this.showTemporaryToast()
-        setTimeout(() => this.msg = '', 3000)
-      } catch (e) { this.error = 'Error guardando análisis' } finally { this.saving = false }
     },
 
     async clearAll() {
@@ -310,8 +438,9 @@ export default {
       let domainMin = (dataMin != null) ? dataMin * 0.9 : 0
       let domainMax = (dataMax != null) ? dataMax * 1.1 : 1
       if (analyteDef) {
-        if (analyteDef.min != null) domainMin = Math.min(domainMin, analyteDef.min)
-        if (analyteDef.max != null) domainMax = Math.max(domainMax, analyteDef.max)
+        // Usar rangos recomendados para extender el dominio si están disponibles
+        if (analyteDef.recommendedMin != null) domainMin = Math.min(domainMin, analyteDef.recommendedMin)
+        if (analyteDef.recommendedMax != null) domainMax = Math.max(domainMax, analyteDef.recommendedMax)
       }
       const y = d3.scaleLinear()
         .domain([domainMin, domainMax])
@@ -327,10 +456,10 @@ export default {
 
       g.append('g').call(d3.axisLeft(y))
 
-      // recommended interval band (if analyte has min/max)
-      if (analyteDef && analyteDef.min != null && analyteDef.max != null) {
-        const yTop = y(analyteDef.max)
-        const yBottom = y(analyteDef.min)
+      // recommended interval band (if analyte has recommended min/max from server)
+      if (analyteDef && analyteDef.recommendedMin != null && analyteDef.recommendedMax != null) {
+        const yTop = y(analyteDef.recommendedMax)
+        const yBottom = y(analyteDef.recommendedMin)
         const rectY = Math.min(yTop, yBottom)
         const rectH = Math.abs(yBottom - yTop)
         g.append('rect')

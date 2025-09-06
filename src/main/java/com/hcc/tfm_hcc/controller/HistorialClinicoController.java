@@ -121,6 +121,20 @@ public interface HistorialClinicoController {
     ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody String analisisJson);
     
     /**
+     * Crea nuevos análisis de sangre en el historial clínico.
+     * 
+     * <p>Este endpoint permite agregar nuevos datos de análisis de sangre
+     * al historial clínico del usuario autenticado. Los datos se procesan
+     * y se asignan automáticamente los rangos de referencia correspondientes
+     * cuando están disponibles en el sistema.</p>
+     * 
+     * @param analisisJson Datos de análisis de sangre en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @PostMapping("/analisis-sangre")
+    ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson);
+    
+    /**
      * Elimina un dato clínico específico del historial.
      * 
      * @param id ID único del dato clínico a eliminar

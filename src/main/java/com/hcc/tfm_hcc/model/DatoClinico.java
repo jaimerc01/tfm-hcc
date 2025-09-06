@@ -64,6 +64,17 @@ public class DatoClinico extends BaseEntity {
     private String observacion;
 
     /**
+     * Rango de valores recomendados asociado a este dato clínico.
+     * 
+     * Esta relación permite establecer los valores normales o recomendados
+     * para el tipo de dato clínico específico, facilitando la interpretación
+     * de los resultados y la identificación de valores fuera del rango normal.
+     */
+    @ManyToOne
+    @JoinColumn(name = "id_rango")
+    private Rango rango;
+
+    /**
      * Historial clínico al que pertenece este dato.
      * Establece la relación con el paciente propietario de la información.
      */

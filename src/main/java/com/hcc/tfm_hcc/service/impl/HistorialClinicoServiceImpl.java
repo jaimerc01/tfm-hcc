@@ -18,12 +18,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.dto.DatoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.dto.RangoDTO;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
 import com.hcc.tfm_hcc.model.DatoClinico;
 import com.hcc.tfm_hcc.model.HistorialClinico;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.DatoClinicoRepository;
 import com.hcc.tfm_hcc.repository.HistorialClinicoRepository;
+import com.hcc.tfm_hcc.repository.RangoRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.HistorialClinicoService;
 
@@ -40,17 +42,20 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     private final UsuarioFacade usuarioFacade;
     private final UsuarioRepository usuarioRepository;
     private final DatoClinicoRepository datoClinicoRepository;
+    private final RangoRepository rangoRepository;
     private final ObjectMapper objectMapper;
 
     public HistorialClinicoServiceImpl(
             HistorialClinicoRepository historiaRepo,
             UsuarioFacade usuarioFacade,
             UsuarioRepository usuarioRepository,
-            DatoClinicoRepository datoClinicoRepository) {
+            DatoClinicoRepository datoClinicoRepository,
+            RangoRepository rangoRepository) {
         this.historiaRepo = historiaRepo;
         this.usuarioFacade = usuarioFacade;
         this.usuarioRepository = usuarioRepository;
         this.datoClinicoRepository = datoClinicoRepository;
+        this.rangoRepository = rangoRepository;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -120,7 +125,52 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         dto.setObservacion(datoClinico.getObservacion());
         dto.setCreatedAt(datoClinico.getFechaCreacion() != null ? 
             datoClinico.getFechaCreacion().toString() : null);
+        
+        // Convertir el rango asociado si existe
+        if (datoClinico.getRango() != null) {
+            dto.setRango(convertirRangoADto(datoClinico.getRango()));
+        }
+        
         return dto;
+    }
+    
+    /**
+     * Convierte una entidad Rango a DTO
+     */
+    private RangoDTO convertirRangoADto(com.hcc.tfm_hcc.model.Rango rango) {
+        RangoDTO dto = new RangoDTO();
+        dto.setId(rango.getId() != null ? rango.getId().toString() : null);
+        dto.setNombre(rango.getNombre());
+        dto.setValorSuperior(rango.getValorSuperior());
+        dto.setValorInferior(rango.getValorInferior());
+        
+        // Extraer valores numéricos para el frontend
+        dto.setValorSuperiorNumerico(extraerValorNumerico(rango.getValorSuperior()));
+        dto.setValorInferiorNumerico(extraerValorNumerico(rango.getValorInferior()));
+        
+        return dto;
+    }
+    
+    /**
+     * Extrae el valor numérico de una cadena que puede contener unidades.
+     * Ejemplo: "140 mg/dL" -> 140.0, "12.5" -> 12.5
+     */
+    private Double extraerValorNumerico(String valor) {
+        if (valor == null || valor.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            // Buscar el primer número en la cadena
+            String numeroStr = valor.trim().replaceAll("[^0-9.,]", "").replace(",", ".");
+            if (!numeroStr.isEmpty()) {
+                return Double.parseDouble(numeroStr);
+            }
+        } catch (NumberFormatException e) {
+            // Si no se puede parsear, devolver null
+        }
+        
+        return null;
     }
 
     @Override
@@ -304,7 +354,32 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         datoClinico.setHistorialClinico(historial);
         datoClinico.setFechaCreacion(fechaCreacion);
         
+        // Buscar y asignar el rango correspondiente para este tipo de dato clínico
+        buscarYAsignarRango(datoClinico, tipo);
+        
         return datoClinico;
+    }
+
+    /**
+     * Busca y asigna el rango correspondiente a un dato clínico basado en su tipo
+     * @param datoClinico El dato clínico al que asignar el rango
+     * @param tipo El tipo/nombre del análisis para buscar el rango
+     */
+    private void buscarYAsignarRango(DatoClinico datoClinico, String tipo) {
+        if (tipo == null || tipo.trim().isEmpty()) {
+            return; // No asignar rango si no hay tipo definido
+        }
+        
+        // Intentar buscar el rango exacto primero
+        var rangoOptional = rangoRepository.findByNombreIgnoreCase(tipo.trim());
+        
+        // Si no se encuentra exacto, buscar por coincidencia parcial
+        if (rangoOptional.isEmpty()) {
+            rangoOptional = rangoRepository.findByNombreContainingIgnoreCase(tipo.trim());
+        }
+        
+        // Asignar el rango si se encontró uno
+        rangoOptional.ifPresent(datoClinico::setRango);
     }
 
     /**

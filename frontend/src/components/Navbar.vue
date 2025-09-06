@@ -74,29 +74,159 @@ export default {
 </script>
 
 <style scoped>
-.nav { position: fixed; top: 0; left: 0; right: 0; background: #2c3e50; color: #fff; z-index: 1000; }
-.nav__content { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; }
-.nav__brand { color: #fff; text-decoration: none; font-weight: 600; font-size: 1.1rem; }
-.nav__toggle { display: none; background: transparent; border: none; color: #fff; font-size: 1.25rem; cursor: pointer; }
-.nav__links { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-.nav__link { color: #ecf0f1; text-decoration: none; }
-.nav__link.router-link-exact-active { color: #42b983; }
-.nav__logout { margin-left: 0.5rem; background: #e74c3c; color: #fff; border: none; padding: 0.5rem 0.75rem; border-radius: 4px; cursor: pointer; }
-.nav__logout:hover { background: #c0392b; }
-.nav__spacer { height: 56px; }
+.nav { 
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  background: var(--primary-color, #0284c7); 
+  color: #fff; 
+  z-index: 1000; 
+  box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+}
+
+.nav__content { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  padding: 0.75rem 1rem; 
+}
+
+.nav__brand { 
+  color: #fff; 
+  text-decoration: none; 
+  font-weight: 600; 
+  font-size: 1.1rem; 
+}
+
+.nav__brand:hover {
+  color: var(--primary-light, #bae6fd);
+}
+
+.nav__toggle { 
+  display: none; 
+  background: transparent; 
+  border: none; 
+  color: #fff; 
+  font-size: 1.25rem; 
+  cursor: pointer; 
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.nav__toggle:hover {
+  background: var(--primary-hover, #0369a1);
+}
+
+.nav__links { 
+  display: flex; 
+  gap: 1rem; 
+  align-items: center; 
+  flex-wrap: wrap; 
+}
+
+.nav__link { 
+  color: rgba(255, 255, 255, 0.9); 
+  text-decoration: none; 
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  font-weight: 500;
+}
+
+.nav__link:hover {
+  color: #fff;
+  background: var(--primary-hover, #0369a1);
+}
+
+.nav__link.router-link-exact-active { 
+  color: #fff;
+  background: var(--primary-active, #075985);
+}
+
+.nav__logout { 
+  margin-left: 0.5rem; 
+  background: var(--danger-color, #dc2626); 
+  color: #fff; 
+  border: none; 
+  padding: 0.5rem 0.75rem; 
+  border-radius: 4px; 
+  cursor: pointer; 
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.nav__logout:hover { 
+  background: var(--danger-hover, #b91c1c); 
+}
+
+.nav__spacer { 
+  height: 56px; 
+}
 
 @media (max-width: 768px) {
-  .nav__toggle { display: inline-block; }
-  .nav__links { position: absolute; top: 56px; left: 0; right: 0; background: #2c3e50; flex-direction: column; padding: 0.75rem 1rem; display: none; }
-  .nav__links--open { display: flex; }
-  .nav__spacer { height: 56px; }
-  .nav__backdrop { position: fixed; inset: 56px 0 0 0; background: rgba(0,0,0,0.25); }
+  .nav__toggle { 
+    display: inline-block; 
+  }
+  
+  .nav__links { 
+    position: absolute; 
+    top: 56px; 
+    left: 0; 
+    right: 0; 
+    background: var(--primary-color, #0284c7); 
+    flex-direction: column; 
+    padding: 0.75rem 1rem; 
+    display: none; 
+    border-top: 1px solid var(--primary-hover, #0369a1);
+  }
+  
+  .nav__links--open { 
+    display: flex; 
+  }
+  
+  .nav__spacer { 
+    height: 56px; 
+  }
+  
+  .nav__backdrop { 
+    position: fixed; 
+    inset: 56px 0 0 0; 
+    background: rgba(0,0,0,0.25); 
+  }
 }
-</style>
 
 /* Dropdown styles */
-.nav__dropdown { position: relative; display: inline-block; }
-.nav__dropdown-content { display: none; position: absolute; background: #34495e; min-width: 180px; z-index: 1; }
-.nav__dropdown:hover .nav__dropdown-content { display: block; }
+.nav__dropdown { 
+  position: relative; 
+  display: inline-block; 
+}
+
+.nav__dropdown-content { 
+  display: none; 
+  position: absolute; 
+  background: var(--primary-hover, #0369a1); 
+  min-width: 180px; 
+  z-index: 1; 
+  border-radius: 4px;
+  box-shadow: var(--shadow-md, 0 1px 3px 0 rgb(0 0 0 / 0.1));
+  overflow: hidden;
+}
+
+.nav__dropdown:hover .nav__dropdown-content { 
+  display: block; 
+}
+
+.nav__dropdown-content .nav__link {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 0;
+}
+
+.nav__dropdown-content .nav__link:hover {
+  background: var(--primary-active, #075985);
+}
+</style>
 .nav__dropdown-content .nav__link { display: block; padding: 0.5rem 1rem; color: #ecf0f1; }
 .nav__dropdown-content .nav__link:hover { background: #22313a; color: #42b983; }

@@ -4,18 +4,17 @@ const api = axios.create({ baseURL: API_BASE_URL, timeout: 10000 })
 api.interceptors.request.use((cfg) => { const token = localStorage.getItem('authToken'); if (token) cfg.headers.Authorization = `Bearer ${token}`; return cfg })
 
 export default {
-  getMine() { return api.get('/historia/me') },
+  getMine() { return api.get('/historia') },
   // identification is sent as JSON
-  updateIdentificacion(payload) { return api.post('/historia/me/identificacion', payload, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
+  updateIdentificacion(payload) { return api.post('/historia/identificacion', payload, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
   // antecedents and single-antecedent edits are plain text (multiline supported)
-  updateAntecedentes(text) { return api.post('/historia/me/antecedentes', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  updateAntecedente(index, texto) { return api.put(`/historia/me/antecedentes/${index}`, texto, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  updateAntecedentes(text) { return api.post('/historia/antecedentes', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  updateAntecedente(index, texto) { return api.put(`/historia/antecedentes/${index}`, texto, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
   // alergias endpoint expects plain multiline text; parameter named text for clarity
-  updateAlergias(text) { return api.post('/historia/me/alergias', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  deleteDatoClinico(id) { return api.delete(`/historia/me/datos/${id}`) },
-  deleteAntecedente(index) { return api.delete(`/historia/me/antecedentes/${index}`) }
-  ,
-  // Analisis de sangre: simple text field for now
-  updateAnalisisSangre(text) { return api.post('/historia/me/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  updateAlergias(text) { return api.post('/historia/alergias', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  deleteDatoClinico(id) { return api.delete(`/historia/datos/${id}`) },
+  deleteAntecedente(index) { return api.delete(`/historia/antecedentes/${index}`) },
+  // Analisis de sangre: Add new analysis data
+  updateAnalisisSangre(text) { return api.post('/historia/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
   // getMine already returns the whole DTO, which may include analisisSangre
 }

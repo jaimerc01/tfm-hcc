@@ -72,3 +72,4 @@ logs/
 
 # Carpeta uploads
 /uploads/*
+scripts/insert_rangos_referencia.sql

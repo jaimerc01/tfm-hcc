@@ -4,14 +4,54 @@
 
     <section class="subsections">
       <div class="subnav" role="tablist" aria-label="Secciones de historia clínica">
-        <button :class="{active: activeSection==='identificacion'}" @click="activeSection='identificacion'" role="tab" :aria-selected="activeSection==='identificacion'">Identificación básica</button>
-        <button :class="{active: activeSection==='antecedentes'}" @click="activeSection='antecedentes'" role="tab" :aria-selected="activeSection==='antecedentes'">Antecedentes personales y familiares</button>
-        <button :class="{active: activeSection==='alergias'}" @click="activeSection='alergias'" role="tab" :aria-selected="activeSection==='alergias'">Alergias e intolerancias</button>
-        <button :class="{active: activeSection==='analisis'}" @click="activeSection='analisis'" role="tab" :aria-selected="activeSection==='analisis'">Análisis de sangre</button>
+        <button 
+          type="button"
+          id="identificacion-tab"
+          :class="['btn-tab', {active: activeSection==='identificacion'}]" 
+          @click="activeSection='identificacion'" 
+          role="tab" 
+          :aria-selected="activeSection==='identificacion'"
+          :aria-controls="activeSection==='identificacion' ? 'identificacion-panel' : null"
+          aria-label="Sección de identificación básica del paciente">
+          Identificación básica
+        </button>
+        <button 
+          type="button"
+          id="antecedentes-tab"
+          :class="['btn-tab', {active: activeSection==='antecedentes'}]" 
+          @click="activeSection='antecedentes'" 
+          role="tab" 
+          :aria-selected="activeSection==='antecedentes'"
+          :aria-controls="activeSection==='antecedentes' ? 'antecedentes-panel' : null"
+          aria-label="Sección de antecedentes personales y familiares">
+          Antecedentes personales y familiares
+        </button>
+        <button 
+          type="button"
+          id="alergias-tab"
+          :class="['btn-tab', {active: activeSection==='alergias'}]" 
+          @click="activeSection='alergias'" 
+          role="tab" 
+          :aria-selected="activeSection==='alergias'"
+          :aria-controls="activeSection==='alergias' ? 'alergias-panel' : null"
+          aria-label="Sección de alergias e intolerancias">
+          Alergias e intolerancias
+        </button>
+        <button 
+          type="button"
+          id="analisis-tab"
+          :class="['btn-tab', {active: activeSection==='analisis'}]" 
+          @click="activeSection='analisis'" 
+          role="tab" 
+          :aria-selected="activeSection==='analisis'"
+          :aria-controls="activeSection==='analisis' ? 'analisis-panel' : null"
+          aria-label="Sección de análisis de sangre">
+          Análisis de sangre
+        </button>
       </div>
 
       <transition name="fade-slide" mode="out-in">
-        <div v-if="activeSection==='identificacion'" key="identificacion" class="section-panel card simple-form" role="tabpanel">
+        <div v-if="activeSection==='identificacion'" key="identificacion" id="identificacion-panel" class="section-panel card simple-form" role="tabpanel" aria-labelledby="identificacion-tab">
           <h3>Identificación básica</h3>
           <label class="form-label">Nombre completo</label>
           <input type="text" v-model="identNombre" placeholder="Nombre y apellidos" />
@@ -40,20 +80,26 @@
 
           <p class="hint">Los datos se guardan y se usan sólo para identificar tu historial; escribe lo que aparece en tus documentos.</p>
           <div class="form-actions form-actions--right">
-            <button @click="saveIdentificacion" :disabled="savingIdent">{{ savingIdent ? 'Guardando…' : 'Guardar identificación' }}</button>
-            <span v-if="msgIdent" class="success">{{ msgIdent }}</span>
+            <button 
+              type="button"
+              @click="saveIdentificacion" 
+              :disabled="savingIdent"
+              :aria-label="savingIdent ? 'Guardando datos de identificación...' : 'Guardar datos de identificación básica'">
+              {{ savingIdent ? 'Guardando…' : 'Guardar identificación' }}
+            </button>
+            <span v-if="msgIdent" class="success" role="status" aria-live="polite">{{ msgIdent }}</span>
           </div>
         </div>
 
-        <div v-else-if="activeSection==='antecedentes'" key="antecedentes">
+        <div v-else-if="activeSection==='antecedentes'" key="antecedentes" id="antecedentes-panel" role="tabpanel" aria-labelledby="antecedentes-tab">
           <AntecedentesSection />
         </div>
 
-        <div v-else-if="activeSection==='alergias'" key="alergias">
+        <div v-else-if="activeSection==='alergias'" key="alergias" id="alergias-panel" role="tabpanel" aria-labelledby="alergias-tab">
           <AlergiasSection />
         </div>
 
-        <div v-else-if="activeSection==='analisis'" key="analisis">
+        <div v-else-if="activeSection==='analisis'" key="analisis" id="analisis-panel" role="tabpanel" aria-labelledby="analisis-tab">
           <AnalisisSangreSection />
         </div>
       </transition>
@@ -63,7 +109,20 @@
 
     <section class="upload">
       <form @submit.prevent="onUpload">
-        <input type="file" @change="onFileChange" />
+        <div class="file-input-wrapper" 
+             @dragover="onDragOver" 
+             @dragleave="onDragLeave" 
+             @drop="onDrop">
+          <input type="file" id="fileInput" @change="onFileChange" />
+          <label for="fileInput" class="file-input-label">
+            <svg class="file-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14,2 14,8 20,8"></polyline>
+            </svg>
+            <span v-if="!file">Seleccionar archivo médico o arrastrarlo aquí</span>
+            <span v-else class="file-selected">{{ file.name }}</span>
+          </label>
+        </div>
         <button type="submit" :disabled="!file || uploading">{{ uploading ? 'Subiendo…' : 'Subir' }}</button>
       </form>
       <p v-if="error" class="error">{{ error }}</p>
@@ -78,8 +137,10 @@
             <small>({{ formatSize(it.sizeBytes) }})</small>
           </div>
           <div class="actions">
-            <button @click="download(it)">Descargar</button>
-            <button @click="remove(it)" :disabled="removingId===it.id">Eliminar</button>
+            <button class="btn-secondary" @click="download(it)">Descargar</button>
+            <button class="danger-btn" @click="remove(it)" :disabled="removingId===it.id">
+              {{ removingId === it.id ? 'Eliminando…' : 'Eliminar' }}
+            </button>
           </div>
         </li>
       </ul>
@@ -166,6 +227,29 @@ export default {
 
     onFileChange(e) {
       this.file = e.target.files && e.target.files[0] ? e.target.files[0] : null
+    },
+
+    onDragOver(e) {
+      e.preventDefault()
+      e.stopPropagation()
+      e.currentTarget.classList.add('drag-over')
+    },
+
+    onDragLeave(e) {
+      e.preventDefault()
+      e.stopPropagation()
+      e.currentTarget.classList.remove('drag-over')
+    },
+
+    onDrop(e) {
+      e.preventDefault()
+      e.stopPropagation()
+      e.currentTarget.classList.remove('drag-over')
+      
+      const files = e.dataTransfer.files
+      if (files && files[0]) {
+        this.file = files[0]
+      }
     },
 
     async onUpload() {

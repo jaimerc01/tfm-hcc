@@ -2,6 +2,252 @@
 
 /* Shared UI helpers used across multiple views */
 
+/* Modern Button System */
+button, .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--button-shadow);
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  user-select: none;
+  min-height: 2.5rem;
+}
+
+/* Primary Button - Medical Blue */
+button:not(.secondary):not(.danger-btn):not(.delete-btn), .btn-primary {
+  background: var(--primary-color);
+  color: var(--on-primary);
+  border: 1px solid var(--primary-color);
+}
+
+button:not(.secondary):not(.danger-btn):not(.delete-btn):hover:not(:disabled), .btn-primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  box-shadow: var(--button-shadow-hover);
+  transform: translateY(-1px);
+}
+
+button:not(.secondary):not(.danger-btn):not(.delete-btn):active:not(:disabled), .btn-primary:active:not(:disabled) {
+  background: var(--primary-active);
+  border-color: var(--primary-active);
+  box-shadow: var(--button-shadow-active);
+  transform: translateY(0);
+}
+
+/* Secondary Button - Medical Gray */
+.secondary, .btn-secondary {
+  background: var(--card-bg);
+  color: var(--secondary-color);
+  border: 1px solid var(--border);
+}
+
+.secondary:hover:not(:disabled), .btn-secondary:hover:not(:disabled) {
+  background: var(--bg-light);
+  border-color: var(--secondary-color);
+  color: var(--secondary-hover);
+  box-shadow: var(--button-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.secondary:active:not(:disabled), .btn-secondary:active:not(:disabled) {
+  background: var(--bg-medium);
+  color: var(--secondary-active);
+  border-color: var(--secondary-hover);
+  transform: translateY(0);
+}
+
+/* Danger/Delete Button - Medical Red */
+.danger-btn, .delete-btn, .btn-danger {
+  background: var(--danger-color);
+  color: white;
+  border: 1px solid var(--danger-color);
+}
+
+.danger-btn:hover:not(:disabled), .delete-btn:hover:not(:disabled), .btn-danger:hover:not(:disabled) {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
+  box-shadow: var(--button-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.danger-btn:active:not(:disabled), .delete-btn:active:not(:disabled), .btn-danger:active:not(:disabled) {
+  background: var(--danger-active);
+  border-color: var(--danger-active);
+  box-shadow: var(--button-shadow-active);
+  transform: translateY(0);
+}
+
+/* Success Button - Medical Green */
+.btn-success {
+  background: var(--success-color);
+  color: white;
+  border: 1px solid var(--success-color);
+}
+
+.btn-success:hover:not(:disabled) {
+  background: var(--success-hover);
+  border-color: var(--success-hover);
+  box-shadow: var(--button-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.btn-success:active:not(:disabled) {
+  background: var(--success-active);
+  border-color: var(--success-active);
+  box-shadow: var(--button-shadow-active);
+  transform: translateY(0);
+}
+
+/* Warning Button - Medical Orange */
+.btn-warning {
+  background: var(--warning-color);
+  color: white;
+  border: 1px solid var(--warning-color);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: var(--warning-hover);
+  border-color: var(--warning-hover);
+  box-shadow: var(--button-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.btn-warning:active:not(:disabled) {
+  background: var(--warning-active);
+  border-color: var(--warning-active);
+  box-shadow: var(--button-shadow-active);
+  transform: translateY(0);
+}
+
+/* Disabled State */
+button:disabled, .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  background: #e5e7eb !important;
+  color: #9ca3af !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Loading State */
+button:disabled[aria-label*="Guardando"], button:disabled[aria-label*="Eliminando"], button:disabled[aria-label*="Exportando"] {
+  background: var(--primary-color) !important;
+  color: white !important;
+  position: relative;
+}
+
+button:disabled[aria-label*="Guardando"]::after,
+button:disabled[aria-label*="Eliminando"]::after,
+button:disabled[aria-label*="Exportando"]::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Button Sizes */
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  min-height: 2rem;
+}
+
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  min-height: 3rem;
+  border-radius: var(--radius-lg);
+}
+
+/* Icon buttons */
+.btn-icon {
+  padding: 0.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+}
+
+/* Tab buttons for navigation */
+.btn-tab {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+  background: var(--bg-light);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+  margin-right: -1px;
+  white-space: nowrap;
+}
+
+.btn-tab:hover {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border-color: var(--border-focus);
+  z-index: 1;
+}
+
+.btn-tab:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+  z-index: 2;
+}
+
+.btn-tab.active {
+  background: white;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  border-bottom-color: white;
+  z-index: 3;
+  font-weight: 600;
+}
+
+.btn-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary-color);
+}
+
+/* Focus states for accessibility */
+button:focus-visible, .btn:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
+}
+
 /* Simple form helpers */
 .simple-form label { display:block; margin:calc(var(--spacing) / 2) 0 calc(var(--spacing) / 4); font-weight:600 }
 .simple-form input, .simple-form textarea { width:100%; padding:.5rem; box-sizing:border-box; border:1px solid var(--border); border-radius:var(--radius) }
@@ -22,9 +268,236 @@
 .subnav button.active { background:var(--primary-color); color:var(--on-primary); border-color:var(--primary-color) }
 
 /* Small helpers */
-.upload { margin: 1rem 0; }
+.upload { 
+  margin: 1rem 0; 
+  padding: 1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.upload form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .upload form {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+/* Medical File Input Styling */
+.file-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.upload input[type="file"] {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.file-input-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-light);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  min-height: 48px;
+  user-select: none;
+}
+
+.file-input-label:hover {
+  border-color: var(--primary-color);
+  background: var(--card-bg);
+  color: var(--primary-color);
+}
+
+.upload input[type="file"]:focus + .file-input-label {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-light);
+  outline: none;
+}
+
+.file-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+}
+
+.file-input-label:hover .file-icon {
+  color: var(--primary-color);
+}
+
+.file-selected {
+  color: var(--success-color);
+  font-weight: 600;
+}
+
+.file-input-label:has(+ input:focus) {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+/* Drag and drop states */
+.file-input-wrapper.drag-over .file-input-label {
+  border-color: var(--success-color);
+  background: var(--success-light);
+  color: var(--success-color);
+}
+
+.file-input-wrapper.drag-over .file-icon {
+  color: var(--success-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .file-input-label {
+    font-size: 0.8rem;
+    padding: 0.625rem 0.875rem;
+  }
+  
+  .file-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Upload Button - Success Style for Medical Actions */
+.upload button[type="submit"] {
+  background: var(--success-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+.upload button[type="submit"]:hover:not(:disabled) {
+  background: var(--success-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.upload button[type="submit"]:active:not(:disabled) {
+  background: var(--success-active);
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.upload button[type="submit"]:disabled {
+  background: var(--bg-medium);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.upload button[type="submit"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--success-light);
+}
+
 .hint { color:var(--muted); font-size:.9rem; margin-top:.5rem }
 .form-actions { margin-top:.5rem }
+
+/* Medical File List Styling */
+.list {
+  margin: 1.5rem 0;
+}
+
+.list h2 {
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.list .item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  transition: background-color var(--transition-fast);
+}
+
+.list .item:last-child {
+  border-bottom: none;
+}
+
+.list .item:hover {
+  background: var(--bg-light);
+}
+
+.list .meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.list .meta strong {
+  display: block;
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  word-break: break-word;
+}
+
+.list .meta small {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.list .actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .list .item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .list .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
 
 /* Toast used across components */
 .toast {

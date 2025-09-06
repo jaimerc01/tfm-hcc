@@ -362,6 +362,34 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
     }
 
     /**
+     * Método adicional que soporta POST para análisis de sangre por compatibilidad.
+     * 
+     * <p>Este endpoint adicional permite usar POST en lugar de PUT para la actualización
+     * de análisis de sangre, manteniendo compatibilidad con frontends que usen POST.</p>
+     * 
+     * @param analisisJson Datos de análisis de sangre en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @PostMapping("/analisis-sangre")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson) {
+        log.debug("Actualizando análisis de sangre del usuario con POST");
+        
+        try {
+            String payload = procesarContenidoUrlEncoded(analisisJson);
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisSangre(payload);
+            log.info("Análisis de sangre actualizados exitosamente con POST");
+            return ResponseEntity.ok(resultado);
+        } catch (IllegalArgumentException e) {
+            log.warn("Error de validación al actualizar análisis de sangre con POST: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al actualizar análisis de sangre con POST: {}", e.getMessage(), e);
+            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
      * {@inheritDoc}
      * 
      * <p>Implementación que elimina un dato clínico específico del historial

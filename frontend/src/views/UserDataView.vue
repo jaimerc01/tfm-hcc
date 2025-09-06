@@ -18,8 +18,21 @@
           <div class="row" v-if="user.fechaUltimaModificacion"><dt>Última Modificación</dt><dd>{{ formatDateTime(user.fechaUltimaModificacion) }}</dd></div>
         </dl>
         <div class="top-actions">
-          <button class="edit-btn" @click="startEdit">Editar datos</button>
-          <button class="export-btn" @click="exportData" :disabled="exportLoading">{{ exportLoading ? 'Exportando...' : 'Descargar mis datos' }}</button>
+          <button 
+            type="button"
+            class="edit-btn" 
+            @click="startEdit"
+            aria-label="Editar datos personales">
+            Editar datos
+          </button>
+          <button 
+            type="button"
+            class="export-btn" 
+            @click="exportData" 
+            :disabled="exportLoading"
+            :aria-label="exportLoading ? 'Exportando datos personales...' : 'Descargar todos mis datos personales en formato JSON'">
+            {{ exportLoading ? 'Exportando...' : 'Descargar mis datos' }}
+          </button>
         </div>
       </template>
       <template v-else>
@@ -34,16 +47,34 @@
             <label class="form-label">Fecha Nacimiento<input type="date" v-model="form.fechaNacimiento" /></label>
           </div>
           <div class="form-actions form-actions--right">
-            <button type="submit" :disabled="editLoading">{{ editLoading ? 'Guardando...' : 'Guardar cambios' }}</button>
-            <button type="button" @click="cancelEdit" :disabled="editLoading">Cancelar</button>
+            <button 
+              type="submit" 
+              :disabled="editLoading"
+              :aria-label="editLoading ? 'Guardando cambios en datos personales...' : 'Guardar cambios en datos personales'">
+              {{ editLoading ? 'Guardando...' : 'Guardar cambios' }}
+            </button>
+            <button 
+              type="button" 
+              @click="cancelEdit" 
+              :disabled="editLoading"
+              aria-label="Cancelar edición y descartar cambios">
+              Cancelar
+            </button>
           </div>
-          <p v-if="editError" class="edit-error">{{ editError }}</p>
-          <p v-if="editSuccess" class="edit-success">Datos actualizados</p>
-          <p v-if="nifChanged" class="nif-warning">Has cambiado el NIF. Necesitarás volver a iniciar sesión.</p>
+          <p v-if="editError" class="edit-error" role="alert">{{ editError }}</p>
+          <p v-if="editSuccess" class="edit-success" role="status" aria-live="polite">Datos actualizados</p>
+          <p v-if="nifChanged" class="nif-warning" role="alert">Has cambiado el NIF. Necesitarás volver a iniciar sesión.</p>
         </form>
       </template>
       <div class="pw-section">
-        <button v-if="!showPwForm" class="pw-btn" @click="showPwForm=true">Cambiar contraseña</button>
+        <button 
+          v-if="!showPwForm" 
+          type="button"
+          class="pw-btn" 
+          @click="showPwForm=true"
+          aria-label="Mostrar formulario para cambiar contraseña">
+          Cambiar contraseña
+        </button>
         <form v-else class="pw-form" @submit.prevent="submitPw">
           <div class="pw-grid">
             <label class="form-label">
@@ -60,11 +91,22 @@
             </label>
           </div>
           <div class="form-actions form-actions--right">
-            <button type="submit" :disabled="pwLoading">{{ pwLoading ? 'Guardando...' : 'Guardar' }}</button>
-            <button type="button" @click="cancelPw" :disabled="pwLoading">Cancelar</button>
+            <button 
+              type="submit" 
+              :disabled="pwLoading"
+              :aria-label="pwLoading ? 'Guardando nueva contraseña...' : 'Guardar nueva contraseña'">
+              {{ pwLoading ? 'Guardando...' : 'Guardar' }}
+            </button>
+            <button 
+              type="button" 
+              @click="cancelPw" 
+              :disabled="pwLoading"
+              aria-label="Cancelar cambio de contraseña">
+              Cancelar
+            </button>
           </div>
-          <p v-if="pwError" class="pw-error">{{ pwError }}</p>
-          <p v-if="pwSuccess" class="pw-success">Contraseña cambiada</p>
+          <p v-if="pwError" class="pw-error" role="alert">{{ pwError }}</p>
+          <p v-if="pwSuccess" class="pw-success" role="status" aria-live="polite">Contraseña cambiada</p>
           <p class="reauth-hint">Introduce tu contraseña para confirmar.</p>
         </form>
       </div>
@@ -74,10 +116,24 @@
           <h3>Confirmar eliminación</h3>
           <p>¿Estás seguro que quieres eliminar tu cuenta? Esta acción es irreversible.</p>
           <div class="modal-actions">
-            <button :disabled="deleteLoading" @click="confirmDelete">{{ deleteLoading ? 'Eliminando...' : 'Sí, borrar' }}</button>
-            <button :disabled="deleteLoading" @click="closeDelete" class="secondary">Cancelar</button>
+            <button 
+              type="button"
+              :disabled="deleteLoading" 
+              @click="confirmDelete"
+              :aria-label="deleteLoading ? 'Eliminando cuenta...' : 'Confirmar eliminación de cuenta definitivamente'"
+              class="danger-btn">
+              {{ deleteLoading ? 'Eliminando...' : 'Sí, borrar' }}
+            </button>
+            <button 
+              type="button"
+              :disabled="deleteLoading" 
+              @click="closeDelete" 
+              class="secondary"
+              aria-label="Cancelar eliminación de cuenta">
+              Cancelar
+            </button>
           </div>
-          <p v-if="deleteError" class="delete-error">{{ deleteError }}</p>
+          <p v-if="deleteError" class="delete-error" role="alert">{{ deleteError }}</p>
         </div>
       </div>
     </div>

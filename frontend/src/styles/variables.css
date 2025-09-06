@@ -1,11 +1,87 @@
-/* Design tokens (colors, spacing, breakpoints) */
+/* Medical Application Design System - Colors for Healthcare */
 :root {
-  --primary-color: #007acc;
+  /* Primary Blue - Medical Trust & Professionalism */
+  --primary-color: #0284c7;      /* Main blue for medical apps */
+  --primary-hover: #0369a1;      /* Darker on hover */
+  --primary-active: #075985;     /* Darkest on click */
+  --primary-light: #bae6fd;      /* Light blue for highlights */
   --on-primary: #ffffff;
-  --muted: #666666;
-  --card-bg: #ffffff;
-  --border: #dddddd;
-  --success: #2b7a0b;
+  
+  /* Success Green - Health & Positive Actions */
+  --success-color: #16a34a;      /* Medical green for positive actions */
+  --success-hover: #15803d;      /* Darker green on hover */
+  --success-active: #166534;     /* Darkest green on click */
+  --success-light: #bbf7d0;      /* Light green for highlights */
+  
+  /* Danger Red - Warnings & Critical Actions */
+  --danger-color: #dc2626;       /* Medical red for warnings */
+  --danger-hover: #b91c1c;       /* Darker red on hover */
+  --danger-active: #991b1b;      /* Darkest red on click */
+  --danger-light: #fecaca;       /* Light red for highlights */
+  
+  /* Warning Orange - Caution & Attention */
+  --warning-color: #d97706;      /* Medical orange for warnings */
+  --warning-hover: #b45309;      /* Darker orange on hover */
+  --warning-active: #92400e;     /* Darkest orange on click */
+  --warning-light: #fde68a;      /* Light orange for highlights */
+  
+  /* Secondary Gray - Professional neutrals */
+  --secondary-color: #525252;    /* Medium gray for secondary actions */
+  --secondary-hover: #404040;    /* Darker gray on hover */
+  --secondary-active: #262626;   /* Darkest gray on click */
+  
+  /* Text colors optimized for medical readability */
+  --text-primary: #404040;       /* Main text - high contrast */
+  --text-secondary: #525252;     /* Secondary text */
+  --muted: #737373;              /* Muted text */
+  --text-placeholder: #a3a3a3;   /* Placeholder text */
+  
+  /* Background colors for medical interfaces */
+  --card-bg: #ffffff;            /* Clean white for cards */
+  --bg-light: #fafafa;           /* Very light gray background */
+  --bg-medium: #f5f5f5;          /* Light gray background */
+  
+  /* Border colors for clean medical layouts */
+  --border: #e5e5e5;             /* Standard border */
+  --border-light: #f5f5f5;       /* Light border */
+  --border-focus: #0284c7;       /* Focus border (primary) */
+  
+  /* Spacing system for consistent layouts */
   --spacing: 1rem;
-  --radius: 6px;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Border radius for medical applications */
+  --radius: 6px;                 /* Standard radius - subtle */
+  --radius-sm: 4px;              /* Small radius */
+  --radius-lg: 8px;              /* Large radius */
+  --radius-xl: 12px;             /* Extra large radius */
+  
+  /* Shadows for medical applications - subtle and clean */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  
+  /* Button specific variables - no gradients for medical clarity */
+  --button-shadow: var(--shadow-sm);
+  --button-shadow-hover: var(--shadow-md);
+  --button-shadow-active: var(--shadow-sm);
+  
+  /* Transitions for smooth interactions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-medium: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Medical-specific status colors */
+  --status-normal: var(--success-color);
+  --status-attention: var(--warning-color);
+  --status-critical: var(--danger-color);
+  --status-info: var(--primary-color);
+  
+  /* Focus outline for accessibility */
+  --focus-outline: 2px solid var(--primary-color);
+  --focus-outline-offset: 2px;
 }

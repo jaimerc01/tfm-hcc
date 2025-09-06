@@ -10,5 +10,8 @@ public class DatoClinicoDTO {
     private String unidad;
     private String observacion;
     private String createdAt;
+    
+    // Información del rango asociado
+    private RangoDTO rango;
 }
     
