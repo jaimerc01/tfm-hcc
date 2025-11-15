@@ -4,8 +4,8 @@
       <h2>Iniciar Sesión</h2>
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
-          <label for="nif">Usuario:</label>
-          <input id="nif" v-model="credentials.nif" type="text" required placeholder="Ingresa tu usuario" />
+          <label for="nif">NIF:</label>
+          <input id="nif" v-model="credentials.nif" type="text" required placeholder="Ingresa tu NIF" />
         </div>
 
         <div class="form-group">

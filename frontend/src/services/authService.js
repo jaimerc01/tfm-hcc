@@ -81,17 +81,11 @@ class AuthService {
   }
 
   async logout() {
-    try {
-      // Llama al endpoint si existe; si no, simplemente limpia el estado local
-      await this.apiClient.post('/auth/logout').catch(() => {})
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error)
-    } finally {
-      // Limpiar datos locales siempre
-      localStorage.removeItem('authToken')
-      localStorage.removeItem('tokenExp')
-  try { localStorage.removeItem('roles') } catch (_) { void 0 }
-    }
+    // Logout en JWT es stateless - solo limpiamos el token local
+    // No hay necesidad de llamar al backend ya que el token expirará naturalmente
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('tokenExp')
+    try { localStorage.removeItem('roles') } catch (_) { void 0 }
   }
 
   async refreshToken() {
@@ -125,8 +119,8 @@ class AuthService {
 
   async fetchMyName() {
     try {
-  const response = await this.apiClient.get('/usuario/me')
-      // Expected shape: { string }
+      const response = await this.apiClient.get('/usuario/nombre')
+      // Expected shape: string (nombre completo del usuario)
       if (response?.data && typeof response.data === 'string') {
         return response.data
       }
@@ -236,7 +230,7 @@ class AuthService {
 
   async fetchMyData() {
     try {
-      const response = await this.apiClient.get('/usuario/me/detalle')
+      const response = await this.apiClient.get('/usuario/me')
       return response?.data || null
     } catch (e) {
       if (e.response?.status === 401) return null

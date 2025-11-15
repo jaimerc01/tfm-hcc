@@ -174,6 +174,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = usuarioMapper.toEntity(usuarioDTO);
         usuario.setFechaCreacion(LocalDateTime.now());
         usuario.setLastPasswordChange(LocalDateTime.now());
+        usuario.setEstadoCuenta("ACTIVO"); // Estado activo por defecto al registrarse
         
         usuario = usuarioRepository.save(usuario);
         
@@ -187,7 +188,16 @@ public class UsuarioServiceImpl implements UsuarioService {
     public String getNombreUsuario() {
         String nif = getNifUsuarioAutenticado();
         return usuarioRepository.findByNif(nif)
-                .map(Usuario::getNombre)
+                .map(usuario -> {
+                    String nombreCompleto = usuario.getNombre();
+                    if (usuario.getApellido1() != null && !usuario.getApellido1().isEmpty()) {
+                        nombreCompleto += " " + usuario.getApellido1();
+                    }
+                    if (usuario.getApellido2() != null && !usuario.getApellido2().isEmpty()) {
+                        nombreCompleto += " " + usuario.getApellido2();
+                    }
+                    return nombreCompleto;
+                })
                 .orElse(null);
     }
 

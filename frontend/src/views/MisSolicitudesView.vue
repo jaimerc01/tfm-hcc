@@ -101,7 +101,7 @@ export default {
       try {
         const token = localStorage.getItem('authToken')
         const base = process.env.VUE_APP_API_URL || 'http://localhost:8081'
-        const resp = await axios.get(`${base}/usuario/solicitud/mis`, { headers: { Authorization: `Bearer ${token}` } })
+        const resp = await axios.get(`${base}/usuario/solicitudes`, { headers: { Authorization: `Bearer ${token}` } })
         this.solicitudes = Array.isArray(resp.data) ? resp.data : []
         // if user is a medico, also load solicitudes they have sent
         const claims = authService.getCurrentUser()
@@ -145,7 +145,7 @@ export default {
       try {
         const token = localStorage.getItem('authToken')
         const base = process.env.VUE_APP_API_URL || 'http://localhost:8081'
-        await axios.post(`${base}/usuario/solicitud/${id}/estado`, { estado: nuevoEstado }, { headers: { Authorization: `Bearer ${token}` } })
+        await axios.put(`${base}/usuario/solicitudes/${id}`, { estado: nuevoEstado }, { headers: { Authorization: `Bearer ${token}` } })
   this.messages[id] = `Solicitud ${nuevoEstado.toLowerCase()} correctamente`
   this.messagesError[id] = false
         await this.cargarSolicitudes()
