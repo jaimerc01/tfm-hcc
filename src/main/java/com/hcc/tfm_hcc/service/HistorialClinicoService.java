@@ -63,12 +63,22 @@ public interface HistorialClinicoService {
     
     /**
      * Actualiza los análisis de sangre del historial clínico.
+     * Reemplaza todos los análisis existentes con los nuevos.
      *
      * @param analisisJson los análisis de sangre en formato JSON
      * @return el DTO del historial clínico actualizado
      * @throws IllegalArgumentException si el JSON es inválido
      */
     HistorialClinicoDTO actualizarAnalisisSangre(String analisisJson);
+    
+    /**
+     * Añade nuevos análisis de sangre al historial clínico sin eliminar los existentes.
+     *
+     * @param analisisJson los nuevos análisis de sangre en formato JSON
+     * @return el DTO del historial clínico actualizado
+     * @throws IllegalArgumentException si el JSON es inválido
+     */
+    HistorialClinicoDTO añadirAnalisisSangre(String analisisJson);
     
     /**
      * Borra un dato clínico específico del historial.

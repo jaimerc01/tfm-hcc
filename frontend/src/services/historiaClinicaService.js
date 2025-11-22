@@ -12,9 +12,10 @@ export default {
   updateAntecedente(index, texto) { return api.put(`/historia/antecedentes/${index}`, texto, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
   // alergias endpoint expects plain multiline text; parameter named text for clarity
   updateAlergias(text) { return api.post('/historia/alergias', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  deleteDatoClinico(id) { return api.delete(`/historia/datos/${id}`) },
+  deleteDatoClinico(id) { return api.delete(`/historia/datos-clinicos/${id}`) },
   deleteAntecedente(index) { return api.delete(`/historia/antecedentes/${index}`) },
-  // Analisis de sangre: Add new analysis data
-  updateAnalisisSangre(text) { return api.post('/historia/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  // Analisis de sangre: Replace all (PUT) or add new (POST)
+  updateAnalisisSangre(text) { return api.put('/historia/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  añadirAnalisisSangre(text) { return api.post('/historia/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
   // getMine already returns the whole DTO, which may include analisisSangre
 }

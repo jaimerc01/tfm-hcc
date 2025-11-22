@@ -362,10 +362,10 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
     }
 
     /**
-     * Método adicional que soporta POST para análisis de sangre por compatibilidad.
+     * Añade nuevos análisis de sangre sin eliminar los existentes.
      * 
-     * <p>Este endpoint adicional permite usar POST en lugar de PUT para la actualización
-     * de análisis de sangre, manteniendo compatibilidad con frontends que usen POST.</p>
+     * <p>Este endpoint permite añadir nuevos datos de análisis de sangre
+     * sin eliminar los análisis previos del historial clínico.</p>
      * 
      * @param analisisJson Datos de análisis de sangre en formato JSON
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
@@ -373,18 +373,18 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
     @PostMapping("/analisis-sangre")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson) {
-        log.debug("Actualizando análisis de sangre del usuario con POST");
+        log.debug("Añadiendo nuevos análisis de sangre del usuario");
         
         try {
             String payload = procesarContenidoUrlEncoded(analisisJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisSangre(payload);
-            log.info("Análisis de sangre actualizados exitosamente con POST");
+            HistorialClinicoDTO resultado = historialClinicoFacade.añadirAnalisisSangre(payload);
+            log.info("Análisis de sangre añadidos exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (IllegalArgumentException e) {
-            log.warn("Error de validación al actualizar análisis de sangre con POST: {}", e.getMessage());
+            log.warn("Error de validación al añadir análisis de sangre: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error al actualizar análisis de sangre con POST: {}", e.getMessage(), e);
+            log.error("Error al añadir análisis de sangre: {}", e.getMessage(), e);
             throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }

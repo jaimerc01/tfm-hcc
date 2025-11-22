@@ -109,6 +109,14 @@ public interface HistorialClinicoFacade {
     HistorialClinicoDTO actualizarAnalisisSangre(String analisisJson);
     
     /**
+     * Añade nuevos análisis de sangre sin eliminar los existentes.
+     * 
+     * @param analisisJson Datos de análisis de sangre en formato JSON
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO añadirAnalisisSangre(String analisisJson);
+    
+    /**
      * Elimina un dato clínico específico del historial.
      * 
      * @param id ID único del dato clínico a eliminar

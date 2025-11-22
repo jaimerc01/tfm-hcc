@@ -362,6 +362,26 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
             throw new RuntimeException("Error interno durante la actualización de análisis", e);
         }
     }
+    
+    @Override
+    public HistorialClinicoDTO añadirAnalisisSangre(String analisisJson) {
+        log.debug("Añadiendo nuevos análisis de sangre al historial clínico");
+        
+        try {
+            validarJson(analisisJson, "análisis de sangre");
+            
+            HistorialClinicoDTO resultado = historiaClinicaService.añadirAnalisisSangre(analisisJson);
+            
+            log.info("Análisis de sangre añadidos exitosamente al historial clínico");
+            return resultado;
+        } catch (IllegalArgumentException e) {
+            log.warn("Error de validación al añadir análisis de sangre: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al añadir análisis de sangre: {}", e.getMessage(), e);
+            throw new RuntimeException("Error interno durante la adición de análisis", e);
+        }
+    }
 
     // ===============================
     // MÉTODOS DE GESTIÓN DE DATOS

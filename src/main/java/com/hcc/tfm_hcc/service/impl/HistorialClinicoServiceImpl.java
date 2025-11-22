@@ -276,16 +276,55 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
         
-        procesarAnalisisSangre(analisisJson, historial);
+        procesarAnalisisSangre(analisisJson, historial, true); // true = eliminar existentes
+        
+        historiaRepo.save(historial);
+        return toDto(historial);
+    }
+    
+    @Override
+    @Transactional
+    public HistorialClinicoDTO añadirAnalisisSangre(String analisisJson) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = ensureForUsuario(usuario);
+        
+        procesarAnalisisSangre(analisisJson, historial, false); // false = NO eliminar existentes
         
         historiaRepo.save(historial);
         return toDto(historial);
     }
 
     /**
-     * Procesa los análisis de sangre del JSON y los almacena como datos clínicos
+     * Procesa los análisis de sangre del JSON y los almacena como datos clínicos.
+     * 
+     * @param analisisJson JSON con los análisis de sangre
+     * @param historial Historial clínico al que pertenecen
+     * @param eliminarExistentes Si true, elimina todos los análisis existentes antes de guardar los nuevos (reemplazo completo).
+     *                           Si false, solo añade los nuevos análisis sin eliminar los existentes.
      */
-    private void procesarAnalisisSangre(String analisisJson, HistorialClinico historial) {
+    private void procesarAnalisisSangre(String analisisJson, HistorialClinico historial, boolean eliminarExistentes) {
+        if (eliminarExistentes) {
+            // Eliminar todos los análisis de sangre existentes
+            // Buscar por nombres de análisis sin las unidades (el frontend envía labels como "Glucosa", "Hemoglobina", etc.)
+            List<DatoClinico> analisisExistentes = datoClinicoRepository.findByHistorialClinicoAndTipoIn(
+                historial,
+                List.of("Hemoglobina", "Glucosa", "Colesterol", "Colesterol Total",
+                        "Triglicéridos", "Creatinina", "Hematocrito", 
+                        "Leucocitos", "Plaquetas", "Transaminasas ALT", 
+                        "Transaminasas AST", "Bilirrubina Total", "Urea",
+                        // También incluir versiones con unidades por compatibilidad con datos antiguos
+                        "Hemoglobina (g/dL)", "Glucosa (mg/dL)", "Colesterol Total (mg/dL)", 
+                        "Triglicéridos (mg/dL)", "Creatinina (mg/dL)", "Hematocrito (%)", 
+                        "Leucocitos (10³/µL)", "Plaquetas (10³/µL)", "Transaminasas ALT (U/L)", 
+                        "Transaminasas AST (U/L)", "Bilirrubina Total (mg/dL)", "Urea (mg/dL)")
+            );
+            
+            if (!analisisExistentes.isEmpty()) {
+                datoClinicoRepository.deleteAll(analisisExistentes);
+            }
+        }
+        
+        // Procesar y guardar los nuevos análisis si existen
         if (analisisJson == null || analisisJson.trim().isEmpty()) {
             return;
         }

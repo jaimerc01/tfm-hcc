@@ -1,0 +1,363 @@
+/* Layout utilities - Page containers, grids, flex layouts */
+@import './variables.css';
+
+/* ================================
+   PAGE CONTAINERS
+   ================================ */
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.page-container-wide {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.page-container-narrow {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* ================================
+   SECTION LAYOUTS
+   ================================ */
+
+.section {
+  margin-bottom: 3rem;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #262626);
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border, #e5e5e5);
+}
+
+.section-title svg {
+  color: var(--primary-color, #0284c7);
+}
+
+.section-subtitle {
+  margin: 0;
+  color: var(--text-secondary, #737373);
+  font-size: 0.875rem;
+}
+
+/* ================================
+   GRID LAYOUTS
+   ================================ */
+
+/* Responsive grid - 1 column on mobile, 2 on tablet, 3 on desktop */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* 2-column grid */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 4-column grid */
+.grid-4 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Grid utilities */
+.grid-gap-sm { gap: 0.75rem; }
+.grid-gap-md { gap: 1.5rem; }
+.grid-gap-lg { gap: 2rem; }
+
+.col-span-full {
+  grid-column: 1 / -1;
+}
+
+/* ================================
+   FORM GRIDS
+   ================================ */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+/* ================================
+   FLEX UTILITIES
+   ================================ */
+
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.items-start {
+  align-items: flex-start;
+}
+
+.items-end {
+  align-items: flex-end;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.gap-xs { gap: var(--spacing-xs, 0.25rem); }
+.gap-sm { gap: var(--spacing-sm, 0.5rem); }
+.gap-md { gap: var(--spacing-md, 1rem); }
+.gap-lg { gap: var(--spacing-lg, 1.5rem); }
+.gap-xl { gap: var(--spacing-xl, 2rem); }
+
+/* ================================
+   TABS LAYOUT
+   ================================ */
+
+.tabs-section {
+  margin-bottom: 2rem;
+}
+
+.tabs-nav {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--border, #e5e5e5);
+  overflow-x: auto;
+  padding-bottom: 0;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #737373);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  color: var(--primary-color, #0284c7);
+  background: var(--bg-light, #fafafa);
+}
+
+.tab-btn.active {
+  color: var(--primary-color, #0284c7);
+  border-bottom-color: var(--primary-color, #0284c7);
+}
+
+.tab-btn svg {
+  flex-shrink: 0;
+}
+
+.tab-panel {
+  animation: fadeIn 0.3s ease;
+}
+
+/* ================================
+   PANEL CARDS
+   ================================ */
+
+.panel-card {
+  background: white;
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+.panel-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border, #e5e5e5);
+}
+
+.panel-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary, #262626);
+}
+
+.panel-subtitle {
+  margin: 0;
+  color: var(--text-secondary, #737373);
+  font-size: 0.875rem;
+}
+
+/* ================================
+   INFO BOXES
+   ================================ */
+
+.info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.info-box svg {
+  color: var(--primary-color, #0284c7);
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.info-box span {
+  font-size: 0.875rem;
+  color: #1e40af;
+}
+
+/* ================================
+   RESPONSIVE UTILITIES
+   ================================ */
+
+@media (max-width: 768px) {
+  .page-container,
+  .page-container-wide,
+  .page-container-narrow {
+    padding: 1.5rem 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .header-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .panel-card {
+    padding: 1.5rem 1rem;
+  }
+
+  .tabs-nav {
+    gap: 0.25rem;
+  }
+
+  .tab-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Hide on mobile */
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+/* Hide on tablet and up */
+@media (min-width: 641px) {
+  .hide-tablet-up {
+    display: none !important;
+  }
+}
+
+/* Hide on desktop */
+@media (min-width: 1024px) {
+  .hide-desktop {
+    display: none !important;
+  }
+}

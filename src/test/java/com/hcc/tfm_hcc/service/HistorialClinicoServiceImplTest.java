@@ -53,17 +53,23 @@ public class HistorialClinicoServiceImplTest {
     @Test
     void borrarDatoClinico_checksOwnershipAndDeletes() {
         var userDto = new com.hcc.tfm_hcc.dto.UsuarioDTO();
-        userDto.setId(u.getId().toString());
+        UUID userId = u.getId();
+        if (userId != null) {
+            userDto.setId(userId.toString());
+        }
         when(usuarioFacade.getUsuarioActual()).thenReturn(userDto);
-        when(usuarioRepository.findById(u.getId())).thenReturn(Optional.of(u));
+        if (userId != null) {
+            when(usuarioRepository.findById(userId)).thenReturn(Optional.of(u));
+        }
         when(historiaRepo.findByUsuario(u)).thenReturn(Optional.of(h));
 
         DatoClinico d = new DatoClinico();
-        d.setId(UUID.randomUUID());
+        UUID datoId = UUID.randomUUID();
+        d.setId(datoId);
         d.setHistorialClinico(h);
-        when(datoRepo.findById(d.getId())).thenReturn(Optional.of(d));
+        when(datoRepo.findById(datoId)).thenReturn(Optional.of(d));
 
-        svc.borrarDatoClinico(d.getId());
+        svc.borrarDatoClinico(datoId);
 
         verify(datoRepo).delete(d);
     }
@@ -71,9 +77,14 @@ public class HistorialClinicoServiceImplTest {
     @Test
     void editarAntecedente_replacesEntry() {
         var userDto = new com.hcc.tfm_hcc.dto.UsuarioDTO();
-        userDto.setId(u.getId().toString());
+        UUID userId = u.getId();
+        if (userId != null) {
+            userDto.setId(userId.toString());
+        }
         when(usuarioFacade.getUsuarioActual()).thenReturn(userDto);
-        when(usuarioRepository.findById(u.getId())).thenReturn(Optional.of(u));
+        if (userId != null) {
+            when(usuarioRepository.findById(userId)).thenReturn(Optional.of(u));
+        }
         when(historiaRepo.findByUsuario(u)).thenReturn(Optional.of(h));
 
         String existing = "[2025-01-01 10:00] primera entrada\n\n[2025-02-01 11:00] segunda entrada";
