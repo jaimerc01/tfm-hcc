@@ -24,13 +24,34 @@
           Evolución Histórica
         </h4>
         <div class="chart-controls">
-          <label class="form-label" for="chart-param-select">Parámetro:</label>
-          <select id="chart-param-select" v-model="chartParam" @change="drawChart" class="form-input chart-select">
-            <option v-for="a in analytes" :key="a.key" :value="a.key">{{ a.label }}</option>
-          </select>
+          <div class="control-group">
+            <label class="form-label" for="chart-type-select">Tipo de gráfico:</label>
+            <select id="chart-type-select" v-model="chartType" @change="drawChart" class="form-input chart-select">
+              <option value="line">Línea simple</option>
+              <option value="interactive">Línea interactiva (zoom)</option>
+              <option value="bar">Barras</option>
+              <option value="gauge">Medidor actual</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label class="form-label" for="chart-param-select">Parámetro:</label>
+            <select id="chart-param-select" v-model="chartParam" @change="drawChart" class="form-input chart-select">
+              <option v-for="a in analytes" :key="a.key" :value="a.key">{{ a.label }}</option>
+            </select>
+          </div>
         </div>
       </div>
       <div ref="chart" class="chart-container" aria-hidden="false"></div>
+      
+      <!-- Chart info helper -->
+      <div class="chart-info" v-if="chartType">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M12 16v-4"></path>
+          <path d="M12 8h.01"></path>
+        </svg>
+        <span>{{ getChartTypeInfo() }}</span>
+      </div>
     </div>
 
     <!-- Add Entry Form -->
@@ -282,12 +303,29 @@
 </template>
 
 <script>
-import * as d3 from 'd3'
+import { useChart } from '@/composables/useChart'
 
 export default {
   name: 'AnalisisSangreSection',
+  setup() {
+    const { 
+      drawTimeSeriesChart, 
+      drawInteractiveTimeSeriesChart,
+      drawBarChart,
+      drawGaugeChart,
+      prepareChartData 
+    } = useChart()
+    return { 
+      drawTimeSeriesChart,
+      drawInteractiveTimeSeriesChart,
+      drawBarChart,
+      drawGaugeChart,
+      prepareChartData 
+    }
+  },
   data() {
     return {
+      chartType: 'interactive', // Tipo de gráfico por defecto
       analytes: [
         { 
           key: 'glucosa', 
@@ -368,13 +406,21 @@ export default {
       showClearAllModal: false
     }
   },
-  created() { this.load(); this.inputDate = this.localNowForInput() },
+  async created() { 
+    await this.loadRangos()
+    await this.load()
+    this.inputDate = this.localNowForInput() 
+  },
   mounted() {
     // initial draw after component mounted
     this.drawChart()
   },
   unmounted() {
-    this.clearChart()
+    // Limpiar el contenedor del gráfico al desmontar el componente
+    const container = this.$refs.chart
+    if (container) {
+      container.innerHTML = ''
+    }
   },
   computed: {
     unitForSelected() {
@@ -409,17 +455,67 @@ export default {
     }
   },
   methods: {
+    /**
+     * Carga los rangos de referencia desde el servidor y actualiza los analytes
+     */
+    async loadRangos() {
+      try {
+        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
+        const res = await svc.getRangos()
+        const rangos = res.data || []
+        
+        // Actualizar rangos en cada analyte
+        rangos.forEach(rango => {
+          // Normalizar nombre del rango para hacer match con los analytes
+          const nombreNormalizado = this.normalizarNombre(rango.nombre)
+          
+          // Buscar el analyte correspondiente
+          const analyte = this.analytes.find(a => {
+            const labelNormalizado = this.normalizarNombre(a.label)
+            const keyNormalizado = this.normalizarNombre(a.key)
+            return labelNormalizado === nombreNormalizado || keyNormalizado === nombreNormalizado
+          })
+          
+          if (analyte && rango.valorInferiorNumerico !== null && rango.valorSuperiorNumerico !== null) {
+            console.log(`DEBUG Rango recibido para ${rango.nombre}:`, {
+              valorInferior: rango.valorInferior,
+              valorSuperior: rango.valorSuperior,
+              valorInferiorNumerico: rango.valorInferiorNumerico,
+              valorSuperiorNumerico: rango.valorSuperiorNumerico
+            })
+            analyte.recommendedMin = rango.valorInferiorNumerico
+            analyte.recommendedMax = rango.valorSuperiorNumerico
+            console.log(`Rango cargado para ${analyte.label}: min=${analyte.recommendedMin}, max=${analyte.recommendedMax}`)
+          }
+        })
+      } catch (e) {
+        console.error('Error cargando rangos:', e)
+        // No bloqueamos la carga del componente si fallan los rangos
+      }
+    },
+    
+    /**
+     * Normaliza un nombre para hacer comparaciones
+     */
+    normalizarNombre(nombre) {
+      if (!nombre) return ''
+      return String(nombre)
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .toLowerCase()
+        .replace(/\s+/g, '')
+    },
+    
     // Map server 'tipo' (e.g. "Glucosa", "Hemoglobina") to a local analyte key.
     // Normalizes accents/case/whitespace and matches against known analytes.
     mapTipoToKey(tipo) {
       if (!tipo) return null
-      const norm = String(tipo).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/\s+/g, '')
+      const norm = this.normalizarNombre(tipo)
       const map = {
         glucosa: 'glucosa',
         hemoglobina: 'hemoglobina',
         'colesteroltotal': 'colesterol',
         colesterol: 'colesterol',
-        triglicéridos: 'trigliceridos',
         trigliceridos: 'trigliceridos',
         creatinina: 'creatinina',
         hematocrito: 'hematocrito'
@@ -458,15 +554,29 @@ export default {
                   rango: p.rango || null // Guardar información del rango
                 }
               })
-              // draw chart after loading entries
-              this.drawChart()
+            } else {
+              // Si no es un array, inicializar como vacío
+              this.entries = []
             }
           } catch (ignore) {
             // ignore malformed content and start empty
             this.entries = []
           }
+        } else {
+          // Si no hay analisisSangre, inicializar vacío
+          this.entries = []
         }
-      } catch (e) { console.error('No se pudo cargar análisis', e); this.error = 'No se pudo cargar análisis' }
+        
+        // Asegurar que el gráfico se redibuja después de actualizar entries
+        await this.$nextTick()
+        this.drawChart()
+      } catch (e) { 
+        console.error('No se pudo cargar análisis', e)
+        this.error = 'No se pudo cargar análisis'
+        this.entries = []
+        await this.$nextTick()
+        this.drawChart()
+      }
     },
 
     /**
@@ -607,16 +717,16 @@ export default {
         if (entriesToDelete.length === 0) {
           console.warn('No hay entradas con ID para eliminar')
           this.entries = []
-          this.clearChart()
+          this.drawChart() // Redibujar gráfico vacío
           return
         }
         
         const deletePromises = entriesToDelete.map(e => svc.deleteDatoClinico(e.id))
         await Promise.all(deletePromises)
         
-        // Limpiar array local y gráfico
+        // Limpiar array local y redibujar gráfico
         this.entries = []
-        this.clearChart()
+        this.drawChart() // Redibujar gráfico vacío
         
         // Recargar desde servidor para asegurar consistencia
         await this.load()
@@ -655,119 +765,102 @@ export default {
     },
     // D3 chart rendering: time series for glucosa (historical values)
     drawChart() {
-      this.clearChart()
       const container = this.$refs.chart
       if (!container || !this.entries) return
 
-      // select entries that correspond to the chosen parameter (by key or label)
-      const param = (this.chartParam || 'glucosa').toLowerCase()
-      const selectedEntries = this.entries.filter(e => {
-        if (!e) return false
-        if (e.key && String(e.key).toLowerCase() === param) return true
-        return String(e.label || '').toLowerCase().includes(param)
-      }).map(e => {
-        return {
-          date: e.createdAt ? new Date(e.createdAt) : null,
-          value: (e.value !== undefined && e.value !== null) ? Number(String(e.value).replace(',', '.')) : (e.valor !== undefined && e.valor !== null) ? Number(String(e.valor).replace(',', '.')) : NaN
-        }
-      }).filter(d => d.date instanceof Date && !Number.isNaN(d.value))
+      // Preparar datos para el parámetro seleccionado
+      const param = this.chartParam || 'glucosa'
+      const analyteDef = this.analytes.find(a => a.key === param) || {}
+      const label = analyteDef.label || param
 
-      if (selectedEntries.length === 0) {
-        // show a friendly message
-        const msg = document.createElement('div')
-        msg.className = 'chart-empty'
-        const label = (this.analytes.find(a => a.key === this.chartParam) || {}).label || this.chartParam
-        msg.textContent = `No hay datos históricos de ${label}.`
-        container.appendChild(msg)
+      // Opciones comunes para todos los gráficos
+      const baseOptions = {
+        label,
+        color: '#c73333',
+        recommendedMin: analyteDef.recommendedMin,
+        recommendedMax: analyteDef.recommendedMax,
+        ariaLabel: `Histórico de ${label}`
+      }
+
+      // Para el gauge, usar el último valor
+      if (this.chartType === 'gauge') {
+        const latestEntry = this.entries
+          .filter(e => e.key === param || (e.label && e.label.toLowerCase().includes(param.toLowerCase())))
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
+        
+        if (!latestEntry) {
+          container.innerHTML = '<div class="chart-empty">No hay datos disponibles para esta métrica</div>'
+          return
+        }
+
+        const value = parseFloat(String(latestEntry.value || latestEntry.valor || '0').replace(',', '.'))
+        
+        // Determinar rango del gauge basado en el analito
+        let gaugeMin = 0
+        let gaugeMax = 100
+        
+        switch(param) {
+          case 'glucosa':
+            gaugeMax = 300
+            break
+          case 'hemoglobina':
+            gaugeMax = 20
+            break
+          case 'colesterol':
+            gaugeMax = 400
+            break
+          case 'trigliceridos':
+            gaugeMax = 500
+            break
+          case 'creatinina':
+            gaugeMax = 3
+            break
+          case 'hematocrito':
+            gaugeMax = 60
+            break
+        }
+
+        this.drawGaugeChart(container, value, {
+          ...baseOptions,
+          min: gaugeMin,
+          max: gaugeMax,
+          unit: analyteDef.unit || '',
+          height: 250
+        })
         return
       }
 
-      // sort by date
-      selectedEntries.sort((a, b) => a.date - b.date)
+      // Para otros tipos de gráfico, preparar datos temporales
+      const chartData = this.prepareChartData(this.entries, param)
 
-      const width = Math.min(700, container.clientWidth || 700)
-      const margin = { top: 10, right: 20, bottom: 30, left: 50 }
-      const height = 200
-      const innerW = width - margin.left - margin.right
-      const innerH = height - margin.top - margin.bottom
-
-      const svg = d3.select(container).append('svg')
-        .attr('width', width)
-        .attr('height', height)
-        .attr('role', 'img')
-        .attr('aria-label', 'Histórico de glucosa')
-
-      const x = d3.scaleTime()
-        .domain(d3.extent(selectedEntries, d => d.date))
-        .range([0, innerW])
-
-      // compute y domain, extending it with analyte recommended min/max if available
-      const dataMin = d3.min(selectedEntries, d => d.value)
-      const dataMax = d3.max(selectedEntries, d => d.value)
-      const analyteDef = this.analytes.find(a => a.key === (this.chartParam || this.selected))
-      let domainMin = (dataMin != null) ? dataMin * 0.9 : 0
-      let domainMax = (dataMax != null) ? dataMax * 1.1 : 1
-      if (analyteDef) {
-        // Usar rangos recomendados para extender el dominio si están disponibles
-        if (analyteDef.recommendedMin != null) domainMin = Math.min(domainMin, analyteDef.recommendedMin)
-        if (analyteDef.recommendedMax != null) domainMax = Math.max(domainMax, analyteDef.recommendedMax)
-      }
-      const y = d3.scaleLinear()
-        .domain([domainMin, domainMax])
-        .nice()
-        .range([innerH, 0])
-
-      const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`)
-
-      // axes
-      g.append('g')
-        .attr('transform', `translate(0,${innerH})`)
-        .call(d3.axisBottom(x).ticks(Math.min(6, selectedEntries.length)).tickFormat(d3.timeFormat('%d/%m %H:%M')))
-
-      g.append('g').call(d3.axisLeft(y))
-
-      // recommended interval band (if analyte has recommended min/max from server)
-      if (analyteDef && analyteDef.recommendedMin != null && analyteDef.recommendedMax != null) {
-        const yTop = y(analyteDef.recommendedMax)
-        const yBottom = y(analyteDef.recommendedMin)
-        const rectY = Math.min(yTop, yBottom)
-        const rectH = Math.abs(yBottom - yTop)
-        g.append('rect')
-          .attr('x', 0)
-          .attr('y', rectY)
-          .attr('width', innerW)
-          .attr('height', rectH)
-          .attr('fill', '#d2f0d9')
-          .attr('opacity', 0.35)
-          .attr('aria-hidden', 'true')
+      if (chartData.length === 0) {
+        container.innerHTML = `<div class="chart-empty">No hay datos históricos de ${label}.</div>`
+        return
       }
 
-      // line
-      const line = d3.line()
-        .x(d => x(d.date))
-        .y(d => y(d.value))
-        .curve(d3.curveMonotoneX)
-
-      g.append('path')
-        .datum(selectedEntries)
-        .attr('fill', 'none')
-        .attr('stroke', '#c73333')
-        .attr('stroke-width', 2)
-        .attr('d', line)
-
-      // points
-      g.selectAll('circle').data(selectedEntries).enter().append('circle')
-        .attr('cx', d => x(d.date))
-        .attr('cy', d => y(d.value))
-        .attr('r', 3.5)
-        .attr('fill', '#c73333')
-        .append('title')
-        .text(d => `${d.value} — ${d.date.toLocaleString()}`)
-    },
-
-    clearChart() {
-      const container = this.$refs.chart
-      if (container) container.innerHTML = ''
+      // Dibujar según el tipo seleccionado
+      switch(this.chartType) {
+        case 'line':
+          this.drawTimeSeriesChart(container, chartData, baseOptions)
+          break
+        
+        case 'interactive':
+          this.drawInteractiveTimeSeriesChart(container, chartData, {
+            ...baseOptions,
+            height: 400
+          })
+          break
+        
+        case 'bar':
+          this.drawBarChart(container, chartData, {
+            ...baseOptions,
+            height: 350
+          })
+          break
+        
+        default:
+          this.drawTimeSeriesChart(container, chartData, baseOptions)
+      }
     },
     formatDate(iso) {
       if (!iso) return ''
@@ -775,81 +868,81 @@ export default {
         const d = new Date(iso)
         return d.toLocaleString()
       } catch (e) { return iso }
+    },
+
+    getChartTypeInfo() {
+      const info = {
+        line: 'Gráfico de línea simple para ver la tendencia general.',
+        interactive: 'Gráfico interactivo con zoom. Usa el selector inferior para explorar períodos específicos.',
+        bar: 'Gráfico de barras para comparar valores entre mediciones.',
+        gauge: 'Medidor que muestra el último valor registrado y su posición en el rango normal.'
+      }
+      return info[this.chartType] || ''
     }
   }
 }
 </script>
 
 <style scoped>
+@import '@/styles/charts.css';
+
 .analisis-section {
   display: flex;
   flex-direction: column;
   gap: 2rem;
 }
 
-/* Chart Section */
-.chart-section {
-  background: white;
-  border: 1px solid var(--border, #e5e5e5);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-}
-
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.chart-header h4 {
+/* Controles de gráfico mejorados */
+.control-group {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.control-group .form-label {
+  white-space: nowrap;
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--text-primary, #262626);
 }
 
-.chart-header h4 svg {
-  color: var(--primary-color, #0284c7);
-}
-
-.chart-controls {
+/* Información del tipo de gráfico */
+.chart-info {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.chart-controls .form-label {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.chart-select {
-  min-width: 200px;
-}
-
-.chart-container {
-  min-height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.chart-empty {
-  color: var(--text-secondary, #737373);
-  padding: 2rem;
-  background: var(--bg-light, #fafafa);
-  border: 1px dashed var(--border, #e5e5e5);
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
   border-radius: 8px;
-  text-align: center;
   font-size: 0.875rem;
+  color: #0c4a6e;
+  line-height: 1.5;
+}
+
+.chart-info svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: #0284c7;
+}
+
+@media (max-width: 768px) {
+  .chart-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .control-group {
+    width: 100%;
+  }
+  
+  .control-group .form-label {
+    min-width: 120px;
+  }
+  
+  .control-group .chart-select {
+    flex: 1;
+  }
 }
 
 /* Add Entry Section */

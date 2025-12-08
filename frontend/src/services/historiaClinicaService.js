@@ -18,4 +18,7 @@ export default {
   updateAnalisisSangre(text) { return api.put('/historia/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
   añadirAnalisisSangre(text) { return api.post('/historia/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
   // getMine already returns the whole DTO, which may include analisisSangre
+  
+  // Rangos de referencia
+  getRangos() { return api.get('/rangos') }
 }
