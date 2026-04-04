@@ -333,6 +333,31 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
     }
 
     /**
+     * Añade nuevas alergias sin eliminar las existentes.
+     * 
+     * <p>Este endpoint permite añadir nuevas alergias
+     * sin eliminar las alergias previas del historial clínico.</p>
+     * 
+     * @param alergiasJson Datos de alergias en formato texto plano (una por línea)
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @PostMapping("/alergias")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<HistorialClinicoDTO> añadirAlergias(@RequestBody String alergiasJson) {
+        log.debug("Añadiendo nuevas alergias del usuario");
+        
+        try {
+            String payload = procesarContenidoUrlEncoded(alergiasJson);
+            HistorialClinicoDTO resultado = historialClinicoFacade.añadirAlergias(payload);
+            log.info("Alergias añadidas exitosamente");
+            return ResponseEntity.ok(resultado);
+        } catch (Exception e) {
+            log.error("Error al añadir alergias: {}", e.getMessage(), e);
+            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
      * {@inheritDoc}
      * 
      * <p>Implementación que actualiza los análisis de sangre del paciente

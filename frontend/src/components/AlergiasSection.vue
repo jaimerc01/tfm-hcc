@@ -7,8 +7,8 @@
         <path d="M12 8h.01"></path>
       </svg>
       <span>
-        <strong>Registra tus alergias e intolerancias</strong> para que tu médico las tenga en cuenta.
-        Escribe cada alergia en una línea: sustancia — reacción — gravedad.
+        <strong>{{ $t('register_allergies') }}</strong> {{ $t('doctor_consider') }}
+        {{ $t('allergy_line_instruction') }}
       </span>
     </div>
 
@@ -19,17 +19,17 @@
           <line x1="12" y1="9" x2="12" y2="13"></line>
           <line x1="12" y1="17" x2="12.01" y2="17"></line>
         </svg>
-        Añadir Nueva Alergia
+        {{ $t('add_new_allergy') }}
       </label>
       <textarea 
         id="alergias-text" 
         v-model="alergias" 
         class="form-input"
         rows="4" 
-        placeholder="Ejemplo: Penicilina — erupción cutánea — moderada"
+        :placeholder="$t('allergy_placeholder')"
         aria-describedby="alergias-hint"></textarea>
       <p id="alergias-hint" class="form-help">
-        Escribe cada alergia en una línea separada. Después de guardar, aparecerá en el listado de alergias registradas.
+        {{ $t('allergy_hint') }}
       </p>
     </div>
 
@@ -51,7 +51,7 @@
           <path d="M12 5v14"></path>
           <path d="M5 12h14"></path>
         </svg>
-        {{ savingAlergias ? 'Guardando...' : 'Guardar alergia' }}
+        {{ savingAlergias ? $t('saving') : $t('save_allergy') }}
       </button>
     </div>
 
@@ -61,7 +61,7 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 11H3v2h6m-6-5h6m-6 8h6m4-7h8m-8-3h8m-8 6h8m-8 3h8"></path>
         </svg>
-        Alergias Registradas
+        {{ $t('allergies_registered') }}
         <span class="badge badge-info">{{ alergiasList.length }}</span>
       </div>
 
@@ -73,19 +73,20 @@
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            <h4>{{ a.observacion || a.tipo }}</h4>
+            <h4 v-html="(a.observacion || a.valor || a.tipo).replace(/\n/g, '<br>')"></h4>
           </div>
           <div class="allergy-body">
             <div class="allergy-meta">
               <span class="badge badge-warning">{{ a.tipo }}</span>
+              <span v-if="a.createdAt" class="badge badge-date">{{ formatDateTime(a.createdAt) }}</span>
             </div>
           </div>
           <div class="allergy-actions">
             <button 
               type="button"
               class="btn-icon btn-danger"
-              @click="removeAlergia(a.id)"
-              :aria-label="`Eliminar alergia ${a.observacion || a.tipo}`">
+              @click="openDelete(a)"
+              :aria-label="`Eliminar alergia ${a.observacion || a.valor || a.tipo}`">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -93,6 +94,29 @@
             </button>
           </div>
         </div>
+        <!-- Modal de confirmación para borrar alergia -->
+        <AppModal v-if="showDelete && deleteAlergia" :label="$t('delete_allergy')" @close="closeDelete">
+          <template #header>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#d32f2f;">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <h3 style="margin:0; text-align:center;">{{ $t('delete_allergy') }}</h3>
+            </div>
+          </template>
+          <div class="modal-body" style="text-align:center;">
+            <p>{{ $t('delete_allergy_confirm') }}</p>
+          </div>
+          <template #footer>
+            <div style="display:flex; justify-content:center; gap:12px;">
+              <button type="button" class="btn-primary" @click="confirmDelete" :aria-label="$t('confirm')">
+                {{ $t('confirm')}}
+              </button>
+              <button type="button" class="btn-secondary" @click="closeDelete">{{ $t('cancel') }}</button>
+            </div>
+          </template>
+        </AppModal>
       </div>
     </div>
 
@@ -103,22 +127,27 @@
         <line x1="12" y1="8" x2="12" y2="12"></line>
         <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
-      <p>No hay alergias registradas</p>
-      <span>Añade tu primera alergia usando el formulario de arriba</span>
+      <p>{{ $t('no_allergies_registered') }}</p>
+      <span>{{ $t('add_first_allergy_hint') }}</span>
     </div>
   </div>
 </template>
 
 <script>
+import AppModal from './Modal.vue';
 export default {
   name: 'AlergiasSection',
+  components: { AppModal },
   data() {
     return {
       alergias: '',
       alergiasList: [],
       savingAlergias: false,
       msgAler: '',
-      error: null
+      error: null,
+      showDelete: false,
+      deleteError: '',
+      deleteAlergia: null
     }
   },
   created() { this.load() },
@@ -128,9 +157,13 @@ export default {
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
         const res = await svc.getMine()
         const dto = res.data || {}
+        console.log('DEBUG: Respuesta completa de getMine:', dto)
+        console.log('DEBUG: datosClinicos:', dto.datosClinicos)
+        console.log('DEBUG: analisisSangre:', dto.analisisSangre)
         this.alergias = dto.alergiasJson || ''
         this.alergiasList = Array.isArray(dto.datosClinicos) ? dto.datosClinicos.filter(d => (d.tipo || '').toUpperCase().includes('ALERGIA')) : []
-      } catch (e) { console.error('No se pudo cargar alergias', e); this.error = 'No se pudo cargar alergias' }
+        console.log('DEBUG: alergiasList filtrada:', this.alergiasList)
+      } catch (e) { console.error(this.$t('error_loading_allergies'), e); this.error = this.$t('error_loading_allergies') }
     },
 
     async saveAlergias() {
@@ -139,20 +172,40 @@ export default {
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
         await svc.updateAlergias(this.alergias)
         await this.load()
-        this.msgAler = 'Alergias guardadas.'
+        this.msgAler = this.$t('allergies_saved')
         // clear textarea after saving to indicate stored
         this.alergias = ''
         setTimeout(() => this.msgAler = '', 3000)
-      } catch (e) { this.error = 'Error guardando alergias' } finally { this.savingAlergias = false }
+      } catch (e) { this.error = this.$t('error_saving_allergies') } finally { this.savingAlergias = false }
     },
 
-    async removeAlergia(id) {
-      if (!confirm('Eliminar esta alergia?')) return
+    openDelete(alergia) {
+      this.deleteAlergia = alergia;
+      this.showDelete = true;
+      this.deleteError = '';
+    },
+    closeDelete() {
+      this.showDelete = false;
+      this.deleteAlergia = null;
+      this.deleteError = '';
+    },
+    async confirmDelete() {
+      if (!this.deleteAlergia) return;
       try {
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
-        await svc.deleteDatoClinico(id)
+        await svc.deleteDatoClinico(this.deleteAlergia.id)
         await this.load()
-      } catch (e) { this.error = 'No se pudo eliminar alergia' }
+        this.closeDelete()
+      } catch (e) {
+        this.deleteError = this.$t('error_deleting_allergy')
+      }
+    },
+
+    formatDateTime(dt) {
+      if (!dt) return '';
+      const d = new Date(dt);
+      if (isNaN(d)) return dt;
+      return d.toLocaleString();
     }
   }
 }

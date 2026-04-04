@@ -7,8 +7,8 @@
         <path d="M12 8h.01"></path>
       </svg>
       <span>
-        <strong>Describe antecedentes médicos relevantes</strong> de tu familia y personales.
-        Ejemplo: "Padre: diabetes tipo 2; Madre: hipertensión. Yo: asma en la infancia".
+        <strong>{{ $t('describe_antecedentes') }}</strong> {{ $t('familia_personal') }}
+        {{ $t('example') }}
       </span>
     </div>
 
@@ -20,7 +20,7 @@
           <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
           <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
         </svg>
-        Antecedentes Personales y Familiares
+        {{ $t('antecedentes_personales_familiares') }}
       </label>
       <textarea 
         id="antecedentes-text" 
@@ -28,7 +28,7 @@
         @input="onInputChange" 
         class="form-input textarea-large"
         rows="8" 
-        placeholder="Describe aquí enfermedades importantes en ti o en tu familia..."
+        :placeholder="$t('placeholder_antecedentes')"
         aria-describedby="antecedentes-counter"
         :maxlength="charLimit"></textarea>
       <div id="antecedentes-counter" class="char-counter">
@@ -62,7 +62,7 @@
           <polyline points="17 21 17 13 7 13 7 21"></polyline>
           <polyline points="7 3 7 8 15 8"></polyline>
         </svg>
-        {{ savingAntecedentes ? 'Guardando...' : 'Guardar antecedentes' }}
+        {{ savingAntecedentes ? $t('saving') : $t('save_antecedentes') }}
       </button>
     </div>
 
@@ -70,7 +70,7 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
-      Guardado correctamente
+      {{ $t('saved_antecedentes') }}
     </div>
   </div>
 </template>
@@ -103,7 +103,7 @@ export default {
         const res = await svc.getMine()
         const dto = res.data || {}
         this.antecedentesFamiliares = dto.antecedentesFamiliares || ''
-      } catch (e) { console.error('No se pudo cargar antecedentes', e); this.error = 'No se pudo cargar antecedentes' }
+      } catch (e) { console.error(this.$t('error_loading_antecedentes'), e); this.error = this.$t('error_loading_antecedentes') }
     },
 
     async saveAntecedentes() {
@@ -112,10 +112,10 @@ export default {
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
         await svc.updateAntecedentes(this.antecedentesFamiliares)
         await this.load()
-        this.msgAnte = 'Antecedentes guardados.'
+        this.msgAnte = this.$t('saved_antecedentes')
         this.showTemporaryToast()
         setTimeout(() => this.msgAnte = '', 3000)
-      } catch (e) { this.error = 'Error guardando antecedentes' } finally { this.savingAntecedentes = false }
+      } catch (e) { this.error = this.$t('error_saving_antecedentes') } finally { this.savingAntecedentes = false }
     },
 
     onInputChange() {

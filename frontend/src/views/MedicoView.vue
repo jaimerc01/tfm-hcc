@@ -1,43 +1,43 @@
 <template>
   <div class="page">
-    <h1>Zona Médica</h1>
+    <h1>{{$t('medical_zone')}}</h1>
     <p v-if="error" class="error">{{ error }}</p>
-    <p v-else-if="!alive && !isMedico">Comprobando acceso…</p>
+    <p v-else-if="!alive && !isMedico">{{$t('checking_access')}}</p>
 
     <div v-else>
-      <p v-if="isMedico">Acceso verificado para rol MEDICO.</p>
+      <p v-if="isMedico">{{$t('access_verified')}}</p>
 
       <!-- Search form visible for médicos -->
       <form @submit.prevent="buscarPaciente" class="search-form">
         <div class="form-group">
-          <label for="dni">DNI del paciente</label>
+          <label for="dni">{{$t('patient_dni_label')}}</label>
           <input id="dni" v-model="dni" required />
         </div>
         <div class="form-group">
-          <label for="fechaNacimiento">Fecha de nacimiento</label>
+          <label for="fechaNacimiento">{{$t('birth_date_label')}}</label>
           <input id="fechaNacimiento" type="date" v-model="fechaNacimiento" required />
         </div>
-        <button type="submit">Buscar paciente</button>
+        <button type="submit">{{$t('search_patient_button')}}</button>
         <p v-if="searchError" class="error">{{ searchError }}</p>
       </form>
 
       <div v-if="paciente">
-        <h2>Datos del paciente</h2>
+        <h2>{{$t('patient_data')}}</h2>
         <ul>
-          <li><b>Nombre:</b> {{ paciente.nombre }}</li>
-          <li><b>Apellidos:</b> {{ paciente.apellido1 }} {{ paciente.apellido2 }}</li>
-          <li><b>DNI:</b> {{ paciente.nif }}</li>
-          <li><b>Fecha nacimiento:</b> {{ paciente.fechaNacimiento }}</li>
+          <li><b>{{$t('name')}}:</b> {{ paciente.nombre }}</li>
+          <li><b>{{$t('surnames')}}:</b> {{ paciente.apellido1 }} {{ paciente.apellido2 }}</li>
+          <li><b>{{$t('dni')}}:</b> {{ paciente.nif }}</li>
+          <li><b>{{$t('birth_date')}}:</b> {{ paciente.fechaNacimiento }}</li>
         </ul>
-        <button @click="solicitarAsignacion" class="asignar-btn">Solicitar asignación</button>
+        <button @click="solicitarAsignacion" class="asignar-btn">{{$t('assign_request')}}</button>
         <p v-if="asignacionMsg" :class="{ error: asignacionError, success: !asignacionError }">{{ asignacionMsg }}</p>
       </div>
 
       <div class="pendientes" v-if="solicitudesPendientes && solicitudesPendientes.length">
-        <h3>Solicitudes pendientes</h3>
+        <h3>{{$t('pending_requests')}}</h3>
         <ul>
           <li v-for="s in solicitudesPendientes" :key="s.id">
-            Paciente: {{ s.paciente?.nif || (s.paciente && s.paciente.nif) }} — Estado: {{ s.estado }} — Fecha: {{ s.fechaCreacion }}
+            {{$t('patient')}}: {{ s.paciente?.nif || (s.paciente && s.paciente.nif) }} — {{$t('state')}}: {{ s.estado }} — {{$t('date')}}: {{ s.fechaCreacion }}
           </li>
         </ul>
       </div>
@@ -48,20 +48,21 @@
 <script>
 import axios from 'axios'
 import authService from '@/services/authService'
-import { validateNIF } from '@/utils/validateNIF'
+import validateNIF from '@/utils/validateNIF'
 
 export default {
   name: 'MedicoView',
   data() {
     return {
       error: '',
-  solicitudesPendientes: [],
+      solicitudesPendientes: [],
       dni: '',
       fechaNacimiento: '',
-      searchError: '',
       paciente: null,
       asignacionMsg: '',
-      asignacionError: false
+      asignacionError: false,
+      searchError: '',
+      alive: true
     }
   },
   computed: {

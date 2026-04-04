@@ -231,28 +231,77 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
         
-        procesarAlergias(alergiasJson, historial);
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
+        
+        procesarAlergias(alergiasJson, historial, true); // true = eliminar existentes
+        
+        historiaRepo.save(historial);
+        return toDto(historial);
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO añadirAlergias(String alergiasJson) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = ensureForUsuario(usuario);
+        
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
+        
+        // Extraer el campo 'alergias' si el string es un JSON
+        String soloAlergias = alergiasJson;
+        if (alergiasJson != null && alergiasJson.trim().startsWith("{")) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode node = mapper.readTree(alergiasJson);
+                if (node.has("alergias")) {
+                    soloAlergias = node.get("alergias").asText();
+                }
+            } catch (Exception e) {
+                // Si falla el parseo, usar el texto original
+            }
+        }
+        procesarAlergias(soloAlergias, historial, false); // false = NO eliminar existentes
         
         historiaRepo.save(historial);
         return toDto(historial);
     }
 
     /**
-     * Procesa las alergias del JSON y las almacena como datos clínicos
+     * Procesa las alergias del texto y las almacena como datos clínicos.
+     * 
+     * @param alergiasJson Texto con las alergias (una por línea)
+     * @param historial Historial clínico al que pertenecen
+     * @param eliminarExistentes Si true, elimina todas las alergias existentes antes de guardar las nuevas.
+     *                           Si false, solo añade las nuevas alergias sin eliminar las existentes.
      */
-    private void procesarAlergias(String alergiasJson, HistorialClinico historial) {
+    private void procesarAlergias(String alergiasJson, HistorialClinico historial, boolean eliminarExistentes) {
+        if (eliminarExistentes) {
+            // Eliminar todas las alergias existentes
+            List<DatoClinico> alergiasExistentes = datoClinicoRepository.findByHistorialClinicoAndTipo(
+                historial, TIPO_ALERGIA_INTOLERANCIA
+            );
+            
+            if (!alergiasExistentes.isEmpty()) {
+                datoClinicoRepository.deleteAll(alergiasExistentes);
+            }
+        }
+        
+        // Procesar y guardar las nuevas alergias si existen
         if (alergiasJson == null || alergiasJson.trim().isEmpty()) {
             return;
         }
 
-        List<DatoClinico> nuevasAlergias = Arrays.stream(alergiasJson.split("\\r?\\n"))
-                .map(String::trim)
-                .filter(texto -> !texto.isEmpty())
-                .map(texto -> crearDatoClinicoAlergia(texto, historial))
-                .collect(Collectors.toList());
-
-        if (!nuevasAlergias.isEmpty()) {
-            datoClinicoRepository.saveAll(nuevasAlergias);
+        // Guardar todo el texto como una sola alergia
+        String textoAlergia = alergiasJson.trim();
+        if (!textoAlergia.isEmpty()) {
+            DatoClinico nuevaAlergia = crearDatoClinicoAlergia(textoAlergia, historial);
+            if (nuevaAlergia != null) {
+                datoClinicoRepository.save(nuevaAlergia);
+            }
         }
     }
 
@@ -276,6 +325,10 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
         
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
+        
         procesarAnalisisSangre(analisisJson, historial, true); // true = eliminar existentes
         
         historiaRepo.save(historial);
@@ -287,6 +340,10 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     public HistorialClinicoDTO añadirAnalisisSangre(String analisisJson) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
+        
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
         
         procesarAnalisisSangre(analisisJson, historial, false); // false = NO eliminar existentes
         

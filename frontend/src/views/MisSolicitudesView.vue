@@ -8,15 +8,15 @@
         </svg>
       </div>
       <div>
-        <h1>Mis Solicitudes</h1>
-        <p class="subtitle">Gestiona las solicitudes de acceso a tu historia clínica</p>
+        <h1>{{ $t('my_requests') }}</h1>
+        <p class="subtitle">{{ $t('manage_requests') }}</p>
       </div>
     </div>
 
     <!-- Loading state -->
     <div v-if="loading" class="loading-container">
       <div class="spinner"></div>
-      <p>Cargando solicitudes...</p>
+      <p>{{ $t('loading_requests') }}</p>
     </div>
 
     <!-- Error state -->
@@ -35,8 +35,8 @@
         <path d="M9 11l3 3L22 4"></path>
         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
       </svg>
-      <h3>No hay solicitudes</h3>
-      <p>No tienes solicitudes pendientes en este momento</p>
+      <h3>{{ $t('no_requests') }}</h3>
+      <p>{{ $t('no_pending_requests') }}</p>
     </div>
 
     <!-- Solicitudes recibidas -->
@@ -45,7 +45,7 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
         </svg>
-        Solicitudes Recibidas
+        {{ $t('received_requests') }}
       </h2>
       
       <div class="solicitudes-grid">
@@ -64,7 +64,7 @@
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
               <div class="info-content">
-                <span class="info-label">Médico</span>
+                <span class="info-label">{{ $t('doctor') }}</span>
                 <span class="info-value">{{ s.medico?.nombre || '-' }}</span>
               </div>
             </div>
@@ -75,7 +75,7 @@
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
               <div class="info-content">
-                <span class="info-label">Paciente</span>
+                <span class="info-label">{{ $t('patient') }}</span>
                 <span class="info-value">{{ s.paciente?.nombre || '-' }}</span>
               </div>
             </div>
@@ -86,14 +86,14 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              Aceptar
+              {{ $t('accept') }}
             </button>
             <button @click="askConfirm(s.id, 'RECHAZADA')" class="btn-reject">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
-              Rechazar
+              {{ $t('reject') }}
             </button>
           </div>
 
@@ -111,7 +111,7 @@
           <line x1="22" y1="2" x2="11" y2="13"></line>
           <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
         </svg>
-        Solicitudes Enviadas
+        {{ $t('sent_requests') }}
       </h2>
       
       <div class="solicitudes-grid">
@@ -130,7 +130,7 @@
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
               <div class="info-content">
-                <span class="info-label">Paciente</span>
+                <span class="info-label">{{ $t('patient') }}</span>
                 <span class="info-value">{{ s.paciente?.nombre || '-' }}</span>
               </div>
             </div>
@@ -148,14 +148,16 @@
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
-          <h3>Confirmar acción</h3>
+          <h3>{{ $t('confirm_action') }}</h3>
         </div>
         <p class="modal-text">¿Estás seguro de que deseas <strong>{{ confirmLabel }}</strong> esta solicitud?</p>
+          <p class="modal-text">{{ $t('confirm_request_action', { action: confirmLabel }) }}</p>
         <div class="modal-actions">
           <button @click="cambiarEstadoConfirmed" :class="confirmAction === 'ACEPTADA' ? 'btn-confirm-accept' : 'btn-confirm-reject'">
-            Sí, {{ confirmLabel }}
+            {{ $t('yes_do_action', { action: confirmLabel }) }}
           </button>
           <button @click="cancelConfirm" class="btn-cancel">Cancelar</button>
+                  <button @click="cancelConfirm" class="btn-cancel">{{ $t('cancel') }}</button>
         </div>
       </div>
     </div>

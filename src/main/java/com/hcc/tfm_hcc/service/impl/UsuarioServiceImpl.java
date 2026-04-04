@@ -173,7 +173,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         // Crear usuario
         Usuario usuario = usuarioMapper.toEntity(usuarioDTO);
         usuario.setFechaCreacion(LocalDateTime.now());
-        usuario.setLastPasswordChange(LocalDateTime.now());
+        usuario.setLastPasswordChange(null);
         usuario.setEstadoCuenta("ACTIVO"); // Estado activo por defecto al registrarse
         
         usuario = usuarioRepository.save(usuario);

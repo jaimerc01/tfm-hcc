@@ -1,0 +1,23 @@
+{
+  "privacy_title": "Política de Privacidade",
+  "privacy_responsible": "Responsable do tratamento",
+  "privacy_responsible_text": "O responsable do tratamento dos datos persoais é [Nome da entidade], con domicilio en [Dirección completa], e correo electrónico de contacto [email].",
+  "privacy_purpose": "Finalidade do tratamento",
+  "privacy_purpose_text": "Os datos persoais recollidos a través desta aplicación serán utilizados para a xestión da historia clínica, a prestación de servizos médicos, a comunicación co paciente e o cumprimento de obrigas legais en materia sanitaria.",
+  "privacy_legal_basis": "Base legal",
+  "privacy_legal_basis_text": "A base xurídica para o tratamento dos datos é o consentimento explícito do usuario, o interese vital do paciente, e o cumprimento de obrigas legais derivadas da normativa sanitaria.",
+  "privacy_recipients": "Destinatarios",
+  "privacy_recipients_text": "Os datos poderán ser comunicados a profesionais sanitarios implicados na atención médica, laboratorios, entidades aseguradoras e organismos públicos cando sexa necesario para a prestación do servizo ou por obrigación legal. Non se realizarán outras cesións salvo obrigación legal.",
+  "privacy_rights": "Dereitos do usuario",
+  "privacy_rights_text": "O usuario pode exercer os dereitos de acceso, rectificación, supresión, limitación, portabilidade e oposición enviando unha solicitude a [email de contacto] ou mediante o formulario dispoñible na aplicación. Así mesmo, ten dereito a presentar unha reclamación ante a Axencia Española de Protección de Datos (AEPD).",
+  "privacy_security": "Medidas de seguridade",
+  "privacy_security_text": "Aplícanse medidas técnicas e organizativas axeitadas para garantir a seguridade dos datos persoais, incluíndo cifrado, control de acceso, auditoría e formación do persoal.",
+  "privacy_retention": "Conservación dos datos",
+  "privacy_retention_text": "Os datos persoais conservaranse durante o tempo necesario para a prestación do servizo e o cumprimento de obrigas legais, incluíndo o período mínimo de conservación da historia clínica establecido pola normativa sanitaria.",
+  "privacy_transfers": "Transferencias internacionais",
+  "privacy_transfers_text": "Non se prevén transferencias internacionais de datos. No caso de que se realicen, garantirase o cumprimento das garantías previstas polo RGPD.",
+  "privacy_more_info": "Información adicional",
+  "privacy_more_info_text": "Para máis información sobre o tratamento de datos persoais, pode consultar a política completa en [ligazón á política extendida] ou contactar co responsable do tratamento.",
+  "privacy_consent": "Consentimento",
+  "privacy_consent_text": "Ao utilizar esta aplicación, o usuario acepta a presente política de privacidade e consinte o tratamento dos seus datos persoais conforme ao descrito."
+}

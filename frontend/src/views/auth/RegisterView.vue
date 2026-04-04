@@ -12,8 +12,8 @@
               <line x1="22" y1="11" x2="16" y2="11"></line>
             </svg>
           </div>
-          <h1>Crear Cuenta</h1>
-          <p class="subtitle">Regístrate en Historia Clínica Común</p>
+          <h1>{{$t('register_title')}}</h1>
+          <p class="subtitle">{{$t('register_subtitle')}}</p>
         </div>
 
         <!-- Alerts -->
@@ -38,18 +38,18 @@
         <form @submit.prevent="handleSignup" class="register-form">
           <!-- Datos Personales -->
           <div class="form-section">
-            <h3 class="section-title">Datos Personales</h3>
+            <h3 class="section-title">{{$t('personal_data')}}</h3>
             <div class="form-grid">
               <div class="form-group">
                 <label for="nombre" class="form-label">
-                  Nombre <span class="required">*</span>
+                  {{$t('first_name')}} <span class="required">*</span>
                 </label>
                 <input 
                   id="nombre" 
                   v-model="form.nombre" 
                   type="text"
                   class="form-input"
-                  placeholder="Ej: Juan"
+                  :placeholder="$t('first_name_placeholder')"
                   required 
                   autocomplete="given-name"
                 />
@@ -57,14 +57,14 @@
 
               <div class="form-group">
                 <label for="apellido1" class="form-label">
-                  Primer Apellido <span class="required">*</span>
+                  {{$t('first_surname')}} <span class="required">*</span>
                 </label>
                 <input 
                   id="apellido1" 
                   v-model="form.apellido1" 
                   type="text"
                   class="form-input"
-                  placeholder="Ej: García"
+                  :placeholder="$t('first_surname_placeholder')"
                   required 
                   autocomplete="family-name"
                 />
@@ -72,14 +72,14 @@
 
               <div class="form-group">
                 <label for="apellido2" class="form-label">
-                  Segundo Apellido
+                  {{$t('second_surname')}}
                 </label>
-                <input 
+                  <input
                   id="apellido2" 
                   v-model="form.apellido2" 
                   type="text"
                   class="form-input"
-                  placeholder="Ej: López"
+                    :placeholder="$t('second_surname_placeholder')"
                   autocomplete="additional-name"
                 />
               </div>
@@ -106,20 +106,20 @@
             <div class="form-grid">
               <div class="form-group">
                 <label for="nif" class="form-label">
-                  NIF <span class="required">*</span>
+                    {{$t('nif_label')}} <span class="required">*</span>
                 </label>
                 <input 
                   id="nif" 
                   v-model="form.nif" 
                   type="text"
                   class="form-input"
-                  placeholder="12345678A"
+                    :placeholder="$t('nif_placeholder')"
                   required 
                   pattern="[0-9]{8}[A-Z]"
                   title="Formato: 8 dígitos seguidos de una letra mayúscula"
                   autocomplete="off"
                 />
-                <small class="form-help">Formato: 12345678A</small>
+                  <small class="form-help">{{$t('nif_format_help')}}</small>
               </div>
 
               <div class="form-group">
@@ -131,7 +131,7 @@
                   v-model="form.telefono" 
                   type="tel"
                   class="form-input"
-                  placeholder="600123456"
+                    :placeholder="$t('phone_placeholder')"
                   autocomplete="tel"
                 />
               </div>
@@ -144,14 +144,14 @@
             <div class="form-grid">
               <div class="form-group full-width">
                 <label for="email" class="form-label">
-                  Correo Electrónico <span class="required">*</span>
+                    {{$t('email_label')}} <span class="required">*</span>
                 </label>
                 <input 
                   id="email" 
                   v-model="form.email" 
                   type="email"
                   class="form-input"
-                  placeholder="correo@ejemplo.com"
+                    :placeholder="$t('email_placeholder')"
                   required 
                   autocomplete="email"
                 />
@@ -166,24 +166,24 @@
                   v-model="form.password" 
                   type="password"
                   class="form-input"
-                  placeholder="Mínimo 6 caracteres"
+                    :placeholder="$t('password_min_placeholder')"
                   required 
                   minlength="6"
                   autocomplete="new-password"
                 />
-                <small class="form-help">Mínimo 6 caracteres</small>
+                  <small class="form-help">{{$t('password_min_help')}}</small>
               </div>
 
               <div class="form-group">
                 <label for="password2" class="form-label">
-                  Confirmar Contraseña <span class="required">*</span>
+                    {{$t('confirm_password')}} <span class="required">*</span>
                 </label>
                 <input 
                   id="password2" 
                   v-model="form.password2" 
                   type="password"
                   class="form-input"
-                  placeholder="Repite la contraseña"
+                    :placeholder="$t('repeat_password_placeholder')"
                   required 
                   minlength="6"
                   autocomplete="new-password"
@@ -206,13 +206,13 @@
                   <line x1="19" y1="8" x2="19" y2="14"></line>
                   <line x1="22" y1="11" x2="16" y2="11"></line>
                 </svg>
-                Crear Cuenta
+                {{$t('register_title')}}
               </span>
               <span v-else class="loading-text">
                 <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
                 </svg>
-                Creando cuenta...
+                {{$t('register_loading')}}
               </span>
             </button>
 
@@ -239,7 +239,7 @@
               <line x1="12" y1="16" x2="12" y2="12"></line>
               <line x1="12" y1="8" x2="12.01" y2="8"></line>
             </svg>
-            Los campos marcados con <span class="required">*</span> son obligatorios
+              {{$t('required_fields_note')}} <span class="required">*</span> {{$t('are_required')}}
           </p>
         </div>
       </div>

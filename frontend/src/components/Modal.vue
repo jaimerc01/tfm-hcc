@@ -5,7 +5,7 @@
         <slot name="header">
           <h3>{{ label }}</h3>
         </slot>
-        <button class="modal-close" @click="close" aria-label="Cerrar">×</button>
+        <!-- Botón de cierre eliminado para popups de confirmación -->
       </header>
       <section class="modal-body">
         <slot />
@@ -21,7 +21,7 @@
 export default {
   name: 'AppModal',
   props: {
-    label: { type: String, default: 'Diálogo' }
+    label: { type: String, default: 'Dialog' }
   },
   emits: ['close'],
   mounted() {

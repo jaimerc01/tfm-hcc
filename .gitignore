@@ -74,3 +74,4 @@ logs/
 # Carpeta uploads
 /uploads/*
 scripts/*
+.github/copilot-instructions.md

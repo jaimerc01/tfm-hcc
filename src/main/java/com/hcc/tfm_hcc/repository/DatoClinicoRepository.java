@@ -47,6 +47,15 @@ public interface DatoClinicoRepository extends JpaRepository<DatoClinico, UUID> 
     void deleteByHistorialClinicoAndTipo(HistorialClinico historial, String tipo);
     
     /**
+     * Busca todos los datos clínicos de un tipo específico asociados a un historial.
+     * 
+     * @param historial HistorialClinico del cual obtener los datos clínicos
+     * @param tipo Tipo específico de dato clínico a buscar
+     * @return Lista de DatoClinico que coinciden con el tipo especificado
+     */
+    List<DatoClinico> findByHistorialClinicoAndTipo(HistorialClinico historial, String tipo);
+    
+    /**
      * Busca todos los datos clínicos asociados a un historial que pertenezcan a un conjunto de tipos.
      * Útil para obtener múltiples tipos de análisis de sangre de una vez.
      * 

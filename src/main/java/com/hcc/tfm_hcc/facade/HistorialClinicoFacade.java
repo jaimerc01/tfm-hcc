@@ -101,6 +101,14 @@ public interface HistorialClinicoFacade {
     HistorialClinicoDTO actualizarAlergias(String alergiasJson);
     
     /**
+     * Añade nuevas alergias sin eliminar las existentes.
+     * 
+     * @param alergiasJson Datos de alergias en formato texto (una por línea)
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO añadirAlergias(String alergiasJson);
+    
+    /**
      * Actualiza los análisis de sangre en el historial clínico.
      * 
      * @param analisisJson Datos de análisis de sangre en formato JSON

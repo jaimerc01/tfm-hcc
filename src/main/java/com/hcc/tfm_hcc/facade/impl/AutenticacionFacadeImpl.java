@@ -235,7 +235,7 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
             throw new IllegalArgumentException(ErrorMessages.campoRequerido("primer apellido"));
         }
         
-        if (usuarioDTO.getEmail() == null || usuarioDTO.getEmail().trim().isEmpty()) {
+        if (usuarioDTO.getEmail() == null || usuarioDTO.getEmail().trim().isEmpty() || !usuarioDTO.getEmail().contains("@")) {
             throw new IllegalArgumentException(ErrorMessages.campoRequerido("email"));
         }
         

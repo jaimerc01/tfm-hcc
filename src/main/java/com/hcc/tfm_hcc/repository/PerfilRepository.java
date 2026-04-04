@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.repository;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -26,7 +27,7 @@ import com.hcc.tfm_hcc.model.Perfil;
  * @since 1.0
  */
 @Repository
-public interface PerfilRepository extends CrudRepository<Perfil, Long> {
+public interface PerfilRepository extends CrudRepository<Perfil, UUID> {
 
     /**
      * Busca un perfil por su rol específico.

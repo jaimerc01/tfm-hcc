@@ -1,18 +1,18 @@
 <template>
   <div class="admin-medicos">
-  <h2>Gestión de Médicos</h2>
-  <button @click="startAdd">Añadir médico</button>
+    <h2>{{$t('doctor_management')}}</h2>
+    <button @click="startAdd">{{$t('add_doctor')}}</button>
     <table v-if="medicos.length" class="medicos-table">
       <thead>
         <tr>
-          <th>Nombre</th>
-          <th>Apellidos</th>
-          <th>Email</th>
-          <th>NIF</th>
-          <th>Especialidad</th>
-          <th>Teléfono</th>
-          <th>Fecha nacimiento</th>
-          <th>Acciones</th>
+          <th>{{$t('name')}}</th>
+          <th>{{$t('surnames')}}</th>
+          <th>{{$t('email')}}</th>
+          <th>{{$t('nif')}}</th>
+          <th>{{$t('specialty')}}</th>
+          <th>{{$t('phone')}}</th>
+          <th>{{$t('birth_date')}}</th>
+          <th>{{$t('actions')}}</th>
         </tr>
       </thead>
       <tbody>
@@ -25,31 +25,31 @@
           <td>{{ m.telefono }}</td>
           <td>{{ formatFecha(m.fechaNacimiento) }}</td>
           <td>
-            <button @click="edit(m)">Editar</button>
-            <button @click="eliminar(m.id)">Eliminar</button>
-            <button @click="quitarPerfil(m.id)" title="Quitar perfil MEDICO">Quitar perfil</button>
+            <button @click="edit(m)">{{$t('edit')}}</button>
+            <button @click="eliminar(m.id)">{{$t('delete')}}</button>
+            <button @click="quitarPerfil(m.id)" :title="$t('remove_profile_title')">{{$t('remove_profile')}}</button>
           </td>
         </tr>
       </tbody>
     </table>
-    <div v-else>No hay médicos registrados.</div>
+    <div v-else>{{$t('no_doctors')}}</div>
 
     <div v-if="showForm" class="medico-form-modal">
       <div class="medico-form">
-        <h3>{{ editMedico ? 'Editar médico' : 'Añadir médico' }}</h3>
+        <h3>{{ editMedico ? $t('edit_doctor') : $t('add_doctor_title') }}</h3>
         <form @submit.prevent="guardar">
-          <input v-model="form.nombre" placeholder="Nombre" required />
-          <input v-model="form.apellido1" placeholder="Primer apellido" required />
-          <input v-model="form.apellido2" placeholder="Segundo apellido" />
-          <input v-model="form.email" placeholder="Email" required type="email" />
-          <input v-model="form.nif" placeholder="NIF" required />
-          <input v-model="form.especialidad" placeholder="Especialidad" />
-          <input v-model="form.telefono" placeholder="Teléfono" />
-          <input v-model="form.fechaNacimiento" placeholder="Fecha de nacimiento" type="date" required />
-          <input v-if="!editMedico" v-model="form.password" placeholder="Contraseña" required type="password" />
+          <input v-model="form.nombre" :placeholder="$t('name')" required />
+          <input v-model="form.apellido1" :placeholder="$t('first_surname')" required />
+          <input v-model="form.apellido2" :placeholder="$t('second_surname')" />
+          <input v-model="form.email" :placeholder="$t('email')" required type="email" />
+          <input v-model="form.nif" :placeholder="$t('nif')" required />
+          <input v-model="form.especialidad" :placeholder="$t('specialty')" />
+          <input v-model="form.telefono" :placeholder="$t('phone')" />
+          <input v-model="form.fechaNacimiento" :placeholder="$t('birth_date')" type="date" required />
+          <input v-if="!editMedico" v-model="form.password" :placeholder="$t('password')" required type="password" />
           <div class="form-actions">
-            <button type="submit">Guardar</button>
-            <button type="button" @click="cancelar">Cancelar</button>
+            <button type="submit">{{$t('save')}}</button>
+            <button type="button" @click="cancelar">{{$t('cancel')}}</button>
           </div>
         </form>
         <div v-if="error" class="error-message">{{ error }}</div>
@@ -58,12 +58,12 @@
 
     <div v-if="showNifStep" class="medico-form-modal">
       <div class="medico-form">
-        <h3>Buscar usuario por NIF</h3>
+        <h3>{{$t('search_user_nif')}}</h3>
         <form @submit.prevent="checkNif">
-          <input v-model="form.nif" placeholder="NIF" required />
+          <input v-model="form.nif" :placeholder="$t('nif')" required />
           <div class="form-actions">
-            <button type="submit">Buscar</button>
-            <button type="button" @click="cancelar">Cancelar</button>
+            <button type="submit">{{$t('search')}}</button>
+            <button type="button" @click="cancelar">{{$t('cancel')}}</button>
           </div>
         </form>
         <div v-if="error" class="error-message">{{ error }}</div>

@@ -7,8 +7,8 @@
         <path d="M12 8h.01"></path>
       </svg>
       <span>
-        <strong>Registra tus análisis de sangre</strong> para hacer seguimiento de tu salud.
-        Selecciona el parámetro, introduce el valor y la fecha, y pulsa "Añadir resultado".
+        <strong>{{ $t('register_blood_analysis') }}</strong> {{ $t('track_health') }}
+        {{ $t('select_param_value_date') }}
       </span>
     </div>
 
@@ -21,20 +21,20 @@
             <line x1="12" y1="20" x2="12" y2="4"></line>
             <line x1="6" y1="20" x2="6" y2="14"></line>
           </svg>
-          Evolución Histórica
+          {{ $t('historical_evolution') }}
         </h4>
         <div class="chart-controls">
           <div class="control-group">
-            <label class="form-label" for="chart-type-select">Tipo de gráfico:</label>
+            <label class="form-label" for="chart-type-select">{{ $t('chart_type') }}</label>
             <select id="chart-type-select" v-model="chartType" @change="drawChart" class="form-input chart-select">
-              <option value="line">Línea simple</option>
-              <option value="interactive">Línea interactiva (zoom)</option>
-              <option value="bar">Barras</option>
-              <option value="gauge">Medidor actual</option>
+              <option value="line">{{ $t('line_simple') }}</option>
+              <option value="interactive">{{ $t('line_interactive') }}</option>
+              <option value="bar">{{ $t('bar_chart') }}</option>
+              <option value="gauge">{{ $t('gauge_chart') }}</option>
             </select>
           </div>
           <div class="control-group">
-            <label class="form-label" for="chart-param-select">Parámetro:</label>
+            <label class="form-label" for="chart-param-select">{{ $t('parameter') }}</label>
             <select id="chart-param-select" v-model="chartParam" @change="drawChart" class="form-input chart-select">
               <option v-for="a in analytes" :key="a.key" :value="a.key">{{ a.label }}</option>
             </select>
@@ -61,19 +61,19 @@
           <path d="M12 5v14"></path>
           <path d="M5 12h14"></path>
         </svg>
-        Añadir Nuevo Resultado
+        {{ $t('add_new_result') }}
       </h4>
 
       <div class="form-grid-analisis">
         <div class="form-group">
-          <label class="form-label" for="param-select">Parámetro <span class="required">*</span></label>
+          <label class="form-label" for="param-select">{{ $t('parameter_required') }} <span class="required">*</span></label>
           <select id="param-select" v-model="selected" class="form-input">
             <option v-for="a in analytes" :key="a.key" :value="a.key">{{ a.label }}</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="value-input">Valor <span class="required">*</span></label>
+          <label class="form-label" for="value-input">{{ $t('value_required') }} <span class="required">*</span></label>
           <div class="input-with-unit">
             <input 
               id="value-input"
@@ -97,9 +97,9 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="date-input">Fecha y Hora <span class="required">*</span></label>
+          <label class="form-label" for="date-input">{{ $t('date_required') }} <span class="required">*</span></label>
           <input id="date-input" type="datetime-local" v-model="inputDate" class="form-input" />
-          <p class="form-help">Fecha y hora del análisis</p>
+          <p class="form-help">{{ $t('date_col') }} y hora del análisis</p>
         </div>
 
         <div class="form-group form-actions-inline">
@@ -116,7 +116,7 @@
               <path d="M12 5v14"></path>
               <path d="M5 12h14"></path>
             </svg>
-            {{ saving ? 'Guardando...' : 'Añadir resultado' }}
+            {{ saving ? $t('saving') : $t('add_result') }}
           </button>
         </div>
       </div>
@@ -128,7 +128,7 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 11H3v2h6m-6-5h6m-6 8h6m4-7h8m-8-3h8m-8 6h8m-8 3h8"></path>
         </svg>
-        Resultados Registrados
+        {{ $t('registered_results') }}
         <span class="badge badge-info">{{ entries.length }}</span>
       </div>
 
@@ -136,10 +136,10 @@
         <table class="results-table">
           <thead>
             <tr>
-              <th>Parámetro</th>
-              <th>Valor</th>
-              <th>Fecha</th>
-              <th class="actions-col">Acciones</th>
+              <th>{{ $t('parameter_col') }}</th>
+              <th>{{ $t('value_col') }}</th>
+              <th>{{ $t('date_col') }}</th>
+              <th class="actions-col">{{ $t('actions_col') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -200,8 +200,8 @@
         <line x1="16" y1="17" x2="8" y2="17"></line>
         <polyline points="10 9 9 9 8 9"></polyline>
       </svg>
-      <p>No hay resultados de análisis registrados</p>
-      <span>Añade tu primer resultado usando el formulario de arriba</span>
+      <p>{{ $t('no_blood_analysis_results') }}</p>
+      <span>{{ $t('add_first_result_hint') }}</span>
     </div>
 
     <div v-if="msg" class="alert alert-success" role="status" aria-live="polite">
@@ -236,16 +236,17 @@
             <line x1="12" y1="9" x2="12" y2="13"></line>
             <line x1="12" y1="17" x2="12.01" y2="17"></line>
           </svg>
-          <h3>Confirmar eliminación</h3>
+          <h3>{{ $t('confirm_delete') }}</h3>
         </div>
         <p class="modal-text">¿Estás seguro de que quieres eliminar este resultado? Esta acción no se puede deshacer.</p>
+          <p class="modal-text">{{ $t('delete_result_confirm') }}</p>
         
         <div class="modal-actions">
           <button 
             type="button"
             class="btn-secondary"
             @click="closeDeleteModal">
-            Cancelar
+            {{ $t('cancel') }}
           </button>
           <button 
             type="button"
@@ -255,7 +256,7 @@
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
-            Sí, eliminar
+            {{ $t('yes_delete') }}
           </button>
         </div>
       </div>
@@ -270,11 +271,10 @@
             <line x1="12" y1="9" x2="12" y2="13"></line>
             <line x1="12" y1="17" x2="12.01" y2="17"></line>
           </svg>
-          <h3>Confirmar eliminación masiva</h3>
+          <h3>{{ $t('confirm_bulk_delete') }}</h3>
         </div>
         <p class="modal-text">
-          ¿Estás seguro de que quieres eliminar <strong>todos los {{ entries.length }} resultados</strong>? 
-          Esta acción no se puede deshacer y se eliminarán permanentemente todos los análisis de sangre registrados.
+          {{ $t('bulk_delete_confirm', { count: entries.length }) }}
         </p>
         
         <div class="modal-actions">
@@ -282,7 +282,7 @@
             type="button"
             class="btn-secondary"
             @click="closeClearAllModal">
-            Cancelar
+            {{ $t('cancel') }}
           </button>
           <button 
             type="button"
@@ -294,7 +294,7 @@
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
             </svg>
-            {{ saving ? 'Eliminando...' : 'Sí, eliminar todo' }}
+            {{ saving ? $t('deleting') : $t('yes_delete_all') }}
           </button>
         </div>
       </div>

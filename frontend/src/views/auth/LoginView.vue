@@ -1,27 +1,27 @@
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h2>Iniciar Sesión</h2>
+      <h2>{{$t('login_title')}}</h2>
       <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
-          <label for="nif">NIF:</label>
-          <input id="nif" v-model="credentials.nif" type="text" required placeholder="Ingresa tu NIF" />
+          <label for="nif">{{$t('nif_label')}}</label>
+          <input id="nif" v-model="credentials.nif" type="text" required :placeholder="$t('nif_placeholder')" />
         </div>
 
         <div class="form-group">
-          <label for="password">Contraseña:</label>
-          <input id="password" v-model="credentials.password" type="password" required placeholder="Ingresa tu contraseña" />
+          <label for="password">{{$t('password_label')}}</label>
+          <input id="password" v-model="credentials.password" type="password" required :placeholder="$t('password_placeholder')" />
         </div>
 
         <button type="submit" :disabled="isLoading" class="login-btn">
-          {{ isLoading ? 'Iniciando...' : 'Iniciar Sesión' }}
+          {{ isLoading ? $t('logging_in') : $t('login_button') }}
         </button>
 
         <div v-if="error" class="error-message">{{ error }}</div>
       </form>
 
       <div class="alt-actions">
-        <router-link to="/register">¿No tienes cuenta? Crear usuario</router-link>
+        <router-link to="/register">{{$t('no_account')}}</router-link>
       </div>
     </div>
   </div>

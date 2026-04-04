@@ -3,26 +3,26 @@
     <div class="nav__content">
       <router-link class="nav__brand" :to="{ name: 'Dashboard' }">HCC</router-link>
 
-      <button class="nav__toggle" @click="open = !open" aria-label="Menú">
+      <button class="nav__toggle" @click="open = !open" :aria-label="$t('menu')">
         ☰
       </button>
 
       <div class="nav__links" :class="{ 'nav__links--open': open }">
       <notifications-dropdown />
-        <router-link class="nav__link" :to="{ name: 'Dashboard' }" @click="close">Inicio</router-link>
-  <router-link class="nav__link" :to="{ name: 'HistoriaClinica' }" @click="close">Historia clínica</router-link>
-  <router-link v-if="isMedico" class="nav__link" :to="{ name: 'Medico' }" @click="close">Zona médica</router-link>
-  <router-link v-if="isPaciente" class="nav__link" :to="{ name: 'MisSolicitudes' }" @click="close">Mis solicitudes</router-link>
+          <router-link class="nav__link" :to="{ name: 'Dashboard' }" @click="close">{{ $t('home') }}</router-link>
+        <router-link class="nav__link" :to="{ name: 'HistoriaClinica' }" @click="close">{{ $t('medical_history') }}</router-link>
+        <router-link v-if="isMedico" class="nav__link" :to="{ name: 'Medico' }" @click="close">{{ $t('medical_zone') }}</router-link>
+        <router-link v-if="isPaciente" class="nav__link" :to="{ name: 'MisSolicitudes' }" @click="close">{{ $t('my_requests') }}</router-link>
   <div v-if="isAdmin" class="nav__dropdown">
-    <router-link class="nav__link" :to="{ name: 'Admin' }" @click="close">Administración</router-link>
+    <router-link class="nav__link" :to="{ name: 'Admin' }" @click="close">{{ $t('admin') }}</router-link>
     <div class="nav__dropdown-content">
-      <router-link class="nav__link" :to="{ name: 'AdminMedicos' }" @click="close">Gestionar médicos</router-link>
+      <router-link class="nav__link" :to="{ name: 'AdminMedicos' }" @click="close">{{ $t('manage_doctors') }}</router-link>
     </div>
   </div>
-        <router-link class="nav__link" :to="{ name: 'UserData' }" @click="close">Datos del usuario</router-link>
-  <router-link class="nav__link" :to="{ name: 'PrivacyPolicy' }" @click="close">Privacidad</router-link>
+          <router-link class="nav__link" :to="{ name: 'UserData' }" @click="close">{{ $t('user_data') }}</router-link>
+        <router-link class="nav__link" :to="{ name: 'PrivacyPolicy' }" @click="close">{{ $t('privacy') }}</router-link>
 
-        <button class="nav__logout" @click="showLogoutModal = true">Cerrar sesión</button>
+        <button class="nav__logout" @click="showLogoutModal = true">{{ $t('logout') }}</button>
       </div>
     </div>
   </nav>
@@ -38,12 +38,12 @@
           <polyline points="16 17 21 12 16 7"></polyline>
           <line x1="21" y1="12" x2="9" y2="12"></line>
         </svg>
-        <h3>Cerrar sesión</h3>
+        <h3>{{ $t('logout') }}</h3>
       </div>
-      <p class="logout-modal-text">¿Estás seguro de que deseas cerrar sesión?</p>
+      <p class="logout-modal-text">{{ $t('logout_confirm') }}</p>
       <div class="logout-modal-actions">
-        <button @click="confirmLogout" class="btn-confirm">Sí, cerrar sesión</button>
-        <button @click="showLogoutModal = false" class="btn-cancel">Cancelar</button>
+        <button @click="confirmLogout" class="btn-confirm">{{ $t('logout_yes') }}</button>
+        <button @click="showLogoutModal = false" class="btn-cancel">{{ $t('cancel') }}</button>
       </div>
     </div>
   </div>
@@ -53,6 +53,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { useI18n } from 'vue-i18n'
 import authService from '@/services/authService'
 import NotificationsDropdown from '@/components/NotificationsDropdown.vue'
 
@@ -69,6 +70,7 @@ export default {
       const roles = claims.authorities || claims.roles || []
       return Array.isArray(roles) && roles.some(r => String(r).toUpperCase().includes('MEDICO'))
     })
+    const { t } = useI18n()
     const isAdmin = computed(() => {
       const claims = authService.getCurrentUser() || {}
       const roles = claims.authorities || claims.roles || []
@@ -89,7 +91,7 @@ export default {
       router.push({ name: 'Login' })
     }
 
-  return { open, close, showLogoutModal, confirmLogout, isMedico, isAdmin, isPaciente }
+  return { open, close, showLogoutModal, confirmLogout, isMedico, isAdmin, isPaciente, t }
   }
 }
 </script>

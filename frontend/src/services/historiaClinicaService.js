@@ -6,12 +6,17 @@ api.interceptors.request.use((cfg) => { const token = localStorage.getItem('auth
 export default {
   getMine() { return api.get('/historia') },
   // identification is sent as JSON
-  updateIdentificacion(payload) { return api.post('/historia/identificacion', payload, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
+  updateIdentificacion(payload) { return api.put('/historia/identificacion', payload, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
   // antecedents and single-antecedent edits are plain text (multiline supported)
-  updateAntecedentes(text) { return api.post('/historia/antecedentes', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  updateAntecedentes(text) { return api.put('/historia/antecedentes', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
   updateAntecedente(index, texto) { return api.put(`/historia/antecedentes/${index}`, texto, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  // alergias endpoint expects plain multiline text; parameter named text for clarity
-  updateAlergias(text) { return api.post('/historia/alergias', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  // alergias endpoint expects JSON: { alergias: "..." }
+  updateAlergias(alergiasText) {
+    // Unir todas las líneas en un solo string, separadas por salto de línea si hay varias
+    const value = (alergiasText || '').split('\n').map(l => l.trim()).filter(l => l.length > 0).join('\n');
+    const payload = JSON.stringify({ alergias: value });
+    return api.post('/historia/alergias', payload, { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+  },
   deleteDatoClinico(id) { return api.delete(`/historia/datos-clinicos/${id}`) },
   deleteAntecedente(index) { return api.delete(`/historia/antecedentes/${index}`) },
   // Analisis de sangre: Replace all (PUT) or add new (POST)

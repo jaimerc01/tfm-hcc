@@ -12,8 +12,8 @@
         </svg>
       </div>
       <div>
-        <h1>Historia Clínica</h1>
-        <p class="subtitle">Gestiona tu información médica y archivos clínicos</p>
+        <h1>{{$t('clinical_history')}}</h1>
+        <p class="subtitle">{{$t('manage_medical_info')}}</p>
       </div>
     </div>
 
@@ -32,7 +32,7 @@
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
           </svg>
-          Identificación
+          {{$t('identification')}}
         </button>
         <button 
           type="button"
@@ -48,7 +48,7 @@
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          Antecedentes
+          {{$t('backgrounds')}}
         </button>
         <button 
           type="button"
@@ -63,7 +63,7 @@
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
-          Alergias
+          {{$t('allergies')}}
         </button>
         <button 
           type="button"
@@ -80,7 +80,7 @@
             <path d="M5 8h14"></path>
             <path d="M6 11V8h12v3"></path>
           </svg>
-          Análisis
+          {{$t('analysis')}}
         </button>
         <button 
           type="button"
@@ -94,7 +94,7 @@
             <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
             <polyline points="13 2 13 9 20 9"></polyline>
           </svg>
-          Archivos
+          {{$t('files')}}
         </button>
       </div>
 
@@ -105,34 +105,34 @@
         <div v-if="activeSection==='identificacion'" key="identificacion" id="identificacion-panel" class="tab-panel" role="tabpanel" aria-labelledby="identificacion-tab">
           <div class="panel-card">
             <div class="panel-header">
-              <h3>Identificación Básica</h3>
-              <p class="panel-subtitle">Información personal del paciente</p>
+              <h3>{{$t('basic_identification')}}</h3>
+              <p class="panel-subtitle">{{$t('personal_info')}}</p>
             </div>
 
             <div class="form-grid">
               <div class="form-group full-width">
-                <label class="form-label">Nombre completo <span class="required">*</span></label>
-                <input type="text" v-model="identNombre" placeholder="Nombre y apellidos" class="form-input" />
+                <label class="form-label">{{$t('full_name')}} <span class="required">*</span></label>
+                <input type="text" v-model="identNombre" :placeholder="$t('full_name')" class="form-input" />
               </div>
 
               <div class="form-group">
-                <label class="form-label">NIF / NIE <span class="required">*</span></label>
-                <input type="text" v-model="identNif" placeholder="12345678A" class="form-input" />
+                <label class="form-label">{{$t('nif_nie')}} <span class="required">*</span></label>
+                <input type="text" v-model="identNif" :placeholder="$t('nif_nie')" class="form-input" />
               </div>
 
               <div class="form-group">
-                <label class="form-label">Fecha de nacimiento</label>
-                <input type="date" v-model="identFechaNacimiento" class="form-input" />
+                <label class="form-label">{{$t('birth_date')}}</label>
+                <input type="date" v-model="identFechaNacimiento" :placeholder="$t('birth_date')" class="form-input" />
               </div>
 
               <div class="form-group">
-                <label class="form-label">Teléfono</label>
-                <input type="tel" v-model="identTelefono" placeholder="600 000 000" class="form-input" />
+                <label class="form-label">{{$t('phone')}}</label>
+                <input type="tel" v-model="identTelefono" :placeholder="$t('phone')" class="form-input" />
               </div>
 
               <div class="form-group">
-                <label class="form-label">Email (opcional)</label>
-                <input type="email" v-model="identEmail" placeholder="tu@correo.com" class="form-input" />
+                <label class="form-label">{{$t('email_optional')}}</label>
+                <input type="email" v-model="identEmail" :placeholder="$t('email_optional')" class="form-input" />
               </div>
             </div>
 
@@ -142,7 +142,7 @@
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
               </svg>
-              <span>Los datos se guardan de forma segura y se utilizan únicamente para identificar tu historial médico.</span>
+              <span>{{$t('data_secure')}}</span>
             </div>
 
             <div class="form-actions">
@@ -157,16 +157,16 @@
                   <polyline points="7 3 7 8 15 8"></polyline>
                 </svg>
                 <div v-else class="spinner-small"></div>
-                {{ savingIdent ? 'Guardando…' : 'Guardar identificación' }}
+                {{ savingIdent ? $t('saving') : $t('save_identification') }}
               </button>
             </div>
 
-            <div v-if="msgIdent" class="alert alert-success">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              {{ msgIdent }}
-            </div>
+              <div v-if="msgIdent" class="alert alert-success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                {{$t('saved')}}
+              </div>
           </div>
         </div>
 
@@ -187,8 +187,8 @@
         <div v-else-if="activeSection==='archivos'" key="archivos" id="archivos-panel" class="tab-panel" role="tabpanel" aria-labelledby="archivos-tab">
           <div class="panel-card">
             <div class="panel-header">
-              <h3>Archivos Médicos</h3>
-              <p class="panel-subtitle">Sube y gestiona tus documentos clínicos</p>
+                <h3>{{$t('files')}}</h3>
+                <p class="panel-subtitle">{{$t('manage_medical_info')}}</p>
             </div>
 
             <!-- Upload Area -->
@@ -212,7 +212,7 @@
                       <line x1="12" y1="3" x2="12" y2="15"></line>
                     </svg>
                     <div class="upload-text">
-                      <span v-if="!file" class="upload-primary">Arrastra tu archivo aquí o haz clic para seleccionar</span>
+                      <span v-if="!file" class="upload-primary">{{$t('upload_here')}}</span>
                       <span v-else class="file-selected-name">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -220,7 +220,7 @@
                         </svg>
                         {{ file.name }}
                       </span>
-                      <span class="upload-secondary">PDF, imágenes o documentos médicos</span>
+                      <span class="upload-secondary">{{$t('file_types')}}</span>
                     </div>
                   </label>
                 </div>
@@ -232,7 +232,7 @@
                     <line x1="12" y1="3" x2="12" y2="15"></line>
                   </svg>
                   <div v-else class="spinner-small"></div>
-                  {{ uploading ? 'Subiendo archivo…' : 'Subir archivo' }}
+                  {{ uploading ? $t('uploading') : $t('upload_file') }}
                 </button>
               </form>
 
@@ -249,8 +249,8 @@
             <!-- Files List -->
             <div v-if="items.length" class="files-list">
               <div class="list-header">
-                <h4>Tus archivos</h4>
-                <span class="file-count">{{ items.length }} archivo{{ items.length !== 1 ? 's' : '' }}</span>
+                <h4>{{$t('your_files')}}</h4>
+                <span class="file-count">{{ items.length }} {{$t('file_count')}}{{ items.length !== 1 ? 's' : '' }}</span>
               </div>
               
               <div class="files-grid">
@@ -266,14 +266,14 @@
                     <div class="file-size">{{ formatSize(it.sizeBytes) }}</div>
                   </div>
                   <div class="file-actions">
-                    <button class="btn-icon" @click="download(it)" title="Descargar">
+                    <button class="btn-icon" @click="download(it)" :title="$t('download')">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>
                         <line x1="12" y1="15" x2="12" y2="3"></line>
                       </svg>
                     </button>
-                    <button class="btn-icon btn-danger" @click="remove(it)" :disabled="removingId===it.id" title="Eliminar">
+                    <button class="btn-icon btn-danger" @click="remove(it)" :disabled="removingId===it.id" :title="$t('delete')">
                       <svg v-if="removingId !== it.id" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -291,8 +291,8 @@
                 <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
                 <polyline points="13 2 13 9 20 9"></polyline>
               </svg>
-              <p>No hay archivos médicos</p>
-              <span>Sube tu primer documento para comenzar</span>
+              <p>{{$t('no_files')}}</p>
+              <span>{{$t('upload_first')}}</span>
             </div>
           </div>
         </div>

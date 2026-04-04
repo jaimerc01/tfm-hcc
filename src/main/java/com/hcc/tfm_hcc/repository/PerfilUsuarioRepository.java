@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.repository;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -27,7 +28,7 @@ import com.hcc.tfm_hcc.model.PerfilUsuario;
  * @since 1.0
  */
 @Repository
-public interface PerfilUsuarioRepository extends CrudRepository<PerfilUsuario, Long> {
+public interface PerfilUsuarioRepository extends CrudRepository<PerfilUsuario, UUID> {
 
     /**
      * Obtiene todos los perfiles asignados a un usuario identificado por su NIF.

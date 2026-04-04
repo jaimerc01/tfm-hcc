@@ -1,11 +1,10 @@
 <template>
   <div class="home">
-    <h1>Bienvenido a Historia Clínica Común</h1>
-    <p>Sistema de gestión de historias clínicas</p>
-    
+    <h1>{{$t('welcome_title')}}</h1>
+    <p>{{$t('welcome_subtitle')}}</p>
     <div class="navigation">
       <router-link to="/login" class="nav-link">
-        Iniciar Sesión
+        {{$t('login')}}
       </router-link>
     </div>
   </div>

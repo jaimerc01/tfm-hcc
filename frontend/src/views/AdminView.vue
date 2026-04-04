@@ -1,8 +1,8 @@
 <template>
   <div class="page">
-    <h1>Zona Administración</h1>
+    <h1>{{$t('admin_zone')}}</h1>
     <p v-if="error" class="error">{{ error }}</p>
-      <p v-else>Acceso de administrador.</p>
+    <p v-else>{{$t('admin_access')}}</p>
   </div>
 </template>
 

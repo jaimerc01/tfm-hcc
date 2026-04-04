@@ -1,10 +1,10 @@
 <template>
   <div class="metrics-dashboard">
-    <h2 class="dashboard-title">Panel de Métricas de Salud</h2>
+    <h2 class="dashboard-title">{{ $t('health_metrics_panel') }}</h2>
     
     <!-- Grid de Gauges para valores actuales -->
     <div class="gauges-section">
-      <h3>Estado Actual</h3>
+      <h3>{{ $t('current_status') }}</h3>
       <div class="gauges-grid">
         <div class="gauge-container" ref="gaugeGlucosa"></div>
         <div class="gauge-container" ref="gaugeHemoglobina"></div>
@@ -18,25 +18,25 @@
     <!-- Selector de tipo de gráfico -->
     <div class="chart-section">
       <div class="chart-header">
-        <h3>Evolución Histórica</h3>
+        <h3>{{ $t('historical_evolution') }}</h3>
         <div class="chart-controls">
           <div class="control-group">
-            <label class="form-label">Tipo de gráfico:</label>
+            <label class="form-label">{{ $t('chart_type') }}</label>
             <select v-model="chartType" @change="updateChart" class="form-input chart-select">
-              <option value="line">Línea simple</option>
-              <option value="interactive">Línea interactiva (zoom)</option>
-              <option value="bar">Barras</option>
+              <option value="line">{{ $t('line_simple') }}</option>
+              <option value="interactive">{{ $t('line_interactive') }}</option>
+              <option value="bar">{{ $t('bar_chart') }}</option>
             </select>
           </div>
           <div class="control-group">
-            <label class="form-label">Parámetro:</label>
+            <label class="form-label">{{ $t('parameter') }}</label>
             <select v-model="selectedMetric" @change="updateChart" class="form-input chart-select">
-              <option value="glucosa">Glucosa</option>
-              <option value="hemoglobina">Hemoglobina</option>
-              <option value="colesterol">Colesterol Total</option>
-              <option value="trigliceridos">Triglicéridos</option>
-              <option value="creatinina">Creatinina</option>
-              <option value="hematocrito">Hematocrito</option>
+              <option value="glucosa">{{ $t('glucose') }}</option>
+              <option value="hemoglobina">{{ $t('hemoglobin') }}</option>
+              <option value="colesterol">{{ $t('total_cholesterol') }}</option>
+              <option value="trigliceridos">{{ $t('triglycerides') }}</option>
+              <option value="creatinina">{{ $t('creatinine') }}</option>
+              <option value="hematocrito">{{ $t('hematocrit') }}</option>
             </select>
           </div>
         </div>
@@ -52,11 +52,11 @@
         <path d="M12 8h.01"></path>
       </svg>
       <div>
-        <strong>Rango recomendado para {{ selectedMetricData.label }}:</strong>
+        <strong>{{ $t('recommended_range', { metric: selectedMetricData.label }) }}</strong>
         <span v-if="selectedMetricData.recommendedMin && selectedMetricData.recommendedMax">
           {{ selectedMetricData.recommendedMin }} - {{ selectedMetricData.recommendedMax }} {{ selectedMetricData.unit }}
         </span>
-        <span v-else>No definido</span>
+        <span v-else>{{ $t('not_defined') }}</span>
       </div>
     </div>
   </div>

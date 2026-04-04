@@ -9,15 +9,15 @@
         </svg>
       </div>
       <div>
-        <h1>Mis Datos Personales</h1>
-        <p class="subtitle">Gestiona tu información personal y configuración de cuenta</p>
+        <h1>{{ $t('my_personal_data') }}</h1>
+        <p class="subtitle">{{ $t('manage_personal_info') }}</p>
       </div>
     </div>
 
     <!-- Loading State -->
     <div v-if="loading" class="loading-container">
       <div class="spinner"></div>
-      <p>Cargando información...</p>
+      <p>{{ $t('loading_info') }}</p>
     </div>
 
     <!-- Error State -->
@@ -36,8 +36,8 @@
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
         <circle cx="12" cy="7" r="4"></circle>
       </svg>
-      <h3>No se pudieron cargar los datos</h3>
-      <p>Por favor, intenta recargar la página</p>
+      <h3>{{ $t('no_data_loaded') }}</h3>
+      <p>{{ $t('reload_page') }}</p>
     </div>
 
     <!-- Data Content -->
@@ -46,45 +46,45 @@
       <template v-if="!editMode">
         <div class="panel-card">
           <div class="panel-header">
-            <h3>Información Personal</h3>
-            <p class="panel-subtitle">Revisa y actualiza tus datos personales</p>
+            <h3>{{ $t('personal_info') }}</h3>
+            <p class="panel-subtitle">{{ $t('review_update_personal') }}</p>
           </div>
 
           <div class="data-grid">
             <div class="data-item">
-              <div class="data-label">Nombre</div>
+              <div class="data-label">{{ $t('name') }}</div>
               <div class="data-value">{{ user.nombre }}</div>
             </div>
             <div class="data-item">
-              <div class="data-label">Primer Apellido</div>
+              <div class="data-label">{{ $t('first_surname') }}</div>
               <div class="data-value">{{ user.apellido1 }}</div>
             </div>
             <div class="data-item" v-if="user.apellido2">
-              <div class="data-label">Segundo Apellido</div>
+              <div class="data-label">{{ $t('second_surname') }}</div>
               <div class="data-value">{{ user.apellido2 }}</div>
             </div>
             <div class="data-item">
-              <div class="data-label">NIF</div>
+              <div class="data-label">{{ $t('nif') }}</div>
               <div class="data-value">{{ user.nif }}</div>
             </div>
             <div class="data-item">
-              <div class="data-label">Email</div>
+              <div class="data-label">{{ $t('email') }}</div>
               <div class="data-value">{{ user.email }}</div>
             </div>
             <div class="data-item" v-if="user.telefono">
-              <div class="data-label">Teléfono</div>
+              <div class="data-label">{{ $t('phone') }}</div>
               <div class="data-value">{{ user.telefono }}</div>
             </div>
             <div class="data-item" v-if="user.fechaNacimiento">
-              <div class="data-label">Fecha de Nacimiento</div>
+              <div class="data-label">{{ $t('birth_date') }}</div>
               <div class="data-value">{{ formatDate(user.fechaNacimiento) }}</div>
             </div>
             <div class="data-item" v-if="user.fechaCreacion">
-              <div class="data-label">Fecha de Alta</div>
+              <div class="data-label">{{ $t('registration_date') }}</div>
               <div class="data-value">{{ formatDateTime(user.fechaCreacion) }}</div>
             </div>
             <div class="data-item" v-if="user.fechaUltimaModificacion">
-              <div class="data-label">Última Modificación</div>
+              <div class="data-label">{{ $t('last_modification') }}</div>
               <div class="data-value">{{ formatDateTime(user.fechaUltimaModificacion) }}</div>
             </div>
           </div>
@@ -99,7 +99,7 @@
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
-              Editar datos
+              {{ $t('edit_data') }}
             </button>
             <button 
               type="button"
@@ -113,7 +113,7 @@
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
               <div v-else class="spinner-small"></div>
-              {{ exportLoading ? 'Exportando...' : 'Descargar mis datos' }}
+              {{ exportLoading ? $t('exporting') : $t('download_my_data') }}
             </button>
           </div>
         </div>
@@ -122,38 +122,38 @@
       <template v-else>
         <div class="panel-card">
           <div class="panel-header">
-            <h3>Editar Información Personal</h3>
-            <p class="panel-subtitle">Actualiza tus datos personales</p>
+            <h3>{{ $t('edit_personal_info') }}</h3>
+            <p class="panel-subtitle">{{ $t('update_personal_data') }}</p>
           </div>
 
           <form @submit.prevent="submitEdit">
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label">Nombre <span class="required">*</span></label>
+                <label class="form-label">{{ $t('name') }} <span class="required">*</span></label>
                 <input type="text" v-model="form.nombre" class="form-input" required />
               </div>
               <div class="form-group">
-                <label class="form-label">Primer Apellido <span class="required">*</span></label>
+                <label class="form-label">{{ $t('first_surname') }} <span class="required">*</span></label>
                 <input type="text" v-model="form.apellido1" class="form-input" required />
               </div>
               <div class="form-group">
-                <label class="form-label">Segundo Apellido</label>
+                <label class="form-label">{{ $t('second_surname') }}</label>
                 <input type="text" v-model="form.apellido2" class="form-input" />
               </div>
               <div class="form-group">
-                <label class="form-label">NIF <span class="required">*</span></label>
+                <label class="form-label">{{ $t('nif') }} <span class="required">*</span></label>
                 <input type="text" v-model="form.nif" class="form-input" required />
               </div>
               <div class="form-group">
-                <label class="form-label">Email <span class="required">*</span></label>
+                <label class="form-label">{{ $t('email') }} <span class="required">*</span></label>
                 <input type="email" v-model="form.email" class="form-input" required />
               </div>
               <div class="form-group">
-                <label class="form-label">Teléfono</label>
+                <label class="form-label">{{ $t('phone') }}</label>
                 <input type="text" v-model="form.telefono" class="form-input" />
               </div>
               <div class="form-group full-width">
-                <label class="form-label">Fecha de Nacimiento</label>
+                <label class="form-label">{{ $t('birth_date') }}</label>
                 <input type="date" v-model="form.fechaNacimiento" class="form-input" />
               </div>
             </div>
@@ -171,7 +171,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              Datos actualizados correctamente
+              {{ $t('edit_success') }}
             </div>
 
             <div v-if="nifChanged" class="alert alert-warning" role="alert">
@@ -180,7 +180,7 @@
                 <line x1="12" y1="9" x2="12" y2="13"></line>
                 <line x1="12" y1="17" x2="12.01" y2="17"></line>
               </svg>
-              Has cambiado el NIF. Necesitarás volver a iniciar sesión.
+              {{ $t('nif_changed') }}
             </div>
 
             <div class="form-actions form-actions--right">
@@ -190,7 +190,7 @@
                 @click="cancelEdit" 
                 :disabled="editLoading"
                 aria-label="Cancelar edición y descartar cambios">
-                Cancelar
+                {{ $t('cancel') }}
               </button>
               <button 
                 type="submit" 
@@ -201,7 +201,7 @@
                 <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                {{ editLoading ? 'Guardando...' : 'Guardar cambios' }}
+                {{ editLoading ? $t('saving') : $t('save_changes') }}
               </button>
             </div>
           </form>
@@ -211,8 +211,8 @@
       <div class="section">
         <div class="panel-card">
           <div class="panel-header">
-            <h3>Cambiar Contraseña</h3>
-            <p class="panel-subtitle">Actualiza tu contraseña de acceso</p>
+            <h3>{{ $t('change_password') }}</h3>
+            <p class="panel-subtitle">{{ $t('update_password') }}</p>
           </div>
 
           <button 
@@ -220,12 +220,12 @@
             type="button"
             class="btn-secondary" 
             @click="showPwForm=true"
-            aria-label="Mostrar formulario para cambiar contraseña">
+            :aria-label="$t('show_pw_form')">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
             </svg>
-            Cambiar contraseña
+            {{ $t('change_password') }}
           </button>
 
           <form v-else @submit.prevent="submitPw">
@@ -240,15 +240,15 @@
 
             <div class="form-grid">
               <div class="form-group full-width">
-                <label class="form-label">Contraseña Actual <span class="required">*</span></label>
+                <label class="form-label">{{ $t('current_password') }} <span class="required">*</span></label>
                 <input type="password" v-model="pw.current" class="form-input" required />
               </div>
               <div class="form-group">
-                <label class="form-label">Nueva Contraseña <span class="required">*</span></label>
+                <label class="form-label">{{ $t('new_password') }} <span class="required">*</span></label>
                 <input type="password" v-model="pw.new1" class="form-input" minlength="6" required />
               </div>
               <div class="form-group">
-                <label class="form-label">Repetir Nueva Contraseña <span class="required">*</span></label>
+                <label class="form-label">{{ $t('repeat_new_password') }} <span class="required">*</span></label>
                 <input type="password" v-model="pw.new2" class="form-input" minlength="6" required />
               </div>
             </div>
@@ -266,7 +266,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-              Contraseña cambiada correctamente. Redirigiendo...
+              {{ $t('password_changed') }}
             </div>
 
             <div class="form-actions form-actions--right">
@@ -275,8 +275,8 @@
                 class="btn-secondary"
                 @click="cancelPw" 
                 :disabled="pwLoading"
-                aria-label="Cancelar cambio de contraseña">
-                Cancelar
+                :aria-label="$t('cancel_pw')">
+                {{ $t('cancel') }}
               </button>
               <button 
                 type="submit" 
@@ -287,7 +287,7 @@
                 <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                {{ pwLoading ? 'Guardando...' : 'Guardar nueva contraseña' }}
+                {{ pwLoading ? $t('saving') : $t('save_new_password') }}
               </button>
             </div>
           </form>
@@ -303,9 +303,9 @@
               <line x1="12" y1="9" x2="12" y2="13"></line>
               <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
-            <h3>Confirmar eliminación</h3>
+            <h3>{{ $t('delete_account') }}</h3>
           </div>
-          <p class="modal-text">¿Estás seguro que quieres eliminar tu cuenta? Esta acción es irreversible y perderás todos tus datos.</p>
+          <p class="modal-text">{{ $t('delete_account_confirm') }}</p>
           
           <div v-if="deleteError" class="alert alert-danger" role="alert">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -322,8 +322,8 @@
               class="btn-secondary"
               :disabled="deleteLoading" 
               @click="closeDelete" 
-              aria-label="Cancelar eliminación de cuenta">
-              Cancelar
+              :aria-label="$t('cancel_delete')">
+              {{ $t('cancel') }}
             </button>
             <button 
               type="button"
@@ -336,7 +336,7 @@
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
-              {{ deleteLoading ? 'Eliminando...' : 'Sí, eliminar mi cuenta' }}
+              {{ deleteLoading ? $t('delete_loading') : $t('delete_confirm') }}
             </button>
           </div>
         </div>

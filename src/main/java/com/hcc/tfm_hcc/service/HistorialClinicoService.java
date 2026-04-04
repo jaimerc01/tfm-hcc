@@ -62,6 +62,15 @@ public interface HistorialClinicoService {
     HistorialClinicoDTO actualizarAlergias(String alergiasJson);
     
     /**
+     * Añade nuevas alergias al historial clínico sin eliminar las existentes.
+     *
+     * @param alergiasJson las nuevas alergias en formato texto (una por línea)
+     * @return el DTO del historial clínico actualizado
+     * @throws IllegalArgumentException si los datos son inválidos
+     */
+    HistorialClinicoDTO añadirAlergias(String alergiasJson);
+    
+    /**
      * Actualiza los análisis de sangre del historial clínico.
      * Reemplaza todos los análisis existentes con los nuevos.
      *

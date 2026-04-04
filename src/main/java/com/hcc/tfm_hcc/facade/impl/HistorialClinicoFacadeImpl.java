@@ -336,6 +336,34 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
     }
 
     /**
+     * Añade nuevas alergias sin eliminar las existentes.
+     * 
+     * @param alergiasJson Texto con las nuevas alergias (una por línea)
+     * @return HistorialClinicoDTO El historial clínico actualizado
+     * @throws IllegalArgumentException Si los datos de alergias son inválidos
+     * @throws RuntimeException Si ocurre un error durante la operación
+     */
+    @Override
+    public HistorialClinicoDTO añadirAlergias(String alergiasJson) {
+        log.debug("Añadiendo nuevas alergias en historial clínico");
+        
+        try {
+            validarJson(alergiasJson, "alergias");
+            
+            HistorialClinicoDTO resultado = historiaClinicaService.añadirAlergias(alergiasJson);
+            
+            log.info("Alergias añadidas exitosamente en historial clínico");
+            return resultado;
+        } catch (IllegalArgumentException e) {
+            log.warn("Error de validación al añadir alergias: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al añadir alergias: {}", e.getMessage(), e);
+            throw new RuntimeException("Error interno durante la adición de alergias", e);
+        }
+    }
+
+    /**
      * Actualiza los análisis de sangre en el historial clínico.
      * 
      * @param analisisJson JSON con los datos de análisis de sangre

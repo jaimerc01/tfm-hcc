@@ -5,18 +5,18 @@
     </button>
 
     <div v-if="open" class="notif__menu">
-      <div class="notif__header">Notificaciones</div>
+      <div class="notif__header">{{ $t('notifications') }}</div>
       <ul>
         <li v-for="n in notifications" :key="n.id" :class="{ 'notif--unread': !n.leida }">
           <div class="notif__message" @click.stop.prevent="onNotificationClick(n)">{{ n.mensaje }}</div>
           <div class="notif__time">{{ formatDate(n.fechaCreacion) }}</div>
-          <button class="notif__delete" @click.stop.prevent="onDelete(n)" aria-label="Eliminar">✕</button>
+          <button class="notif__delete" @click.stop.prevent="onDelete(n)" :aria-label="$t('delete')">✕</button>
         </li>
-        <li v-if="notifications.length===0" class="notif__empty">No tienes notificaciones</li>
+        <li v-if="notifications.length===0" class="notif__empty">{{ $t('no_notifications') }}</li>
       </ul>
       <div class="notif__footer">
-        <button @click="markAllRead">Marcar todas como leídas</button>
-        <button v-if="notifications.length < total" @click="loadMore" :disabled="loading">{{ loading ? 'Cargando...' : 'Cargar más' }}</button>
+        <button @click="markAllRead">{{ $t('mark_all_read') }}</button>
+        <button v-if="notifications.length < total" @click="loadMore" :disabled="loading">{{ loading ? $t('loading') : $t('load_more') }}</button>
       </div>
     </div>
   </div>

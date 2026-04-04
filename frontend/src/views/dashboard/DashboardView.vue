@@ -1,13 +1,12 @@
 <template>
   <div class="dashboard">
-  <h1>Inicio</h1>
-  <p v-if="welcomeName">Hola, {{ welcomeName }}</p>
-  <p v-else>¡Bienvenido! Has iniciado sesión correctamente.</p>
-    
+    <h1>{{$t('dashboard_title')}}</h1>
+    <p v-if="welcomeName">{{$t('hello')}} {{ welcomeName }}</p>
+    <p v-else>{{$t('welcome_login_success')}}</p>
     <div class="user-info">
-      <p>Usuario autenticado</p>
+      <p>{{$t('authenticated_user')}}</p>
       <button @click="showLogoutModal = true" class="logout-btn">
-        Cerrar Sesión
+        {{$t('logout_button')}}
       </button>
     </div>
   </div>
@@ -21,12 +20,12 @@
           <polyline points="16 17 21 12 16 7"></polyline>
           <line x1="21" y1="12" x2="9" y2="12"></line>
         </svg>
-        <h3>Cerrar sesión</h3>
+        <h3>{{$t('logout_confirm_title')}}</h3>
       </div>
-      <p class="logout-modal-text">¿Estás seguro de que deseas cerrar sesión?</p>
+      <p class="logout-modal-text">{{$t('logout_confirm_text')}}</p>
       <div class="logout-modal-actions">
-        <button @click="confirmLogout" class="btn-confirm">Sí, cerrar sesión</button>
-        <button @click="showLogoutModal = false" class="btn-cancel">Cancelar</button>
+        <button @click="confirmLogout" class="btn-confirm">{{$t('logout_confirm_button')}}</button>
+        <button @click="showLogoutModal = false" class="btn-cancel">{{$t('logout_cancel_button')}}</button>
       </div>
     </div>
   </div>
