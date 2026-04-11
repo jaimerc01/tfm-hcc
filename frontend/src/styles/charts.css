@@ -2,7 +2,7 @@
 
 .chart-section {
   background: white;
-  border: 1px solid var(--border, #e5e5e5);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
@@ -24,11 +24,11 @@
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .chart-header h4 svg {
-  color: var(--primary-color, #0284c7);
+  color: var(--primary-color);
 }
 
 .chart-controls {
@@ -55,10 +55,10 @@
 }
 
 .chart-empty {
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   padding: 2rem;
-  background: var(--bg-light, #fafafa);
-  border: 1px dashed var(--border, #e5e5e5);
+  background: var(--bg-light);
+  border: 1px dashed var(--border);
   border-radius: 8px;
   text-align: center;
   width: 100%;
@@ -77,11 +77,11 @@
 
 .chart-container svg .axis path,
 .chart-container svg .axis line {
-  stroke: var(--border, #e5e5e5);
+  stroke: var(--border);
 }
 
 .chart-container svg .axis text {
-  fill: var(--text-secondary, #737373);
+  fill: var(--text-secondary);
 }
 
 /* Tooltips interactivos */
@@ -103,7 +103,7 @@
   display: block;
   margin-bottom: 4px;
   font-size: 14px;
-  color: #fff;
+  color: var(--text-inverse);
 }
 
 /* Interactividad en puntos y barras */
@@ -119,9 +119,9 @@
 
 /* Brush para zoom */
 .chart-container .brush .selection {
-  fill: var(--primary-color, #0284c7);
+  fill: var(--primary-color);
   fill-opacity: 0.2;
-  stroke: var(--primary-color, #0284c7);
+  stroke: var(--primary-color);
   stroke-width: 1px;
 }
 

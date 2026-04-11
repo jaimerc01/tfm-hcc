@@ -29,14 +29,14 @@ export default {
 .nav-link {
   display: inline-block;
   padding: 0.75rem 1.5rem;
-  background-color: #42b983;
-  color: white;
+  background-color: var(--brand-accent);
+  color: var(--text-inverse);
   text-decoration: none;
   border-radius: 4px;
   transition: background-color 0.3s;
 }
 
 .nav-link:hover {
-  background-color: #369870;
+  background-color: var(--brand-accent-hover);
 }
 </style>

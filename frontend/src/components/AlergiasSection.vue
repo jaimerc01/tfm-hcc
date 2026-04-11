@@ -98,7 +98,7 @@
         <AppModal v-if="showDelete && deleteAlergia" :label="$t('delete_allergy')" @close="closeDelete">
           <template #header>
             <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#d32f2f;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger-color);">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
@@ -225,12 +225,12 @@ export default {
 }
 
 .form-label svg {
-  color: var(--warning-color, #d97706);
+  color: var(--warning-color);
 }
 
 .form-help {
   font-size: 0.8125rem;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   margin-top: 0.5rem;
   margin-bottom: 0;
 }
@@ -250,8 +250,8 @@ export default {
 
 .allergy-card {
   background: white;
-  border: 1px solid var(--border, #e5e5e5);
-  border-left: 4px solid var(--warning-color, #d97706);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--warning-color);
   border-radius: 8px;
   padding: 1rem;
   transition: all 0.2s ease;
@@ -270,7 +270,7 @@ export default {
 }
 
 .allergy-icon {
-  color: var(--warning-color, #d97706);
+  color: var(--warning-color);
   flex-shrink: 0;
 }
 
@@ -278,7 +278,7 @@ export default {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
   word-break: break-word;
 }
 
@@ -296,20 +296,20 @@ export default {
   display: flex;
   justify-content: flex-end;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--border, #e5e5e5);
+  border-top: 1px solid var(--border);
 }
 
 /* Empty state small variant */
 .empty-state-small {
   text-align: center;
   padding: 3rem 2rem;
-  background: var(--bg-light, #fafafa);
+  background: var(--bg-light);
   border-radius: 12px;
-  border: 1px dashed var(--border, #e5e5e5);
+  border: 1px dashed var(--border);
 }
 
 .empty-state-small svg {
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   opacity: 0.3;
   margin-bottom: 1rem;
 }
@@ -318,11 +318,11 @@ export default {
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .empty-state-small span {
   font-size: 0.875rem;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
 }
 </style>

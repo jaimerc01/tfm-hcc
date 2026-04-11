@@ -207,9 +207,9 @@ export default {
 <style scoped>
 .admin-medicos { max-width: 900px; margin: 2rem auto; }
 .medicos-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-.medicos-table th, .medicos-table td { border: 1px solid #ccc; padding: 0.5rem; }
-.medico-form-modal { position: fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.2); display:flex; align-items:center; justify-content:center; }
-.medico-form { background:#fff; padding:2rem; border-radius:8px; min-width:300px; }
+.medicos-table th, .medicos-table td { border: 1px solid var(--border-medium); padding: 0.5rem; }
+.medico-form-modal { position: fixed; top:0; left:0; right:0; bottom:0; background:var(--surface-overlay-soft); display:flex; align-items:center; justify-content:center; }
+.medico-form { background:var(--card-bg); padding:2rem; border-radius:8px; min-width:300px; }
 .form-actions { display:flex; gap:1rem; }
-.error-message { color: #c00; margin-top: 1rem; }
+.error-message { color: var(--danger-color); margin-top: 1rem; }
 </style>

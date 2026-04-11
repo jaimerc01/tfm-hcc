@@ -64,6 +64,7 @@
 
 <script>
 import { useChart } from '@/composables/useChart'
+import { getThemeColor } from '@/utils/themeColors'
 
 export default {
   name: 'DashboardMetricsView',
@@ -87,6 +88,15 @@ export default {
   },
 
   data() {
+    const metricColors = {
+      glucosa: getThemeColor('--chart-emphasis'),
+      hemoglobina: getThemeColor('--danger-color'),
+      colesterol: getThemeColor('--warning-hover'),
+      trigliceridos: getThemeColor('--warning-color'),
+      creatinina: getThemeColor('--primary-color'),
+      hematocrito: getThemeColor('--metric-hematocrito')
+    }
+
     return {
       chartType: 'interactive',
       selectedMetric: 'glucosa',
@@ -96,7 +106,7 @@ export default {
           key: 'glucosa',
           label: 'Glucosa',
           unit: 'mg/dL',
-          color: '#c73333',
+          color: metricColors.glucosa,
           recommendedMin: null,
           recommendedMax: null,
           gaugeMin: 0,
@@ -106,7 +116,7 @@ export default {
           key: 'hemoglobina',
           label: 'Hemoglobina',
           unit: 'g/dL',
-          color: '#dc2626',
+          color: metricColors.hemoglobina,
           recommendedMin: null,
           recommendedMax: null,
           gaugeMin: 0,
@@ -116,7 +126,7 @@ export default {
           key: 'colesterol',
           label: 'Colesterol Total',
           unit: 'mg/dL',
-          color: '#ea580c',
+          color: metricColors.colesterol,
           recommendedMin: null,
           recommendedMax: null,
           gaugeMin: 0,
@@ -126,7 +136,7 @@ export default {
           key: 'trigliceridos',
           label: 'Triglicéridos',
           unit: 'mg/dL',
-          color: '#d97706',
+          color: metricColors.trigliceridos,
           recommendedMin: null,
           recommendedMax: null,
           gaugeMin: 0,
@@ -136,7 +146,7 @@ export default {
           key: 'creatinina',
           label: 'Creatinina',
           unit: 'mg/dL',
-          color: '#0284c7',
+          color: metricColors.creatinina,
           recommendedMin: null,
           recommendedMax: null,
           gaugeMin: 0,
@@ -146,7 +156,7 @@ export default {
           key: 'hematocrito',
           label: 'Hematocrito',
           unit: '%',
-          color: '#7c3aed',
+          color: metricColors.hematocrito,
           recommendedMin: null,
           recommendedMax: null,
           gaugeMin: 0,
@@ -332,7 +342,7 @@ export default {
 .dashboard-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -340,7 +350,7 @@ export default {
 .chart-section h3 {
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
   margin: 0 0 1rem 0;
 }
 
@@ -354,15 +364,15 @@ export default {
   display: flex;
   gap: 1rem;
   padding: 1rem;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: var(--surface-info-bg);
+  border: 1px solid var(--surface-info-border);
   border-radius: 8px;
-  color: #1e40af;
+  color: var(--surface-info-text);
 }
 
 .info-box svg {
   flex-shrink: 0;
-  color: #3b82f6;
+  color: var(--surface-info-icon);
 }
 
 .info-box strong {

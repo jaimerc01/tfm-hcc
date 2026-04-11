@@ -1,12 +1,16 @@
 import * as d3 from 'd3'
+import { getThemeColor } from '@/utils/themeColors'
 
 /**
  * Gráfico de línea temporal simple
  */
 export function drawTimeSeriesChart(container, data, options = {}) {
+  const defaultColor = getThemeColor('--chart-emphasis')
+  const recommendedBandColor = getThemeColor('--chart-recommended-band')
+
   const {
     label = '',
-    color = '#c73333',
+    color = defaultColor,
     recommendedMin = null,
     recommendedMax = null,
     width: customWidth = null,
@@ -87,7 +91,7 @@ export function drawTimeSeriesChart(container, data, options = {}) {
       .attr('y', rectY)
       .attr('width', innerW)
       .attr('height', rectH)
-      .attr('fill', '#d2f0d9')
+      .attr('fill', recommendedBandColor)
       .attr('opacity', 0.35)
       .attr('aria-hidden', 'true')
   }

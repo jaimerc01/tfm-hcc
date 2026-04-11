@@ -545,15 +545,15 @@ export default {
   flex-direction: column;
   gap: 0.5rem;
   padding: 1rem;
-  background: var(--bg-light, #fafafa);
+  background: var(--bg-light);
   border-radius: 8px;
-  border: 1px solid var(--border, #e5e5e5);
+  border: 1px solid var(--border);
 }
 
 .data-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -561,7 +561,7 @@ export default {
 .data-value {
   font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
   word-break: break-word;
 }
 

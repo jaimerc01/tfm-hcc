@@ -136,9 +136,9 @@ button:disabled, .btn:disabled {
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
-  background: #e5e7eb !important;
-  color: #9ca3af !important;
-  border-color: #e5e7eb !important;
+  background: var(--chart-gauge-bg) !important;
+  color: var(--text-placeholder) !important;
+  border-color: var(--chart-gauge-bg) !important;
 }
 
 /* Loading State */
@@ -504,8 +504,8 @@ button:focus-visible, .btn:focus-visible {
   position: fixed;
   right: 1rem;
   bottom: 1rem;
-  background: #2b7a0b;
-  color: white;
+  background: var(--success-hover);
+  color: var(--text-inverse);
   padding: .6rem .9rem;
   border-radius: 6px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.15);
@@ -515,14 +515,14 @@ button:focus-visible, .btn:focus-visible {
 .section-panel { padding: 16px; border-radius: var(--radius); background: var(--card-bg); }
 
 /* Common helpers used by multiple views */
-.error { color: #b00020; }
+.error { color: var(--danger-active); }
 .row { display:flex; gap:1rem; }
 .row > div { flex:1 }
 
 /* Additional shared helpers discovered by style checker */
-.success { color: #166534; }
-.nav-link:hover { background-color: #369870; }
-.login-btn:hover:not(:disabled) { background-color: #369870; }
+.success { color: var(--success-active); }
+.nav-link:hover { background-color: var(--brand-accent-hover); }
+.login-btn:hover:not(:disabled) { background-color: var(--brand-accent-hover); }
 .dashboard, .home { padding: 2rem; text-align: center; }
 .user-info, .navigation { margin-top: 2rem; }
 .solicitud-actions { margin-top: 0.5rem; }

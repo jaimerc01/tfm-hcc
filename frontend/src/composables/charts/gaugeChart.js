@@ -1,4 +1,5 @@
 import * as d3 from 'd3'
+import { getThemeColor } from '@/utils/themeColors'
 
 /**
  * Dibuja un gauge (medidor circular) para mostrar el valor actual vs rango
@@ -7,6 +8,13 @@ import * as d3 from 'd3'
  * @param {Object} options - Opciones de configuración
  */
 export function drawGaugeChart(container, value, options = {}) {
+  const gaugeBackgroundColor = getThemeColor('--chart-gauge-bg')
+  const successColor = getThemeColor('--success-color')
+  const defaultColor = getThemeColor('--chart-default')
+  const dangerColor = getThemeColor('--danger-color')
+  const unitTextColor = getThemeColor('--chart-label-muted')
+  const labelTextColor = getThemeColor('--chart-label-strong')
+
   const {
     label = '',
     min = 0,
@@ -58,7 +66,7 @@ export function drawGaugeChart(container, value, options = {}) {
 
   g.append('path')
     .attr('d', backgroundArc)
-    .attr('fill', '#e5e7eb')
+    .attr('fill', gaugeBackgroundColor)
 
   // Dibujar zona verde del rango recomendado si existe
   if (recommendedMin != null && recommendedMax != null) {
@@ -76,27 +84,27 @@ export function drawGaugeChart(container, value, options = {}) {
     
     g.append('path')
       .attr('d', recommendedArc)
-      .attr('fill', '#16a34a')
+      .attr('fill', successColor)
       .attr('opacity', 0.3)
-      .attr('stroke', '#16a34a')
+      .attr('stroke', successColor)
       .attr('stroke-width', 2)
       .style('pointer-events', 'none')
       .raise() // Mover al frente para que se vea encima
   }
 
   // Determinar color según el rango
-  let fillColor = '#0284c7'
+  let fillColor = defaultColor
   let statusText = ''
   
   if (recommendedMin != null && recommendedMax != null) {
     if (value < recommendedMin) {
-      fillColor = '#dc2626' // Rojo si está fuera de rango
+      fillColor = dangerColor // Rojo si está fuera de rango
       statusText = 'Bajo'
     } else if (value > recommendedMax) {
-      fillColor = '#dc2626' // Rojo si está fuera de rango
+      fillColor = dangerColor // Rojo si está fuera de rango
       statusText = 'Alto'
     } else {
-      fillColor = '#16a34a' // Verde si está en rango
+      fillColor = successColor // Verde si está en rango
       statusText = 'Normal'
     }
   }
@@ -136,7 +144,7 @@ export function drawGaugeChart(container, value, options = {}) {
     .attr('text-anchor', 'middle')
     .attr('dy', '2.5em')
     .style('font-size', '14px')
-    .style('fill', '#6b7280')
+    .style('fill', unitTextColor)
     .text(unit)
 
   // Label
@@ -146,7 +154,7 @@ export function drawGaugeChart(container, value, options = {}) {
       .attr('dy', '-2em')
       .style('font-size', '16px')
       .style('font-weight', '600')
-      .style('fill', '#374151')
+      .style('fill', labelTextColor)
       .text(label)
   }
 

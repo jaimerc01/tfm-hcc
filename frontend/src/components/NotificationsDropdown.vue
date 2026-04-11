@@ -130,18 +130,18 @@ export default {
 
 <style scoped>
 .notifications { position: relative; display: inline-block; }
-.notif__button { background: transparent; border: none; color: #ecf0f1; font-size: 1.1rem; cursor: pointer; }
-.notif__badge { background: #e74c3c; color: #fff; padding: 2px 6px; border-radius: 999px; margin-left: 4px; font-size: 0.75rem; }
-.notif__menu { position: absolute; right: 0; top: 36px; background: #34495e; color: #fff; min-width: 260px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 2000; }
+.notif__button { background: transparent; border: none; color: var(--surface-nav-dark-text); font-size: 1.1rem; cursor: pointer; }
+.notif__badge { background: var(--danger-color); color: var(--text-inverse); padding: 2px 6px; border-radius: 999px; margin-left: 4px; font-size: 0.75rem; }
+.notif__menu { position: absolute; right: 0; top: 36px; background: var(--surface-nav-dark); color: var(--text-inverse); min-width: 260px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 2000; }
 .notif__header { padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); font-weight: 600; }
 .notif__menu ul { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow:auto; }
 .notif__menu li { padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.03); }
 .notif--unread { background: rgba(0,0,0,0.08); }
 .notif__message { font-size: 0.95rem; }
-.notif__time { font-size: 0.75rem; color: #bdc3c7; }
-.notif__empty { padding: 0.5rem 0.75rem; color: #bdc3c7 }
+.notif__time { font-size: 0.75rem; color: var(--surface-nav-dark-muted); }
+.notif__empty { padding: 0.5rem 0.75rem; color: var(--surface-nav-dark-muted) }
 .notif__footer { padding: 0.5rem; text-align: right; }
-.notif__footer button { background: transparent; border: 1px solid rgba(255,255,255,0.08); color: #fff; padding: 0.3rem 0.5rem; border-radius: 4px; cursor: pointer; }
-.notif__delete { background: transparent; border: none; color: #bdc3c7; cursor: pointer; float: right; }
-.notif__delete:hover { color: #fff; }
+.notif__footer button { background: transparent; border: 1px solid rgba(255,255,255,0.08); color: var(--text-inverse); padding: 0.3rem 0.5rem; border-radius: 4px; cursor: pointer; }
+.notif__delete { background: transparent; border: none; color: var(--surface-nav-dark-muted); cursor: pointer; float: right; }
+.notif__delete:hover { color: var(--text-inverse); }
 </style>

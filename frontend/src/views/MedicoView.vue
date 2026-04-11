@@ -152,7 +152,7 @@ export default {
 .search-form {
   margin: 2rem 0;
   padding: 1rem;
-  background: #f8f8f8;
+  background: var(--bg-light);
   border-radius: 8px;
   max-width: 400px;
 }
@@ -166,31 +166,31 @@ export default {
 .form-group input {
   width: 100%;
   padding: 0.5rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-medium);
   border-radius: 4px;
 }
 button[type="submit"] {
-  background: #1976d2;
-  color: #fff;
+  background: var(--primary-color);
+  color: var(--text-inverse);
   border: none;
   padding: 0.5rem 1.2rem;
   border-radius: 4px;
   cursor: pointer;
 }
 button[type="submit"]:hover {
-  background: #125ea2;
+  background: var(--primary-hover);
 }
 .asignar-btn {
   margin-top: 1rem;
-  background: #388e3c;
-  color: #fff;
+  background: var(--success-color);
+  color: var(--text-inverse);
   border: none;
   padding: 0.5rem 1.2rem;
   border-radius: 4px;
   cursor: pointer;
 }
 .asignar-btn:hover {
-  background: #256029;
+  background: var(--success-hover);
 }
 .success { margin-top: 0.5rem; }
 </style>

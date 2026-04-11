@@ -69,16 +69,16 @@ export default {
 </script>
 
 <style scoped>
-.login-container { display:flex; justify-content:center; align-items:center; min-height:100vh; background-color:#f5f5f5 }
-.login-card { background:white; padding:2rem; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.1); width:100%; max-width:400px }
+.login-container { display:flex; justify-content:center; align-items:center; min-height:100vh; background-color:var(--bg-medium) }
+.login-card { background:var(--card-bg); padding:2rem; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.1); width:100%; max-width:400px }
 .login-form { display:flex; flex-direction:column; gap:1rem }
 .form-group { display:flex; flex-direction:column; gap:.5rem }
-.form-group label { font-weight:500; color:#333 }
-.form-group input { padding:.75rem; border:1px solid #ddd; border-radius:4px; font-size:1rem }
-.login-btn { background-color:#42b983; color:white; padding:.75rem; border:none; border-radius:4px; font-size:1rem; cursor:pointer; transition:background-color .3s }
+.form-group label { font-weight:500; color:var(--text-primary) }
+.form-group input { padding:.75rem; border:1px solid var(--neutral-300); border-radius:4px; font-size:1rem }
+.login-btn { background-color:var(--brand-accent); color:var(--text-inverse); padding:.75rem; border:none; border-radius:4px; font-size:1rem; cursor:pointer; transition:background-color .3s }
 .login-btn:disabled { opacity:.6; cursor:not-allowed }
-.error-message { color:#e74c3c; text-align:center; padding:.5rem; background-color:#fdf2f2; border-radius:4px }
+.error-message { color:var(--danger-color); text-align:center; padding:.5rem; background-color:var(--danger-soft-bg); border-radius:4px }
 .alt-actions { margin-top:1rem; text-align:center }
-.alt-actions a { color:#42b983; text-decoration:none }
+.alt-actions a { color:var(--brand-accent); text-decoration:none }
 .alt-actions a:hover { text-decoration:underline }
 </style>

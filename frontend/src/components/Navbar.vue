@@ -102,8 +102,8 @@ export default {
   top: 0; 
   left: 0; 
   right: 0; 
-  background: var(--primary-color, #0284c7); 
-  color: #fff; 
+  background: var(--primary-color); 
+  color: var(--text-inverse); 
   z-index: 1000; 
   box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
 }
@@ -116,21 +116,21 @@ export default {
 }
 
 .nav__brand { 
-  color: #fff; 
+  color: var(--text-inverse); 
   text-decoration: none; 
   font-weight: 600; 
   font-size: 1.1rem; 
 }
 
 .nav__brand:hover {
-  color: var(--primary-light, #bae6fd);
+  color: var(--primary-light);
 }
 
 .nav__toggle { 
   display: none; 
   background: transparent; 
   border: none; 
-  color: #fff; 
+  color: var(--text-inverse); 
   font-size: 1.25rem; 
   cursor: pointer; 
   padding: 0.25rem;
@@ -139,7 +139,7 @@ export default {
 }
 
 .nav__toggle:hover {
-  background: var(--primary-hover, #0369a1);
+  background: var(--primary-hover);
 }
 
 .nav__links { 
@@ -159,19 +159,19 @@ export default {
 }
 
 .nav__link:hover {
-  color: #fff;
-  background: var(--primary-hover, #0369a1);
+  color: var(--text-inverse);
+  background: var(--primary-hover);
 }
 
 .nav__link.router-link-exact-active { 
-  color: #fff;
-  background: var(--primary-active, #075985);
+  color: var(--text-inverse);
+  background: var(--primary-active);
 }
 
 .nav__logout { 
   margin-left: 0.5rem; 
-  background: var(--danger-color, #dc2626); 
-  color: #fff; 
+  background: var(--danger-color); 
+  color: var(--text-inverse); 
   border: none; 
   padding: 0.5rem 0.75rem; 
   border-radius: 4px; 
@@ -181,7 +181,7 @@ export default {
 }
 
 .nav__logout:hover { 
-  background: var(--danger-hover, #b91c1c); 
+  background: var(--danger-hover); 
 }
 
 .nav__spacer { 
@@ -198,11 +198,11 @@ export default {
     top: 56px; 
     left: 0; 
     right: 0; 
-    background: var(--primary-color, #0284c7); 
+    background: var(--primary-color); 
     flex-direction: column; 
     padding: 0.75rem 1rem; 
     display: none; 
-    border-top: 1px solid var(--primary-hover, #0369a1);
+    border-top: 1px solid var(--primary-hover);
   }
   
   .nav__links--open { 
@@ -229,7 +229,7 @@ export default {
 .nav__dropdown-content { 
   display: none; 
   position: absolute; 
-  background: var(--primary-hover, #0369a1); 
+  background: var(--primary-hover); 
   min-width: 180px; 
   z-index: 1; 
   border-radius: 4px;
@@ -248,7 +248,7 @@ export default {
 }
 
 .nav__dropdown-content .nav__link:hover {
-  background: var(--primary-active, #075985);
+  background: var(--primary-active);
 }
 
 /* Modal de logout */
@@ -298,19 +298,19 @@ export default {
 }
 
 .logout-icon {
-  color: var(--danger-color, #dc2626);
+  color: var(--danger-color);
 }
 
 .logout-modal-header h3 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .logout-modal-text {
   text-align: center;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   margin-bottom: 2rem;
   font-size: 1rem;
 }
@@ -340,25 +340,25 @@ export default {
 }
 
 .btn-confirm {
-  background: var(--danger-color, #dc2626);
+  background: var(--danger-color);
   color: white;
 }
 
 .btn-confirm:hover {
-  background: #b91c1c;
+  background: var(--danger-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
 .btn-cancel {
-  background: var(--bg-light, #fafafa);
-  color: var(--text-primary, #262626);
-  border: 1.5px solid var(--border, #e5e5e5);
+  background: var(--bg-light);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border);
 }
 
 .btn-cancel:hover {
-  background: var(--border, #e5e5e5);
+  background: var(--border);
 }
 </style>
-.nav__dropdown-content .nav__link { display: block; padding: 0.5rem 1rem; color: #ecf0f1; }
-.nav__dropdown-content .nav__link:hover { background: #22313a; color: #42b983; }
+.nav__dropdown-content .nav__link { display: block; padding: 0.5rem 1rem; color: var(--surface-nav-dark-text); }
+.nav__dropdown-content .nav__link:hover { background: var(--surface-nav-dark-hover); color: var(--brand-accent); }

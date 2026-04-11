@@ -321,7 +321,7 @@ export default {
   gap: 1.5rem;
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 2px solid var(--primary-color, #0284c7);
+  border-bottom: 2px solid var(--primary-color);
 }
 
 .header-icon {
@@ -330,7 +330,7 @@ export default {
   justify-content: center;
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, var(--primary-color, #0284c7), var(--primary-hover, #0369a1));
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   border-radius: 12px;
   color: white;
   flex-shrink: 0;
@@ -340,12 +340,12 @@ export default {
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .subtitle {
   margin: 0.25rem 0 0 0;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
@@ -362,8 +362,8 @@ export default {
 .spinner {
   width: 48px;
   height: 48px;
-  border: 4px solid var(--border, #e5e5e5);
-  border-top-color: var(--primary-color, #0284c7);
+  border: 4px solid var(--border);
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -373,7 +373,7 @@ export default {
 }
 
 .loading-container p {
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -394,15 +394,15 @@ export default {
 }
 
 .alert-danger {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: var(--alert-danger-bg);
+  color: var(--alert-danger-text);
+  border: 1px solid var(--alert-danger-border);
 }
 
 .alert-success {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+  background: var(--alert-success-bg);
+  color: var(--alert-success-text);
+  border: 1px solid var(--alert-success-border);
 }
 
 /* Empty state */
@@ -412,7 +412,7 @@ export default {
 }
 
 .empty-state svg {
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   opacity: 0.3;
   margin-bottom: 1.5rem;
 }
@@ -421,12 +421,12 @@ export default {
   margin: 0 0 0.5rem 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .empty-state p {
   margin: 0;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
@@ -441,14 +441,14 @@ export default {
   gap: 0.75rem;
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
   margin: 0 0 1.5rem 0;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border, #e5e5e5);
+  border-bottom: 1px solid var(--border);
 }
 
 .section-title svg {
-  color: var(--primary-color, #0284c7);
+  color: var(--primary-color);
 }
 
 /* Grid */
@@ -473,7 +473,7 @@ export default {
 /* Cards */
 .solicitud-card {
   background: white;
-  border: 1px solid var(--border, #e5e5e5);
+  border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.2s ease;
@@ -489,13 +489,13 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: var(--bg-light, #fafafa);
-  border-bottom: 1px solid var(--border, #e5e5e5);
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border);
 }
 
 .card-date {
   font-size: 0.75rem;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
 }
 
 /* Status badges */
@@ -511,18 +511,18 @@ export default {
 }
 
 .status-pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--badge-warning-bg);
+  color: var(--badge-warning-text);
 }
 
 .status-accepted {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--success-light);
+  color: var(--success-active);
 }
 
 .status-rejected {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--badge-danger-bg);
+  color: var(--badge-danger-text);
 }
 
 /* Card body */
@@ -540,7 +540,7 @@ export default {
 }
 
 .info-row svg {
-  color: var(--primary-color, #0284c7);
+  color: var(--primary-color);
   flex-shrink: 0;
   margin-top: 0.125rem;
 }
@@ -555,14 +555,14 @@ export default {
 .info-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.025em;
 }
 
 .info-value {
   font-size: 0.875rem;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
   font-weight: 500;
   word-break: break-word;
 }
@@ -572,8 +572,8 @@ export default {
   display: flex;
   gap: 0.5rem;
   padding: 1rem;
-  border-top: 1px solid var(--border, #e5e5e5);
-  background: var(--bg-light, #fafafa);
+  border-top: 1px solid var(--border);
+  background: var(--bg-light);
 }
 
 .btn-accept,
@@ -593,23 +593,23 @@ export default {
 }
 
 .btn-accept {
-  background: var(--success-color, #16a34a);
+  background: var(--success-color);
   color: white;
 }
 
 .btn-accept:hover {
-  background: #15803d;
+  background: var(--success-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
 .btn-reject {
-  background: var(--danger-color, #dc2626);
+  background: var(--danger-color);
   color: white;
 }
 
 .btn-reject:hover {
-  background: #b91c1c;
+  background: var(--danger-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
@@ -665,23 +665,23 @@ export default {
 }
 
 .icon-success {
-  color: var(--success-color, #16a34a);
+  color: var(--success-color);
 }
 
 .icon-danger {
-  color: var(--danger-color, #dc2626);
+  color: var(--danger-color);
 }
 
 .modal-header h3 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .modal-text {
   text-align: center;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   margin-bottom: 2rem;
   font-size: 1rem;
 }
@@ -712,35 +712,35 @@ export default {
 }
 
 .btn-confirm-accept {
-  background: var(--success-color, #16a34a);
+  background: var(--success-color);
   color: white;
 }
 
 .btn-confirm-accept:hover {
-  background: #15803d;
+  background: var(--success-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
 .btn-confirm-reject {
-  background: var(--danger-color, #dc2626);
+  background: var(--danger-color);
   color: white;
 }
 
 .btn-confirm-reject:hover {
-  background: #b91c1c;
+  background: var(--danger-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
 .btn-cancel {
-  background: var(--bg-light, #fafafa);
-  color: var(--text-primary, #262626);
-  border: 1.5px solid var(--border, #e5e5e5);
+  background: var(--bg-light);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border);
 }
 
 .btn-cancel:hover {
-  background: var(--border, #e5e5e5);
+  background: var(--border);
 }
 
 /* Responsive */

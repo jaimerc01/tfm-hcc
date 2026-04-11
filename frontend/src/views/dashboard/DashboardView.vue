@@ -86,8 +86,8 @@ export default {
 </script>
 
 <style scoped>
-.logout-btn { background-color:#e74c3c; color:white; padding:.75rem 1.5rem; border:none; border-radius:4px; cursor:pointer; font-size:1rem }
-.logout-btn:hover { background-color:#c0392b }
+.logout-btn { background-color:var(--danger-color); color:var(--text-inverse); padding:.75rem 1.5rem; border:none; border-radius:4px; cursor:pointer; font-size:1rem }
+.logout-btn:hover { background-color:var(--danger-hover) }
 
 /* Modal de logout */
 .logout-modal-overlay {
@@ -136,19 +136,19 @@ export default {
 }
 
 .logout-icon {
-  color: var(--danger-color, #dc2626);
+  color: var(--danger-color);
 }
 
 .logout-modal-header h3 {
   margin: 0;
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .logout-modal-text {
   text-align: center;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   margin-bottom: 2rem;
   font-size: 1rem;
 }
@@ -178,23 +178,23 @@ export default {
 }
 
 .btn-confirm {
-  background: var(--danger-color, #dc2626);
+  background: var(--danger-color);
   color: white;
 }
 
 .btn-confirm:hover {
-  background: #b91c1c;
+  background: var(--danger-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
 .btn-cancel {
-  background: var(--bg-light, #fafafa);
-  color: var(--text-primary, #262626);
-  border: 1.5px solid var(--border, #e5e5e5);
+  background: var(--bg-light);
+  color: var(--text-primary);
+  border: 1.5px solid var(--border);
 }
 
 .btn-cancel:hover {
-  background: var(--border, #e5e5e5);
+  background: var(--border);
 }
 </style>

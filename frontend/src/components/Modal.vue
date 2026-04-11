@@ -73,22 +73,22 @@ export default {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: var(--surface-overlay-strong);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
 .modal {
-  background: white;
+  background: var(--card-bg);
   width: 90%;
   max-width: 640px;
   border-radius: 8px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.35);
   overflow: hidden;
 }
-.modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eee }
+.modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border-subtle) }
 .modal-body { padding: 16px }
-.modal-footer { padding: 12px 16px; border-top:1px solid #eee; text-align:right }
+.modal-footer { padding: 12px 16px; border-top:1px solid var(--border-subtle); text-align:right }
 .modal-close { background: transparent; border: none; font-size:20px; cursor:pointer }
 </style>

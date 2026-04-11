@@ -1,4 +1,5 @@
 import * as d3 from 'd3'
+import { getThemeColor } from '@/utils/themeColors'
 
 /**
  * Dibuja un gráfico de barras con comparación
@@ -7,9 +8,12 @@ import * as d3 from 'd3'
  * @param {Object} options - Opciones de configuración
  */
 export function drawBarChart(container, data, options = {}) {
+  const defaultColor = getThemeColor('--chart-default')
+  const recommendedBandColor = getThemeColor('--chart-recommended-band')
+
   const {
     label = '',
-    color = '#0284c7',
+    color = defaultColor,
     recommendedMin = null,
     recommendedMax = null,
     width: customWidth = null,
@@ -67,7 +71,7 @@ export function drawBarChart(container, data, options = {}) {
       .attr('y', Math.min(yTop, yBottom))
       .attr('width', innerW)
       .attr('height', Math.abs(yBottom - yTop))
-      .attr('fill', '#d2f0d9')
+      .attr('fill', recommendedBandColor)
       .attr('opacity', 0.35)
   }
 

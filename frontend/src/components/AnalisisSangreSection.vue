@@ -304,6 +304,7 @@
 
 <script>
 import { useChart } from '@/composables/useChart'
+import { getThemeColor } from '@/utils/themeColors'
 
 export default {
   name: 'AnalisisSangreSection',
@@ -776,7 +777,7 @@ export default {
       // Opciones comunes para todos los gráficos
       const baseOptions = {
         label,
-        color: '#c73333',
+        color: getThemeColor('--chart-emphasis'),
         recommendedMin: analyteDef.recommendedMin,
         recommendedMax: analyteDef.recommendedMax,
         ariaLabel: `Histórico de ${label}`
@@ -912,18 +913,18 @@ export default {
   gap: 0.5rem;
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
+  background: var(--primary-100);
+  border: 1px solid var(--primary-light);
   border-radius: 8px;
   font-size: 0.875rem;
-  color: #0c4a6e;
+  color: var(--primary-active);
   line-height: 1.5;
 }
 
 .chart-info svg {
   flex-shrink: 0;
   margin-top: 0.125rem;
-  color: #0284c7;
+  color: var(--primary-color);
 }
 
 @media (max-width: 768px) {
@@ -948,7 +949,7 @@ export default {
 /* Add Entry Section */
 .add-entry-section {
   background: white;
-  border: 1px solid var(--border, #e5e5e5);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
@@ -960,12 +961,12 @@ export default {
   gap: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
   margin: 0 0 1.5rem 0;
 }
 
 .section-subtitle svg {
-  color: var(--success-color, #16a34a);
+  color: var(--success-color);
 }
 
 .form-grid-analisis {
@@ -1019,17 +1020,17 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 0 1rem;
-  background: var(--bg-light, #fafafa);
-  border-left: 1px solid var(--border, #e5e5e5);
+  background: var(--bg-light);
+  border-left: 1px solid var(--border);
   border-radius: 0 8px 8px 0;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   min-width: 60px;
 }
 
 .input-error {
-  border-color: var(--danger-color, #dc2626) !important;
+  border-color: var(--danger-color) !important;
 }
 
 .input-error:focus {
@@ -1039,7 +1040,7 @@ export default {
 /* Results Section */
 .results-section {
   background: white;
-  border: 1px solid var(--border, #e5e5e5);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
@@ -1057,32 +1058,32 @@ export default {
 }
 
 .results-table thead {
-  background: var(--bg-light, #fafafa);
-  border-bottom: 2px solid var(--border, #e5e5e5);
+  background: var(--bg-light);
+  border-bottom: 2px solid var(--border);
 }
 
 .results-table th {
   padding: 0.75rem 1rem;
   text-align: left;
   font-weight: 600;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   font-size: 0.8125rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .results-table tbody tr {
-  border-bottom: 1px solid var(--border, #e5e5e5);
+  border-bottom: 1px solid var(--border);
   transition: background-color 0.15s ease;
 }
 
 .results-table tbody tr:hover {
-  background: var(--bg-light, #fafafa);
+  background: var(--bg-light);
 }
 
 .results-table td {
   padding: 1rem;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .param-cell {
@@ -1092,24 +1093,24 @@ export default {
 }
 
 .param-cell svg {
-  color: var(--primary-color, #0284c7);
+  color: var(--primary-color);
   flex-shrink: 0;
 }
 
 .value-cell {
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .unit-small {
   font-weight: 400;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   font-size: 0.8125rem;
 }
 
 .date-cell {
   white-space: nowrap;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   font-size: 0.8125rem;
 }
 
@@ -1122,13 +1123,13 @@ export default {
 .empty-state-small {
   text-align: center;
   padding: 3rem 2rem;
-  background: var(--bg-light, #fafafa);
+  background: var(--bg-light);
   border-radius: 12px;
-  border: 1px dashed var(--border, #e5e5e5);
+  border: 1px dashed var(--border);
 }
 
 .empty-state-small svg {
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   opacity: 0.3;
   margin-bottom: 1rem;
 }
@@ -1137,12 +1138,12 @@ export default {
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .empty-state-small span {
   font-size: 0.875rem;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
 }
 
 /* Toast notification */
@@ -1150,7 +1151,7 @@ export default {
   position: fixed;
   right: 2rem;
   bottom: 2rem;
-  background: var(--success-color, #16a34a);
+  background: var(--success-color);
   color: white;
   padding: 1rem 1.5rem;
   border-radius: 8px;

@@ -314,7 +314,7 @@ export default {
 <style scoped>
 .register-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+  background: linear-gradient(135deg, var(--register-bg-start) 0%, var(--register-bg-end) 100%);
   padding: 2rem 1rem;
   display: flex;
   align-items: center;
@@ -336,7 +336,7 @@ export default {
 
 /* Header */
 .register-header {
-  background: linear-gradient(135deg, var(--primary-color, #0284c7) 0%, var(--primary-hover, #0369a1) 100%);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
   color: white;
   padding: 2.5rem 2rem;
   text-align: center;
@@ -386,15 +386,15 @@ export default {
 }
 
 .alert-danger {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: var(--alert-danger-bg);
+  color: var(--alert-danger-text);
+  border: 1px solid var(--alert-danger-border);
 }
 
 .alert-success {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+  background: var(--alert-success-bg);
+  color: var(--alert-success-text);
+  border: 1px solid var(--alert-success-border);
 }
 
 /* Form */
@@ -413,10 +413,10 @@ export default {
 .section-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
   margin: 0 0 1rem 0;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid var(--primary-color, #0284c7);
+  border-bottom: 2px solid var(--primary-color);
 }
 
 .form-grid {
@@ -444,16 +444,16 @@ export default {
 .form-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .required {
-  color: var(--danger-color, #dc2626);
+  color: var(--danger-color);
 }
 
 .form-input {
   padding: 0.75rem 1rem;
-  border: 1.5px solid var(--border, #e5e5e5);
+  border: 1.5px solid var(--border);
   border-radius: 8px;
   font-size: 0.875rem;
   transition: all 0.2s ease;
@@ -461,22 +461,22 @@ export default {
 }
 
 .form-input:hover {
-  border-color: var(--primary-color, #0284c7);
+  border-color: var(--primary-color);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--primary-color, #0284c7);
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
 }
 
 .form-input::placeholder {
-  color: #9ca3af;
+  color: var(--text-placeholder);
 }
 
 .form-help {
   font-size: 0.75rem;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   margin-top: -0.25rem;
 }
 
@@ -486,7 +486,7 @@ export default {
   flex-direction: column;
   gap: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border, #e5e5e5);
+  border-top: 1px solid var(--border);
 }
 
 @media (min-width: 640px) {
@@ -513,18 +513,18 @@ export default {
 }
 
 .btn-primary {
-  background: var(--primary-color, #0284c7);
+  background: var(--primary-color);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover, #0369a1);
+  background: var(--primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
 
 .btn-primary:active:not(:disabled) {
-  background: var(--primary-active, #075985);
+  background: var(--primary-active);
   transform: translateY(0);
 }
 
@@ -535,13 +535,13 @@ export default {
 
 .btn-secondary {
   background: white;
-  color: var(--secondary-color, #525252);
-  border: 1.5px solid var(--border, #e5e5e5);
+  color: var(--secondary-color);
+  border: 1.5px solid var(--border);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--bg-light, #fafafa);
-  border-color: var(--secondary-color, #525252);
+  background: var(--bg-light);
+  border-color: var(--secondary-color);
 }
 
 .btn-secondary:disabled {
@@ -575,15 +575,15 @@ export default {
 /* Footer */
 .register-footer {
   padding: 1.5rem 2rem;
-  background: var(--bg-light, #fafafa);
-  border-top: 1px solid var(--border, #e5e5e5);
+  background: var(--bg-light);
+  border-top: 1px solid var(--border);
   text-align: center;
 }
 
 .register-footer p {
   margin: 0;
   font-size: 0.875rem;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -591,7 +591,7 @@ export default {
 
 .info-icon {
   flex-shrink: 0;
-  color: var(--primary-color, #0284c7);
+  color: var(--primary-color);
 }
 
 /* Responsive */

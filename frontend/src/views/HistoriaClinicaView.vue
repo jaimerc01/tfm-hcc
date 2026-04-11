@@ -472,7 +472,7 @@ export default {
   gap: 1.5rem;
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 2px solid var(--primary-color, #0284c7);
+  border-bottom: 2px solid var(--primary-color);
 }
 
 .header-icon {
@@ -481,7 +481,7 @@ export default {
   justify-content: center;
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, var(--primary-color, #0284c7), var(--primary-hover, #0369a1));
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   border-radius: 12px;
   color: white;
   flex-shrink: 0;
@@ -491,12 +491,12 @@ export default {
   margin: 0;
   font-size: 2rem;
   font-weight: 700;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .subtitle {
   margin: 0.25rem 0 0 0;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
@@ -508,7 +508,7 @@ export default {
 .tabs-nav {
   display: flex;
   gap: 0.5rem;
-  border-bottom: 2px solid var(--border, #e5e5e5);
+  border-bottom: 2px solid var(--border);
   overflow-x: auto;
   padding-bottom: 0;
 }
@@ -520,7 +520,7 @@ export default {
   padding: 0.875rem 1.25rem;
   border: none;
   background: transparent;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -530,13 +530,13 @@ export default {
 }
 
 .tab-btn:hover {
-  color: var(--primary-color, #0284c7);
-  background: var(--bg-light, #fafafa);
+  color: var(--primary-color);
+  background: var(--bg-light);
 }
 
 .tab-btn.active {
-  color: var(--primary-color, #0284c7);
-  border-bottom-color: var(--primary-color, #0284c7);
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
 }
 
 .tab-btn svg {
@@ -562,7 +562,7 @@ export default {
 /* Panel Card */
 .panel-card {
   background: white;
-  border: 1px solid var(--border, #e5e5e5);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 2rem;
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
@@ -571,19 +571,19 @@ export default {
 .panel-header {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border, #e5e5e5);
+  border-bottom: 1px solid var(--border);
 }
 
 .panel-header h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .panel-subtitle {
   margin: 0;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
@@ -614,16 +614,16 @@ export default {
 .form-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .required {
-  color: var(--danger-color, #dc2626);
+  color: var(--danger-color);
 }
 
 .form-input {
   padding: 0.75rem 1rem;
-  border: 1.5px solid var(--border, #e5e5e5);
+  border: 1.5px solid var(--border);
   border-radius: 8px;
   font-size: 0.875rem;
   transition: all 0.2s ease;
@@ -631,12 +631,12 @@ export default {
 }
 
 .form-input:hover {
-  border-color: var(--primary-color, #0284c7);
+  border-color: var(--primary-color);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: var(--primary-color, #0284c7);
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
 }
 
@@ -646,21 +646,21 @@ export default {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 1rem;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: var(--surface-info-bg);
+  border: 1px solid var(--surface-info-border);
   border-radius: 8px;
   margin-bottom: 2rem;
 }
 
 .info-box svg {
-  color: var(--primary-color, #0284c7);
+  color: var(--primary-color);
   flex-shrink: 0;
   margin-top: 0.125rem;
 }
 
 .info-box span {
   font-size: 0.875rem;
-  color: #1e40af;
+  color: var(--surface-info-text);
 }
 
 /* Form Actions */
@@ -676,7 +676,7 @@ export default {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.875rem 1.5rem;
-  background: var(--primary-color, #0284c7);
+  background: var(--primary-color);
   color: white;
   border: none;
   border-radius: 8px;
@@ -688,7 +688,7 @@ export default {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover, #0369a1);
+  background: var(--primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
 }
@@ -728,15 +728,15 @@ export default {
 }
 
 .alert-success {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+  background: var(--alert-success-bg);
+  color: var(--alert-success-text);
+  border: 1px solid var(--alert-success-border);
 }
 
 .alert-danger {
-  background: #fef2f2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+  background: var(--alert-danger-bg);
+  color: var(--alert-danger-text);
+  border: 1px solid var(--alert-danger-border);
 }
 
 /* Upload Section */
@@ -745,19 +745,19 @@ export default {
 }
 
 .file-drop-zone {
-  border: 2px dashed var(--border, #e5e5e5);
+  border: 2px dashed var(--border);
   border-radius: 12px;
   padding: 3rem 2rem;
   text-align: center;
   transition: all 0.2s ease;
-  background: var(--bg-light, #fafafa);
+  background: var(--bg-light);
   margin-bottom: 1rem;
 }
 
 .file-drop-zone:hover,
 .file-drop-zone.drag-over {
-  border-color: var(--primary-color, #0284c7);
-  background: #eff6ff;
+  border-color: var(--primary-color);
+  background: var(--surface-info-bg);
 }
 
 .file-input-hidden {
@@ -773,7 +773,7 @@ export default {
 }
 
 .upload-icon {
-  color: var(--primary-color, #0284c7);
+  color: var(--primary-color);
 }
 
 .upload-text {
@@ -785,7 +785,7 @@ export default {
 .upload-primary {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .file-selected-name {
@@ -794,16 +794,16 @@ export default {
   gap: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--success-color, #16a34a);
+  color: var(--success-color);
 }
 
 .file-selected-name svg {
-  color: var(--success-color, #16a34a);
+  color: var(--success-color);
 }
 
 .upload-secondary {
   font-size: 0.875rem;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
 }
 
 .upload-btn {
@@ -817,7 +817,7 @@ export default {
 .files-list {
   margin-top: 3rem;
   padding-top: 2rem;
-  border-top: 1px solid var(--border, #e5e5e5);
+  border-top: 1px solid var(--border);
 }
 
 .list-header {
@@ -831,13 +831,13 @@ export default {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .file-count {
   font-size: 0.875rem;
-  color: var(--text-secondary, #737373);
-  background: var(--bg-light, #fafafa);
+  color: var(--text-secondary);
+  background: var(--bg-light);
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
 }
@@ -852,7 +852,7 @@ export default {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border: 1px solid var(--border, #e5e5e5);
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: white;
   transition: all 0.2s ease;
@@ -869,9 +869,9 @@ export default {
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: var(--bg-light, #fafafa);
+  background: var(--bg-light);
   border-radius: 8px;
-  color: var(--primary-color, #0284c7);
+  color: var(--primary-color);
   flex-shrink: 0;
 }
 
@@ -883,14 +883,14 @@ export default {
 .file-name {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
   word-break: break-word;
   margin-bottom: 0.25rem;
 }
 
 .file-size {
   font-size: 0.75rem;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
 }
 
 .file-actions {
@@ -904,23 +904,23 @@ export default {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid var(--border, #e5e5e5);
+  border: 1px solid var(--border);
   background: white;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
 }
 
 .btn-icon:hover:not(:disabled) {
-  background: var(--primary-color, #0284c7);
-  border-color: var(--primary-color, #0284c7);
+  background: var(--primary-color);
+  border-color: var(--primary-color);
   color: white;
 }
 
 .btn-icon.btn-danger:hover:not(:disabled) {
-  background: var(--danger-color, #dc2626);
-  border-color: var(--danger-color, #dc2626);
+  background: var(--danger-color);
+  border-color: var(--danger-color);
   color: white;
 }
 
@@ -936,7 +936,7 @@ export default {
 }
 
 .empty-files svg {
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   opacity: 0.3;
   margin-bottom: 1rem;
 }
@@ -945,12 +945,12 @@ export default {
   margin: 0 0 0.5rem 0;
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-primary, #262626);
+  color: var(--text-primary);
 }
 
 .empty-files span {
   font-size: 0.875rem;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
 }
 
 /* Responsive */

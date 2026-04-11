@@ -153,22 +153,22 @@ export default {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.8125rem;
-  color: var(--text-secondary, #737373);
+  color: var(--text-secondary);
   margin-top: 0.5rem;
 }
 
 .char-counter svg {
-  color: var(--success-color, #16a34a);
+  color: var(--success-color);
   flex-shrink: 0;
 }
 
 .text-warning {
-  color: var(--warning-color, #d97706);
+  color: var(--warning-color);
   font-weight: 600;
 }
 
 .text-danger {
-  color: var(--danger-color, #dc2626);
+  color: var(--danger-color);
   font-weight: 600;
 }
 
@@ -179,14 +179,14 @@ export default {
 }
 
 .form-label svg {
-  color: var(--primary-color, #0284c7);
+  color: var(--primary-color);
 }
 
 .toast-notification {
   position: fixed;
   right: 2rem;
   bottom: 2rem;
-  background: var(--success-color, #16a34a);
+  background: var(--success-color);
   color: white;
   padding: 1rem 1.5rem;
   border-radius: 8px;

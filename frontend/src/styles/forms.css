@@ -57,7 +57,7 @@ Usage notes:
 .form-input:disabled,
 .form-select:disabled,
 .form-textarea:disabled {
-  background: var(--neutral-50, #f9fafb);
+  background: var(--neutral-50);
   color: var(--neutral-500, var(--muted));
   cursor: not-allowed;
 }
@@ -87,7 +87,7 @@ Usage notes:
 
 .form-success {
   font-size: 0.75rem;
-  color: var(--success-600, #166534);
+  color: var(--success-600);
   margin-top: 0.25rem;
   line-height: 1.4;
   display: flex;

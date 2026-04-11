@@ -5,6 +5,8 @@
   --primary-hover: #0369a1;      /* Darker on hover */
   --primary-active: #075985;     /* Darkest on click */
   --primary-light: #bae6fd;      /* Light blue for highlights */
+  --primary-100: #e0f2fe;
+  --primary-400: #38bdf8;
   --on-primary: #ffffff;
   
   /* Success Green - Health & Positive Actions */
@@ -12,18 +14,26 @@
   --success-hover: #15803d;      /* Darker green on hover */
   --success-active: #166534;     /* Darkest green on click */
   --success-light: #bbf7d0;      /* Light green for highlights */
+  --success-600: #166534;
+  --success-soft-bg: #f0fdf4;
   
   /* Danger Red - Warnings & Critical Actions */
   --danger-color: #dc2626;       /* Medical red for warnings */
   --danger-hover: #b91c1c;       /* Darker red on hover */
   --danger-active: #991b1b;      /* Darkest red on click */
   --danger-light: #fecaca;       /* Light red for highlights */
+  --danger-100: #fee2e2;
+  --danger-400: #f87171;
+  --danger-600: #dc2626;
+  --danger-soft-bg: #fef2f2;
+  --error-color: var(--danger-color);
   
   /* Warning Orange - Caution & Attention */
   --warning-color: #d97706;      /* Medical orange for warnings */
   --warning-hover: #b45309;      /* Darker orange on hover */
   --warning-active: #92400e;     /* Darkest orange on click */
   --warning-light: #fde68a;      /* Light orange for highlights */
+  --warning-soft-bg: #fef3c7;
   
   /* Secondary Gray - Professional neutrals */
   --secondary-color: #525252;    /* Medium gray for secondary actions */
@@ -35,16 +45,39 @@
   --text-secondary: #525252;     /* Secondary text */
   --muted: #737373;              /* Muted text */
   --text-placeholder: #a3a3a3;   /* Placeholder text */
+  --text-color: var(--text-primary);
+  --text-inverse: #ffffff;
   
   /* Background colors for medical interfaces */
   --card-bg: #ffffff;            /* Clean white for cards */
   --bg-light: #fafafa;           /* Very light gray background */
   --bg-medium: #f5f5f5;          /* Light gray background */
+  --neutral-50: #f9fafb;
+  --neutral-300: #d1d5db;
+  --neutral-500: #6b7280;
+  --neutral-900: #111827;
+  --surface-info-bg: #eff6ff;
+  --surface-info-border: #bfdbfe;
+  --surface-info-text: #1e40af;
+  --surface-info-icon: #3b82f6;
+  --surface-overlay: rgba(0, 0, 0, 0.5);
+  --surface-overlay-soft: rgba(0, 0, 0, 0.2);
+  --surface-overlay-strong: rgba(0, 0, 0, 0.45);
+  --surface-nav-dark: #34495e;
+  --surface-nav-dark-hover: #22313a;
+  --surface-nav-dark-text: #ecf0f1;
+  --surface-nav-dark-muted: #bdc3c7;
+  --brand-accent: #42b983;
+  --brand-accent-hover: #369870;
+  --register-bg-start: #f5f7fa;
+  --register-bg-end: #e9ecef;
   
   /* Border colors for clean medical layouts */
   --border: #e5e5e5;             /* Standard border */
   --border-light: #f5f5f5;       /* Light border */
   --border-focus: #0284c7;       /* Focus border (primary) */
+  --border-medium: #cccccc;
+  --border-subtle: #eeeeee;
   
   /* Spacing system for consistent layouts */
   --spacing: 1rem;
@@ -80,6 +113,37 @@
   --status-attention: var(--warning-color);
   --status-critical: var(--danger-color);
   --status-info: var(--primary-color);
+
+  /* Alert and badge surfaces */
+  --alert-danger-bg: var(--danger-soft-bg);
+  --alert-danger-text: var(--danger-active);
+  --alert-danger-border: var(--danger-light);
+  --alert-success-bg: var(--success-soft-bg);
+  --alert-success-text: var(--success-active);
+  --alert-success-border: var(--success-light);
+  --alert-warning-bg: var(--warning-soft-bg);
+  --alert-warning-text: var(--warning-active);
+  --alert-warning-border: var(--warning-light);
+  --alert-info-bg: var(--surface-info-bg);
+  --alert-info-text: var(--surface-info-text);
+  --alert-info-border: var(--surface-info-border);
+  --badge-success-bg: #dcfce7;
+  --badge-success-text: var(--success-active);
+  --badge-danger-bg: var(--danger-100);
+  --badge-danger-text: var(--danger-active);
+  --badge-warning-bg: var(--warning-soft-bg);
+  --badge-warning-text: var(--warning-active);
+  --badge-info-bg: #dbeafe;
+  --badge-info-text: var(--surface-info-text);
+
+  /* Chart specific colors */
+  --chart-default: var(--primary-color);
+  --chart-emphasis: #c73333;
+  --metric-hematocrito: #7c3aed;
+  --chart-recommended-band: #d2f0d9;
+  --chart-gauge-bg: #e5e7eb;
+  --chart-label-muted: #6b7280;
+  --chart-label-strong: #374151;
   
   /* Focus outline for accessibility */
   --focus-outline: 2px solid var(--primary-color);
