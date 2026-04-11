@@ -98,6 +98,9 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
      */
     private Usuario getCurrentUser() {
         UUID userId = getCurrentUserId();
+        if (userId == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
+        }
         return usuarioRepository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
     }
@@ -323,7 +326,11 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     private Resource crearResourceDesdeArchivo(ArchivoClinico archivo) {
         try {
             Path rutaArchivo = Paths.get(archivo.getRutaAlmacenada());
-            Resource resource = new UrlResource(rutaArchivo.toUri());
+            var uri = rutaArchivo.toUri();
+            if (uri == null) {
+                throw new IllegalStateException(ErrorMessages.ERROR_RUTA_INVALIDA);
+            }
+            Resource resource = new UrlResource(uri);
             
             validarResourceAccesible(resource);
             

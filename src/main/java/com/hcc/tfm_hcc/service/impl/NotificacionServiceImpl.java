@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.service.impl;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -47,7 +48,7 @@ public class NotificacionServiceImpl implements NotificacionService {
         
         try {
             UUID uid = UUID.fromString(dto.getId());
-            return usuarioRepository.findById(uid)
+            return usuarioRepository.findById(Objects.requireNonNull(uid, "UUID cannot be null"))
                     .orElseThrow(() -> new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_FORMATO_INVALIDO, e);
@@ -70,7 +71,7 @@ public class NotificacionServiceImpl implements NotificacionService {
     private Notificacion buscarYValidarNotificacion(String notificacionId, Usuario usuario) {
         try {
             UUID nid = UUID.fromString(notificacionId);
-            Notificacion notificacion = notificacionRepository.findById(nid)
+            Notificacion notificacion = notificacionRepository.findById(Objects.requireNonNull(nid, "UUID cannot be null"))
                     .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ERROR_NOTIFICACION_NO_ENCONTRADA));
             
             validarPropietarioNotificacion(notificacion, usuario);
@@ -142,7 +143,9 @@ public class NotificacionServiceImpl implements NotificacionService {
         Usuario usuario = obtenerUsuarioActual();
         Notificacion notificacion = buscarYValidarNotificacion(notificacionId, usuario);
         
-        notificacionRepository.delete(notificacion);
+        if (notificacion != null) {
+            notificacionRepository.delete(notificacion);
+        }
     }
 
     @Override

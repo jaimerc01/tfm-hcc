@@ -346,6 +346,9 @@ public class MedicoServiceImpl implements MedicoService {
         log.debug(LOG_ACTUALIZANDO_MEDICO, id);
         
         Usuario usuario = buscarMedicoPorId(id);
+        if (usuario == null) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO);
+        }
         actualizarDatosUsuario(usuario, medicoDTO);
         Usuario usuarioActualizado = usuarioRepository.save(usuario);
         
@@ -363,6 +366,11 @@ public class MedicoServiceImpl implements MedicoService {
      * @throws IllegalArgumentException si no se encuentra el médico
      */
     private Usuario buscarMedicoPorId(UUID id) {
+        if(id == null) {
+            String error = ErrorMessages.campoRequerido("ID del médico");
+            log.error(error);
+            throw new IllegalArgumentException(error);
+        }
         return usuarioRepository.findById(id)
             .orElseThrow(() -> {
                 String error = ErrorMessages.formatError(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO, id.toString());
@@ -400,6 +408,11 @@ public class MedicoServiceImpl implements MedicoService {
 
     @Override
     public void eliminarMedico(UUID id) {
+        if(id == null) {
+            String error = ErrorMessages.campoRequerido("ID del médico");
+            log.error(error);
+            throw new IllegalArgumentException(error);
+        }
         var usuarioOpt = usuarioRepository.findById(id);
         if (usuarioOpt.isEmpty()) throw new IllegalArgumentException("No existe el médico");
         Usuario usuario = usuarioOpt.get();
@@ -420,12 +433,20 @@ public class MedicoServiceImpl implements MedicoService {
         var relaciones = StreamSupport.stream(perfilUsuarioRepository.findAll().spliterator(), false)
             .filter(pu -> pu.getUsuario().getId().equals(id) && pu.getPerfil().getRol().equalsIgnoreCase(PERFIL_MEDICO))
             .collect(Collectors.toList());
-        perfilUsuarioRepository.deleteAll(relaciones);
-        usuarioRepository.delete(usuario);
+
+        if (!relaciones.isEmpty()) {
+            perfilUsuarioRepository.deleteAll(relaciones);
+        }
+        usuarioRepository.deleteById(id);
     }
 
     @Override
     public void setPerfilMedico(UUID id, boolean asignar) {
+        if (id == null) {
+            String error = ErrorMessages.campoRequerido("ID del usuario");
+            log.error(error);
+            throw new IllegalArgumentException(error);
+        }
         var usuarioOpt = usuarioRepository.findById(id);
         if (usuarioOpt.isEmpty()) throw new IllegalArgumentException("Usuario no encontrado");
         Usuario usuario = usuarioOpt.get();

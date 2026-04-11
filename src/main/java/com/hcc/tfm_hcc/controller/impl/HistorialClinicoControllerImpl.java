@@ -178,6 +178,10 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
             
             log.info("Descargando archivo clínico: {} (ID: {})", nombreArchivo, id);
             
+            if (mediaType == null) {
+                log.warn("Tipo de contenido no reconocido para el archivo: {}", nombreArchivo);
+                throw new IllegalArgumentException(ErrorMessages.ERROR_TIPO_CONTENIDO_NO_RECONOCIDO);
+            }
             return ResponseEntity.ok()
                     .contentType(mediaType)
                     .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)

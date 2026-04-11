@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -281,7 +282,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     /**
      * Actualiza los campos del usuario con los valores proporcionados
      */
-    private void actualizarCamposUsuario(Usuario usuario, UsuarioDTO parcial) {
+    @NonNull
+    private Usuario actualizarCamposUsuario(Usuario usuario, UsuarioDTO parcial) {
         if (parcial.getNombre() != null) {
             usuario.setNombre(parcial.getNombre());
         }
@@ -304,6 +306,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             usuario.setNif(parcial.getNif());
         }
         usuario.setFechaUltimaModificacion(LocalDateTime.now());
+
+        return usuario;
     }
 
     @Override
@@ -312,7 +316,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = obtenerUsuarioAutenticado();
         
         validarDatosActualizacion(parcial, usuario);
-        actualizarCamposUsuario(usuario, parcial);
+        usuario = actualizarCamposUsuario(usuario, parcial);
         
         usuarioRepository.save(usuario);
         return usuarioMapper.toDto(usuario);
@@ -321,7 +325,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     /**
      * Realiza la anonimización de datos del usuario
      */
-    private void anonimizarUsuario(Usuario usuario) {
+    @NonNull
+    private Usuario anonimizarUsuario(Usuario usuario) {
         usuario.setEstadoCuenta("ELIMINADO");
         usuario.setFechaEliminacion(LocalDateTime.now());
         usuario.setNombre("_eliminado_");
@@ -332,14 +337,17 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setNif("DEL-" + usuario.getId().toString().substring(0, 8));
         usuario.setEspecialidad(null);
         usuario.setFechaUltimaModificacion(LocalDateTime.now());
+        return usuario;
     }
 
     @Override
     @Transactional
     public void deleteCuentaActual() {
         Usuario usuario = obtenerUsuarioAutenticado();
-        anonimizarUsuario(usuario);
-        usuarioRepository.save(usuario);
+        if (usuario != null) {
+            usuario = anonimizarUsuario(usuario);
+            usuarioRepository.save(usuario);
+        }
     }
 
     /**
@@ -530,7 +538,15 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         validarEstadoSolicitud(nuevoEstado);
         
+        if (solicitudId == null || solicitudId.isBlank()) {
+            throw new IllegalArgumentException(ErrorMessages.formatError("ID de solicitud inválido: {0}", solicitudId));
+        }
+        
         UUID solicitudIdUUID = UUID.fromString(solicitudId);
+        if (solicitudIdUUID == null) {
+            throw new IllegalArgumentException(ErrorMessages.formatError("ID de solicitud inválido: {0}", solicitudId));
+        }
+        
         SolicitudAsignacion solicitud = solicitudAsignacionRepository.findById(solicitudIdUUID)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.formatError("Solicitud no encontrada: {0}", solicitudId)));
         

@@ -80,12 +80,17 @@ public class AccessLogServiceImpl implements AccessLogService {
     @Transactional
     private void persistirAccessLog(AccessLog accessLog) {
         try {
+            if(accessLog == null) {
+                throw new IllegalArgumentException(ErrorMessages.campoRequerido("AccessLog"));
+            }
             accessLogRepository.save(accessLog);
             log.debug("Log de acceso guardado exitosamente: usuarioId={}, ruta={}, metodo={}", 
                      accessLog.getUsuarioId(), accessLog.getRuta(), accessLog.getMetodo());
         } catch (Exception e) {
-            log.error("Error al guardar log de acceso: usuarioId={}, ruta={}, metodo={}, error={}", 
+            if (accessLog != null) {
+                log.error("Error al guardar log de acceso: usuarioId={}, ruta={}, metodo={}, error={}", 
                      accessLog.getUsuarioId(), accessLog.getRuta(), accessLog.getMetodo(), e.getMessage(), e);
+            }
             throw new RuntimeException(ErrorMessages.formatError("Error al guardar log de acceso: {0}", e.getMessage()), e);
         }
     }

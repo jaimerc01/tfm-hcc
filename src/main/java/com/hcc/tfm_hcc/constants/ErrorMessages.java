@@ -43,6 +43,7 @@ public final class ErrorMessages {
     public static final String ERROR_CREAR_DIRECTORIO = "No se pudo crear el directorio";
     public static final String ERROR_ARCHIVO_CORRUPTO = "El archivo está corrupto";
     public static final String ERROR_EXTENSION_NO_PERMITIDA = "Extensión de archivo no permitida";
+    public static final String ERROR_TIPO_CONTENIDO_NO_RECONOCIDO = "Tipo de contenido no reconocido";
 
     // =====================================================
     // MENSAJES DE ERROR - HISTORIAL CLÍNICO
@@ -73,6 +74,7 @@ public final class ErrorMessages {
     public static final String ERROR_DNI_YA_EXISTE = "El DNI ya está en uso";
     public static final String ERROR_FECHA_INVALIDA = "Fecha inválida";
     public static final String ERROR_HORA_INVALIDA = "Hora inválida";
+    public static final String ERROR_ID_DATO_INVALIDO = "ID de dato clínico inválido";
 
     // =====================================================
     // MENSAJES DE ERROR - JSON Y SERIALIZACIÓN

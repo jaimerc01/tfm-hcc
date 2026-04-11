@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -68,7 +69,13 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
         }
         
-        return usuarioRepository.findById(UUID.fromString(dto.getId()))
+        String usuarioIdTexto = dto.getId();
+        if (usuarioIdTexto == null || usuarioIdTexto.isBlank()) {
+            throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
+        }
+
+        UUID usuarioId = Objects.requireNonNull(UUID.fromString(usuarioIdTexto));
+        return usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
     }
 
@@ -181,7 +188,13 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             return null;
         }
         
-        var usuario = usuarioRepository.findById(UUID.fromString(dto.getId()));
+        String usuarioIdTexto = dto.getId();
+        if (usuarioIdTexto == null || usuarioIdTexto.isBlank()) {
+            return null;
+        }
+
+        UUID usuarioId = Objects.requireNonNull(UUID.fromString(usuarioIdTexto));
+        var usuario = usuarioRepository.findById(usuarioId);
         if (usuario.isEmpty()) {
             return null;
         }
@@ -197,6 +210,9 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
         
+        if(historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
         // Identificación persistida en otra entidad; no modificar aquí por restricciones del modelo
         historiaRepo.save(historial);
         return toDto(historial);
@@ -208,6 +224,10 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
         
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
+        // Actualizar los antecedentes familiares con el nuevo texto, reemplazando el valor anterior
         actualizarAntecedentesFamiliares(historial, antecedentesFamiliares);
         
         historiaRepo.save(historial);
@@ -539,6 +559,9 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         HistorialClinico historial = obtenerHistorialUsuario(usuario);
         
         DatoClinico datoClinico = obtenerDatoClinico(id);
+        if (datoClinico == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_DATO_NO_ENCONTRADO);
+        }
         validarPropiedadDatoClinico(datoClinico, historial);
         
         datoClinicoRepository.delete(datoClinico);
@@ -556,6 +579,9 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
      * Obtiene un dato clínico por ID o lanza excepción si no existe
      */
     private DatoClinico obtenerDatoClinico(UUID id) {
+        if(id == null) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_ID_DATO_INVALIDO);
+        }
         return datoClinicoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ERROR_DATO_NO_ENCONTRADO));
     }
@@ -575,6 +601,10 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     public HistorialClinicoDTO borrarAntecedente(int index) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
+
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
         
         List<String> antecedentes = obtenerListaAntecedentes(historial);
         validarIndiceAntecedente(index, antecedentes);
@@ -591,6 +621,10 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     public HistorialClinicoDTO editarAntecedente(int index, String texto) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
+
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
         
         List<String> antecedentes = obtenerListaAntecedentes(historial);
         validarIndiceAntecedente(index, antecedentes);
