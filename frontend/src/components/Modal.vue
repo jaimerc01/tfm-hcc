@@ -84,7 +84,7 @@ export default {
   width: 90%;
   max-width: 640px;
   border-radius: 8px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  box-shadow: var(--shadow-modal-strong);
   overflow: hidden;
 }
 .modal-header { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--border-subtle) }

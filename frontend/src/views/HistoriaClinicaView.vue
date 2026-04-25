@@ -1,9 +1,8 @@
 <template>
   <div class="historia-page">
-    <!-- Header -->
     <div class="page-header">
       <div class="header-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
           <polyline points="14 2 14 8 20 8"></polyline>
           <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -17,32 +16,40 @@
       </div>
     </div>
 
-    <!-- Tabs Navigation -->
     <section class="tabs-section">
-      <div class="tabs-nav" role="tablist" aria-label="Secciones de historia clínica">
-        <button 
+      <div class="tabs-nav" role="tablist" :aria-label="$t('clinical_history')">
+        <button
           type="button"
           id="identificacion-tab"
-          :class="['tab-btn', {active: activeSection==='identificacion'}]" 
-          @click="activeSection='identificacion'" 
-          role="tab" 
-          :aria-selected="activeSection==='identificacion'"
-          :aria-controls="activeSection==='identificacion' ? 'identificacion-panel' : null">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          ref="tabIdentificacion"
+          :class="['tab-btn', { active: activeSection === 'identificacion' }]"
+          @click="activeSection = 'identificacion'"
+          @keydown="onTabKeydown($event, 'identificacion')"
+          role="tab"
+          :aria-selected="activeSection === 'identificacion'"
+          aria-controls="identificacion-panel"
+          :tabindex="activeSection === 'identificacion' ? 0 : -1"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
           </svg>
           {{$t('identification')}}
         </button>
-        <button 
+
+        <button
           type="button"
           id="antecedentes-tab"
-          :class="['tab-btn', {active: activeSection==='antecedentes'}]" 
-          @click="activeSection='antecedentes'" 
-          role="tab" 
-          :aria-selected="activeSection==='antecedentes'"
-          :aria-controls="activeSection==='antecedentes' ? 'antecedentes-panel' : null">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          ref="tabAntecedentes"
+          :class="['tab-btn', { active: activeSection === 'antecedentes' }]"
+          @click="activeSection = 'antecedentes'"
+          @keydown="onTabKeydown($event, 'antecedentes')"
+          role="tab"
+          :aria-selected="activeSection === 'antecedentes'"
+          aria-controls="antecedentes-panel"
+          :tabindex="activeSection === 'antecedentes' ? 0 : -1"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -50,30 +57,40 @@
           </svg>
           {{$t('backgrounds')}}
         </button>
-        <button 
+
+        <button
           type="button"
           id="alergias-tab"
-          :class="['tab-btn', {active: activeSection==='alergias'}]" 
-          @click="activeSection='alergias'" 
-          role="tab" 
-          :aria-selected="activeSection==='alergias'"
-          :aria-controls="activeSection==='alergias' ? 'alergias-panel' : null">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          ref="tabAlergias"
+          :class="['tab-btn', { active: activeSection === 'alergias' }]"
+          @click="activeSection = 'alergias'"
+          @keydown="onTabKeydown($event, 'alergias')"
+          role="tab"
+          :aria-selected="activeSection === 'alergias'"
+          aria-controls="alergias-panel"
+          :tabindex="activeSection === 'alergias' ? 0 : -1"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
           {{$t('allergies')}}
         </button>
-        <button 
+
+        <button
           type="button"
           id="analisis-tab"
-          :class="['tab-btn', {active: activeSection==='analisis'}]" 
-          @click="activeSection='analisis'" 
-          role="tab" 
-          :aria-selected="activeSection==='analisis'"
-          :aria-controls="activeSection==='analisis' ? 'analisis-panel' : null">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          ref="tabAnalisis"
+          :class="['tab-btn', { active: activeSection === 'analisis' }]"
+          @click="activeSection = 'analisis'"
+          @keydown="onTabKeydown($event, 'analisis')"
+          role="tab"
+          :aria-selected="activeSection === 'analisis'"
+          aria-controls="analisis-panel"
+          :tabindex="activeSection === 'analisis' ? 0 : -1"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
             <path d="M9 2v6"></path>
             <path d="M15 2v6"></path>
             <path d="M12 17v5"></path>
@@ -82,15 +99,20 @@
           </svg>
           {{$t('analysis')}}
         </button>
-        <button 
+
+        <button
           type="button"
           id="archivos-tab"
-          :class="['tab-btn', {active: activeSection==='archivos'}]" 
-          @click="activeSection='archivos'" 
-          role="tab" 
-          :aria-selected="activeSection==='archivos'"
-          :aria-controls="activeSection==='archivos' ? 'archivos-panel' : null">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          ref="tabArchivos"
+          :class="['tab-btn', { active: activeSection === 'archivos' }]"
+          @click="activeSection = 'archivos'"
+          @keydown="onTabKeydown($event, 'archivos')"
+          role="tab"
+          :aria-selected="activeSection === 'archivos'"
+          aria-controls="archivos-panel"
+          :tabindex="activeSection === 'archivos' ? 0 : -1"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
             <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
             <polyline points="13 2 13 9 20 9"></polyline>
           </svg>
@@ -98,46 +120,51 @@
         </button>
       </div>
 
-
-      <!-- Tab Panels -->
       <transition name="fade-slide" mode="out-in">
-        <!-- Identificación Panel -->
-        <div v-if="activeSection==='identificacion'" key="identificacion" id="identificacion-panel" class="tab-panel" role="tabpanel" aria-labelledby="identificacion-tab">
+        <div
+          v-if="activeSection === 'identificacion'"
+          key="identificacion"
+          id="identificacion-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="identificacion-tab"
+          tabindex="-1"
+        >
           <div class="panel-card">
             <div class="panel-header">
-              <h3>{{$t('basic_identification')}}</h3>
+              <h2>{{$t('basic_identification')}}</h2>
               <p class="panel-subtitle">{{$t('personal_info')}}</p>
             </div>
 
             <div class="form-grid">
               <div class="form-group full-width">
-                <label class="form-label">{{$t('full_name')}} <span class="required">*</span></label>
-                <input type="text" v-model="identNombre" :placeholder="$t('full_name')" class="form-input" />
+                <label for="ident-nombre" class="form-label">{{$t('full_name')}} <span class="required">*</span></label>
+                <input id="ident-nombre" type="text" v-model="identNombre" :placeholder="$t('full_name')" class="form-input" required aria-required="true" autocomplete="name" />
               </div>
 
               <div class="form-group">
-                <label class="form-label">{{$t('nif_nie')}} <span class="required">*</span></label>
-                <input type="text" v-model="identNif" :placeholder="$t('nif_nie')" class="form-input" />
+                <label for="ident-nif" class="form-label">{{$t('nif_nie')}} <span class="required">*</span></label>
+                <input id="ident-nif" type="text" v-model="identNif" :placeholder="$t('nif_nie')" class="form-input" required aria-required="true" autocomplete="off" />
               </div>
 
               <div class="form-group">
-                <label class="form-label">{{$t('birth_date')}}</label>
-                <input type="date" v-model="identFechaNacimiento" :placeholder="$t('birth_date')" class="form-input" />
+                <label for="ident-fecha" class="form-label">{{$t('birth_date')}}</label>
+                <input id="ident-fecha" type="date" v-model="identFechaNacimiento" :placeholder="$t('birth_date')" class="form-input" autocomplete="bday" />
               </div>
 
               <div class="form-group">
-                <label class="form-label">{{$t('phone')}}</label>
-                <input type="tel" v-model="identTelefono" :placeholder="$t('phone')" class="form-input" />
+                <label for="ident-telefono" class="form-label">{{$t('phone')}}</label>
+                <input id="ident-telefono" type="tel" v-model="identTelefono" :placeholder="$t('phone')" class="form-input" autocomplete="tel" />
               </div>
 
               <div class="form-group">
-                <label class="form-label">{{$t('email_optional')}}</label>
-                <input type="email" v-model="identEmail" :placeholder="$t('email_optional')" class="form-input" />
+                <label for="ident-email" class="form-label">{{$t('email_optional')}}</label>
+                <input id="ident-email" type="email" v-model="identEmail" :placeholder="$t('email_optional')" class="form-input" autocomplete="email" />
               </div>
             </div>
 
             <div class="info-box">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
@@ -146,12 +173,8 @@
             </div>
 
             <div class="form-actions">
-              <button 
-                type="button"
-                @click="saveIdentificacion" 
-                :disabled="savingIdent"
-                class="btn-primary">
-                <svg v-if="!savingIdent" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button type="button" @click="saveIdentificacion" :disabled="savingIdent" class="btn-primary">
+                <svg v-if="!savingIdent" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
                   <polyline points="17 21 17 13 7 13 7 21"></polyline>
                   <polyline points="7 3 7 8 15 8"></polyline>
@@ -161,52 +184,83 @@
               </button>
             </div>
 
-              <div v-if="msgIdent" class="alert alert-success">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                {{$t('saved')}}
-              </div>
+            <div v-if="msgIdent" class="alert alert-success" role="status" aria-live="polite">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              {{$t('saved')}}
+            </div>
           </div>
         </div>
 
-        <!-- Other Sections -->
-        <div v-else-if="activeSection==='antecedentes'" key="antecedentes" id="antecedentes-panel" class="tab-panel" role="tabpanel" aria-labelledby="antecedentes-tab">
+        <div
+          v-else-if="activeSection === 'antecedentes'"
+          key="antecedentes"
+          id="antecedentes-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="antecedentes-tab"
+          tabindex="-1"
+        >
           <AntecedentesSection />
         </div>
 
-        <div v-else-if="activeSection==='alergias'" key="alergias" id="alergias-panel" class="tab-panel" role="tabpanel" aria-labelledby="alergias-tab">
+        <div
+          v-else-if="activeSection === 'alergias'"
+          key="alergias"
+          id="alergias-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="alergias-tab"
+          tabindex="-1"
+        >
           <AlergiasSection />
         </div>
 
-        <div v-else-if="activeSection==='analisis'" key="analisis" id="analisis-panel" class="tab-panel" role="tabpanel" aria-labelledby="analisis-tab">
+        <div
+          v-else-if="activeSection === 'analisis'"
+          key="analisis"
+          id="analisis-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="analisis-tab"
+          tabindex="-1"
+        >
           <AnalisisSangreSection />
         </div>
 
-        <!-- Archivos Panel -->
-        <div v-else-if="activeSection==='archivos'" key="archivos" id="archivos-panel" class="tab-panel" role="tabpanel" aria-labelledby="archivos-tab">
+        <div
+          v-else-if="activeSection === 'archivos'"
+          key="archivos"
+          id="archivos-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="archivos-tab"
+          tabindex="-1"
+        >
           <div class="panel-card">
             <div class="panel-header">
-                <h3>{{$t('files')}}</h3>
-                <p class="panel-subtitle">{{$t('manage_medical_info')}}</p>
+              <h2>{{$t('files')}}</h2>
+              <p class="panel-subtitle">{{$t('manage_medical_info')}}</p>
             </div>
 
-            <!-- Upload Area -->
             <div class="upload-section">
               <form @submit.prevent="onUpload">
-                <div 
-                  class="file-drop-zone" 
-                  :class="{'drag-over': isDragging}"
-                  @dragover="onDragOver" 
-                  @dragleave="onDragLeave" 
-                  @drop="onDrop">
-                  <input 
-                    type="file" 
-                    id="fileInput" 
-                    @change="onFileChange" 
-                    class="file-input-hidden" />
-                  <label for="fileInput" class="file-drop-label">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="upload-icon">
+                <div
+                  class="file-drop-zone"
+                  :class="{ 'drag-over': isDragging }"
+                  role="button"
+                  tabindex="0"
+                  :aria-label="$t('upload_here')"
+                  @dragover="onDragOver"
+                  @dragleave="onDragLeave"
+                  @drop="onDrop"
+                  @keydown.enter.prevent="openFilePicker"
+                  @keydown.space.prevent="openFilePicker"
+                >
+                  <input type="file" id="fileInput" ref="fileInputRef" @change="onFileChange" class="file-input-hidden" />
+                  <label for="fileInput" class="file-drop-label" tabindex="-1">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="upload-icon" aria-hidden="true" focusable="false">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                       <polyline points="17 8 12 3 7 8"></polyline>
                       <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -214,7 +268,7 @@
                     <div class="upload-text">
                       <span v-if="!file" class="upload-primary">{{$t('upload_here')}}</span>
                       <span v-else class="file-selected-name">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                           <polyline points="14 2 14 8 20 8"></polyline>
                         </svg>
@@ -224,9 +278,9 @@
                     </div>
                   </label>
                 </div>
-                
+
                 <button type="submit" :disabled="!file || uploading" class="btn-primary upload-btn">
-                  <svg v-if="!uploading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg v-if="!uploading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="17 8 12 3 7 8"></polyline>
                     <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -236,8 +290,8 @@
                 </button>
               </form>
 
-              <div v-if="error" class="alert alert-danger">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <div v-if="error" class="alert alert-danger" role="alert" aria-live="assertive">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="12" y1="8" x2="12" y2="12"></line>
                   <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -246,17 +300,16 @@
               </div>
             </div>
 
-            <!-- Files List -->
             <div v-if="items.length" class="files-list">
               <div class="list-header">
                 <h4>{{$t('your_files')}}</h4>
                 <span class="file-count">{{ items.length }} {{$t('file_count')}}{{ items.length !== 1 ? 's' : '' }}</span>
               </div>
-              
+
               <div class="files-grid">
                 <div v-for="it in items" :key="it.id" class="file-card">
                   <div class="file-icon-wrapper">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                       <polyline points="14 2 14 8 20 8"></polyline>
                     </svg>
@@ -266,15 +319,15 @@
                     <div class="file-size">{{ formatSize(it.sizeBytes) }}</div>
                   </div>
                   <div class="file-actions">
-                    <button class="btn-icon" @click="download(it)" :title="$t('download')">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <button class="btn-icon" @click="download(it)" :title="$t('download')" :aria-label="$t('download')">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>
                         <line x1="12" y1="15" x2="12" y2="3"></line>
                       </svg>
                     </button>
-                    <button class="btn-icon btn-danger" @click="remove(it)" :disabled="removingId===it.id" :title="$t('delete')">
-                      <svg v-if="removingId !== it.id" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <button class="btn-icon btn-danger" @click="remove(it)" :disabled="removingId === it.id" :title="$t('delete')" :aria-label="$t('delete')">
+                      <svg v-if="removingId !== it.id" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                       </svg>
@@ -285,9 +338,8 @@
               </div>
             </div>
 
-            <!-- Empty State -->
             <div v-else class="empty-files">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false">
                 <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
                 <polyline points="13 2 13 9 20 9"></polyline>
               </svg>
@@ -310,15 +362,23 @@ import AnalisisSangreSection from '@/components/AnalisisSangreSection.vue'
 export default {
   name: 'HistoriaClinicaView',
   components: { AntecedentesSection, AlergiasSection, AnalisisSangreSection },
+  watch: {
+    activeSection() {
+      this.$nextTick(() => {
+        const panel = document.getElementById(`${this.activeSection}-panel`)
+        if (panel) panel.focus()
+      })
+    }
+  },
   data() {
     return {
+      tabOrder: ['identificacion', 'antecedentes', 'alergias', 'analisis', 'archivos'],
       items: [],
       file: null,
       uploading: false,
       removingId: null,
       error: null,
       isDragging: false,
-      // Identification fields (user-friendly)
       identNombre: '',
       identNif: '',
       identFechaNacimiento: '',
@@ -334,28 +394,71 @@ export default {
     this.loadHistoria()
   },
   methods: {
+    getTabRefName(section) {
+      const map = {
+        identificacion: 'tabIdentificacion',
+        antecedentes: 'tabAntecedentes',
+        alergias: 'tabAlergias',
+        analisis: 'tabAnalisis',
+        archivos: 'tabArchivos'
+      }
+      return map[section]
+    },
+
+    focusTab(section) {
+      const refName = this.getTabRefName(section)
+      const tab = this.$refs[refName]
+      if (tab && typeof tab.focus === 'function') tab.focus()
+    },
+
+    onTabKeydown(event, currentSection) {
+      const idx = this.tabOrder.indexOf(currentSection)
+      if (idx < 0) return
+
+      let targetIdx = idx
+      if (event.key === 'ArrowRight') targetIdx = (idx + 1) % this.tabOrder.length
+      if (event.key === 'ArrowLeft') targetIdx = (idx - 1 + this.tabOrder.length) % this.tabOrder.length
+      if (event.key === 'Home') targetIdx = 0
+      if (event.key === 'End') targetIdx = this.tabOrder.length - 1
+
+      if (targetIdx !== idx) {
+        event.preventDefault()
+        this.activeSection = this.tabOrder[targetIdx]
+        this.$nextTick(() => this.focusTab(this.tabOrder[targetIdx]))
+      }
+    },
+
+    openFilePicker() {
+      const input = this.$refs.fileInputRef
+      if (input && typeof input.click === 'function') input.click()
+    },
+
     async loadHistoria() {
       try {
-        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
-        const res = await svc.getMine()
+        const historiaSvc = await import('@/services/historiaClinicaService').then(m => m.default)
+        const res = await historiaSvc.getMine()
         const dto = res.data || {}
-        // If backend returns identification JSON, try to parse and populate fields; otherwise leave blank
         try {
-          const id = dto.identificacionJson ? (typeof dto.identificacionJson === 'string' ? JSON.parse(dto.identificacionJson) : dto.identificacionJson) : {}
+          const id = dto.identificacionJson
+            ? (typeof dto.identificacionJson === 'string' ? JSON.parse(dto.identificacionJson) : dto.identificacionJson)
+            : {}
           this.identNombre = id.nombre || ''
           this.identNif = id.nif || ''
           this.identFechaNacimiento = id.fechaNacimiento || ''
           this.identTelefono = id.contacto || ''
           this.identEmail = id.email || ''
-        } catch (e) { /* ignore parse errors */ }
-        // children components handle antecedentes and alergias UI/state
-      } catch (e) { console.error('No se pudo cargar historia', e) }
+        } catch (e) {
+          // Ignore malformed JSON from backend identification payload.
+        }
+      } catch (e) {
+        console.error(this.$t('error_loading_history'), e)
+      }
     },
 
     async saveIdentificacion() {
       this.savingIdent = true
       try {
-        const svc = await import('@/services/historiaClinicaService').then(m => m.default)
+        const historiaSvc = await import('@/services/historiaClinicaService').then(m => m.default)
         const payload = {
           nombre: this.identNombre,
           nif: this.identNif,
@@ -363,18 +466,24 @@ export default {
           contacto: this.identTelefono,
           email: this.identEmail
         }
-        await svc.updateIdentificacion(JSON.stringify(payload))
+        await historiaSvc.updateIdentificacion(JSON.stringify(payload))
         await this.loadHistoria()
-        this.msgIdent = 'Identificación guardada.'
-        setTimeout(() => this.msgIdent = '', 3000)
-      } catch (e) { this.error = 'Error guardando identificación' } finally { this.savingIdent = false }
+        this.msgIdent = this.$t('saved')
+        setTimeout(() => {
+          this.msgIdent = ''
+        }, 3000)
+      } catch (e) {
+        this.error = this.$t('error_saving_identification')
+      } finally {
+        this.savingIdent = false
+      }
     },
 
     async load() {
       try {
         this.items = await svc.list()
       } catch (e) {
-        this.error = 'No se pudieron cargar los archivos'
+        this.error = this.$t('error_loading_files')
       }
     },
 
@@ -398,7 +507,7 @@ export default {
       e.preventDefault()
       e.stopPropagation()
       this.isDragging = false
-      
+
       const files = e.dataTransfer.files
       if (files && files[0]) {
         this.file = files[0]
@@ -414,7 +523,7 @@ export default {
         this.file = null
         await this.load()
       } catch (e) {
-        this.error = 'Error al subir archivo'
+        this.error = this.$t('error_uploading_file')
       } finally {
         this.uploading = false
       }
@@ -426,7 +535,7 @@ export default {
         await svc.remove(it.id)
         this.items = this.items.filter(x => x.id !== it.id)
       } catch (e) {
-        this.error = 'No se pudo eliminar'
+        this.error = this.$t('error_deleting_file')
       } finally {
         this.removingId = null
       }
@@ -442,20 +551,23 @@ export default {
         a.click()
         URL.revokeObjectURL(url)
       } catch (e) {
-        this.error = 'No se pudo descargar'
+        this.error = this.$t('error_downloading_file')
       }
     },
 
     formatSize(bytes) {
       if (!bytes && bytes !== 0) return ''
-      const units = ['B','KB','MB','GB']
-      let b = Number(bytes), i = 0
-      while (b >= 1024 && i < units.length-1) { b /= 1024; i++ }
+      const units = ['B', 'KB', 'MB', 'GB']
+      let b = Number(bytes)
+      let i = 0
+      while (b >= 1024 && i < units.length - 1) {
+        b /= 1024
+        i++
+      }
       return `${b.toFixed(1)} ${units[i]}`
     }
   }
 }
-
 </script>
 
 <style scoped>
@@ -465,7 +577,6 @@ export default {
   padding: 2rem 1rem;
 }
 
-/* Page Header */
 .page-header {
   display: flex;
   align-items: center;
@@ -483,7 +594,7 @@ export default {
   height: 64px;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   border-radius: 12px;
-  color: white;
+  color: var(--text-inverse);
   flex-shrink: 0;
 }
 
@@ -500,7 +611,6 @@ export default {
   font-size: 0.875rem;
 }
 
-/* Tabs Navigation */
 .tabs-section {
   margin-bottom: 2rem;
 }
@@ -534,6 +644,11 @@ export default {
   background: var(--bg-light);
 }
 
+.tab-btn:focus-visible {
+  outline: 3px solid var(--focus-color, #005fcc);
+  outline-offset: 2px;
+}
+
 .tab-btn.active {
   color: var(--primary-color);
   border-bottom-color: var(--primary-color);
@@ -543,7 +658,6 @@ export default {
   flex-shrink: 0;
 }
 
-/* Tab Panel */
 .tab-panel {
   animation: fadeIn 0.3s ease;
 }
@@ -553,19 +667,19 @@ export default {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* Panel Card */
 .panel-card {
-  background: white;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 2rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .panel-header {
@@ -587,7 +701,6 @@ export default {
   font-size: 0.875rem;
 }
 
-/* Form Grid */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -618,7 +731,9 @@ export default {
 }
 
 .required {
-  color: var(--danger-color);
+  color: var(--danger-active);
+  font-size: 1.2em;
+  font-weight: 800;
 }
 
 .form-input {
@@ -627,20 +742,20 @@ export default {
   border-radius: 8px;
   font-size: 0.875rem;
   transition: all 0.2s ease;
-  background: white;
+  background: var(--card-bg);
 }
 
 .form-input:hover {
   border-color: var(--primary-color);
 }
 
-.form-input:focus {
-  outline: none;
+.form-input:focus-visible {
+  outline: 3px solid var(--focus-color, #005fcc);
+  outline-offset: 2px;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+  box-shadow: var(--focus-ring-info);
 }
 
-/* Info Box */
 .info-box {
   display: flex;
   align-items: flex-start;
@@ -663,7 +778,6 @@ export default {
   color: var(--surface-info-text);
 }
 
-/* Form Actions */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -677,20 +791,27 @@ export default {
   gap: 0.5rem;
   padding: 0.875rem 1.5rem;
   background: var(--primary-color);
-  color: white;
+  color: var(--text-inverse);
   border: none;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-primary:focus-visible,
+.btn-icon:focus-visible,
+.file-drop-zone:focus-visible {
+  outline: 3px solid var(--focus-color, #005fcc);
+  outline-offset: 2px;
 }
 
 .btn-primary:disabled {
@@ -701,17 +822,18 @@ export default {
 .spinner-small {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border: 2px solid var(--white-alpha-30);
+  border-top-color: var(--text-inverse);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* Alerts */
 .alert {
   display: flex;
   align-items: center;
@@ -739,7 +861,6 @@ export default {
   border: 1px solid var(--alert-danger-border);
 }
 
-/* Upload Section */
 .upload-section {
   margin-bottom: 2rem;
 }
@@ -761,7 +882,15 @@ export default {
 }
 
 .file-input-hidden {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .file-drop-label {
@@ -813,7 +942,6 @@ export default {
   display: flex;
 }
 
-/* Files List */
 .files-list {
   margin-top: 3rem;
   padding-top: 2rem;
@@ -854,12 +982,12 @@ export default {
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: white;
+  background: var(--card-bg);
   transition: all 0.2s ease;
 }
 
 .file-card:hover {
-  box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
@@ -905,7 +1033,7 @@ export default {
   width: 36px;
   height: 36px;
   border: 1px solid var(--border);
-  background: white;
+  background: var(--card-bg);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -915,13 +1043,13 @@ export default {
 .btn-icon:hover:not(:disabled) {
   background: var(--primary-color);
   border-color: var(--primary-color);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .btn-icon.btn-danger:hover:not(:disabled) {
   background: var(--danger-color);
   border-color: var(--danger-color);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .btn-icon:disabled {
@@ -929,7 +1057,6 @@ export default {
   cursor: not-allowed;
 }
 
-/* Empty State */
 .empty-files {
   text-align: center;
   padding: 3rem 2rem;
@@ -953,7 +1080,6 @@ export default {
   color: var(--text-secondary);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .historia-page {
     padding: 1.5rem 1rem;
@@ -1001,7 +1127,6 @@ export default {
   }
 }
 
-/* Transitions */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition: all 0.3s ease;
@@ -1015,5 +1140,23 @@ export default {
 .fade-slide-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner-small,
+  .tab-panel {
+    animation: none;
+  }
+
+  .tab-btn,
+  .btn-primary,
+  .btn-icon,
+  .file-drop-zone,
+  .file-card,
+  .fade-slide-enter-active,
+  .fade-slide-leave-active,
+  .form-input {
+    transition: none;
+  }
 }
 </style>

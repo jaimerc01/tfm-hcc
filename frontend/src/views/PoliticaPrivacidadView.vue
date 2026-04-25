@@ -41,9 +41,10 @@
       <h2>{{ $t('privacy_consent') }}</h2>
       <p>{{ $t('privacy_consent_text') }}</p>
     </section>
+    <p>{{ $t('privacy_last_update') }}</p>
   </div>
 </template>
 
 <script>
-export default { name: 'PrivacyPolicyView' }
+export default { name: 'PoliticaPrivacidadView' }
 </script>

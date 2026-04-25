@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { tService } from './serviceI18n'
 
 const API_BASE_URL = process.env.VUE_APP_API_URL || 'http://localhost:8081'
 
@@ -36,12 +37,12 @@ class AuthService {
       // Validar que la respuesta sea JSON y contenga token
       const contentType = response.headers?.['content-type'] || response.headers?.get?.('content-type') || ''
       if (contentType && contentType.includes('text/html')) {
-        throw new Error('Ha ocurrido un error. Por favor, inténtelo de nuevo')
+        throw new Error(tService('auth_generic_retry'))
       }
 
       const { token, expirationTime } = (response && response.data) ? response.data : {}
       if (!token) {
-        throw new Error('Ha ocurrido un error. Por favor, inténtelo de nuevo')
+        throw new Error(tService('auth_generic_retry'))
       }
 
       // Guardar token y expiración en localStorage
@@ -69,13 +70,13 @@ class AuthService {
     } catch (error) {
       // Manejar diferentes tipos de errores
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        throw new Error('Ha ocurrido un error. Por favor, inténtelo de nuevo')
+        throw new Error(tService('auth_generic_retry'))
       } else if (error.response?.status === 401) {
-        throw new Error('Credenciales incorrectas')
+        throw new Error(tService('auth_invalid_credentials'))
       } else if (error.response?.status >= 500) {
-        throw new Error('Ha ocurrido un error. Por favor, inténtelo de nuevo')
+        throw new Error(tService('auth_generic_retry'))
       } else {
-        throw new Error(error.response?.data?.message || 'Ha ocurrido un error. Por favor, inténtelo de nuevo')
+        throw new Error(error.response?.data?.message || tService('auth_generic_retry'))
       }
     }
   }
@@ -222,9 +223,9 @@ class AuthService {
       return response?.data || null
     } catch (error) {
       if (error.response?.status === 409) {
-        throw new Error('Usuario ya existe')
+        throw new Error(tService('user_exists'))
       }
-      throw new Error(error.response?.data?.message || 'Error al crear usuario')
+      throw new Error(error.response?.data?.message || tService('error_creating_user'))
     }
   }
 
@@ -243,22 +244,22 @@ class AuthService {
       const response = await this.apiClient.put('/usuario/me', partial)
       return response?.data || null
     } catch (e) {
-      if (e.response?.status === 400) throw new Error(e.response.data || 'Datos inválidos')
-      if (e.response?.status === 401) throw new Error('No autenticado')
-      throw new Error('Error al actualizar datos')
+      if (e.response?.status === 400) throw new Error(e.response.data || tService('invalid_data'))
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      throw new Error(tService('error_updating_data'))
     }
   }
 
   async changePassword(currentPassword, newPassword) {
     const payload = { currentPassword, newPassword }
     try {
-  const resp = await this.apiClient.post('/usuario/change-password', payload)
+  const resp = await this.apiClient.put('/usuario/password', payload)
   // Invalidate local session immediately
   this._clearAuth()
   return resp?.data?.id || true
     } catch (e) {
       if (e.response?.data) throw new Error(e.response.data)
-      throw new Error('Error al cambiar contraseña')
+      throw new Error(tService('error_changing_password'))
     }
   }
 
@@ -268,8 +269,8 @@ class AuthService {
       this._clearAuth()
       return true
     } catch (e) {
-      if (e.response?.status === 401) throw new Error('No autenticado')
-      throw new Error(e.response?.data || 'Error al eliminar cuenta')
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      throw new Error(e.response?.data || tService('error_deleting_account'))
     }
   }
 }

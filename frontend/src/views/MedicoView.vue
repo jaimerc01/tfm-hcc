@@ -48,7 +48,7 @@
 <script>
 import axios from 'axios'
 import authService from '@/services/authService'
-import validateNIF from '@/utils/validateNIF'
+import { validateNIF } from '@/utils/validateNIF'
 
 export default {
   name: 'MedicoView',

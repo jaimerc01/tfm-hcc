@@ -7,8 +7,9 @@ import LoginView from '@/views/auth/LoginView.vue'
 import RegisterView from '@/views/auth/RegisterView.vue'
 import DashboardView from '@/views/dashboard/DashboardView.vue'
 import HistoriaClinicaView from '@/views/HistoriaClinicaView.vue'
-import PrivacyPolicyView from '@/views/PrivacyPolicyView.vue'
-import UserDataView from '@/views/UserDataView.vue'
+import PoliticaPrivacidadView from '@/views/PoliticaPrivacidadView.vue'
+import PoliticaCookiesView from '@/views/PoliticaCookiesView.vue'
+import DatosUsuarioView from '@/views/DatosUsuarioView.vue'
 import MedicoView from '@/views/MedicoView.vue'
 import AdminView from '@/views/AdminView.vue'
 import AdminMedicosView from '@/views/AdminMedicosView.vue'
@@ -47,8 +48,8 @@ const routes = [
   },
   {
     path: '/usuario',
-    name: 'UserData',
-    component: UserDataView,
+    name: 'DatosUsuario',
+    component: DatosUsuarioView,
     meta: { requiresAuth: true }
   },
   {
@@ -77,8 +78,14 @@ const routes = [
   },
   {
     path: '/privacidad',
-    name: 'PrivacyPolicy',
-    component: PrivacyPolicyView,
+    name: 'PoliticaPrivacidad',
+    component: PoliticaPrivacidadView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/cookies',
+    name: 'PoliticaCookies',
+    component: PoliticaCookiesView,
     meta: { requiresAuth: true }
   },
 ]

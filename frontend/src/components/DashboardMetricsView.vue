@@ -52,7 +52,7 @@
         <path d="M12 8h.01"></path>
       </svg>
       <div>
-        <strong>{{ $t('recommended_range', { metric: selectedMetricData.label }) }}</strong>
+        <strong>{{ $t('recommended_range', { metric: selectedMetricLabel }) }}</strong>
         <span v-if="selectedMetricData.recommendedMin && selectedMetricData.recommendedMax">
           {{ selectedMetricData.recommendedMin }} - {{ selectedMetricData.recommendedMax }} {{ selectedMetricData.unit }}
         </span>
@@ -65,6 +65,11 @@
 <script>
 import { useChart } from '@/composables/useChart'
 import { getThemeColor } from '@/utils/themeColors'
+
+const DASHBOARD_METRICS_UI = Object.freeze({
+  INTERACTIVE_CHART_HEIGHT: 400,
+  CHART_EMPTY_CLASS: 'chart-empty'
+})
 
 export default {
   name: 'DashboardMetricsView',
@@ -104,7 +109,8 @@ export default {
       metrics: {
         glucosa: {
           key: 'glucosa',
-          label: 'Glucosa',
+          labelKey: 'glucose',
+          aliases: ['glucosa', 'glucose'],
           unit: 'mg/dL',
           color: metricColors.glucosa,
           recommendedMin: null,
@@ -114,7 +120,8 @@ export default {
         },
         hemoglobina: {
           key: 'hemoglobina',
-          label: 'Hemoglobina',
+          labelKey: 'hemoglobin',
+          aliases: ['hemoglobina', 'hemoglobin'],
           unit: 'g/dL',
           color: metricColors.hemoglobina,
           recommendedMin: null,
@@ -124,7 +131,8 @@ export default {
         },
         colesterol: {
           key: 'colesterol',
-          label: 'Colesterol Total',
+          labelKey: 'total_cholesterol',
+          aliases: ['colesterol', 'colesterol total', 'colesteroltotal', 'total cholesterol'],
           unit: 'mg/dL',
           color: metricColors.colesterol,
           recommendedMin: null,
@@ -134,7 +142,8 @@ export default {
         },
         trigliceridos: {
           key: 'trigliceridos',
-          label: 'Triglicéridos',
+          labelKey: 'triglycerides',
+          aliases: ['trigliceridos', 'triglicéridos', 'triglycerides'],
           unit: 'mg/dL',
           color: metricColors.trigliceridos,
           recommendedMin: null,
@@ -144,7 +153,8 @@ export default {
         },
         creatinina: {
           key: 'creatinina',
-          label: 'Creatinina',
+          labelKey: 'creatinine',
+          aliases: ['creatinina', 'creatinine'],
           unit: 'mg/dL',
           color: metricColors.creatinina,
           recommendedMin: null,
@@ -154,7 +164,8 @@ export default {
         },
         hematocrito: {
           key: 'hematocrito',
-          label: 'Hematocrito',
+          labelKey: 'hematocrit',
+          aliases: ['hematocrito', 'hematocrit'],
           unit: '%',
           color: metricColors.hematocrito,
           recommendedMin: null,
@@ -169,6 +180,9 @@ export default {
   computed: {
     selectedMetricData() {
       return this.metrics[this.selectedMetric]
+    },
+    selectedMetricLabel() {
+      return this.getMetricLabel(this.selectedMetricData)
     }
   },
 
@@ -180,6 +194,17 @@ export default {
   },
 
   methods: {
+    getMetricLabel(metric) {
+      if (!metric) return ''
+      return this.$t(metric.labelKey || metric.key)
+    },
+    renderChartEmpty(container, message) {
+      container.innerHTML = ''
+      const empty = document.createElement('div')
+      empty.className = DASHBOARD_METRICS_UI.CHART_EMPTY_CLASS
+      empty.textContent = message
+      container.appendChild(empty)
+    },
     async loadRangos() {
       try {
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
@@ -193,19 +218,18 @@ export default {
           // Buscar la métrica correspondiente
           const metricKey = Object.keys(this.metrics).find(key => {
             const metric = this.metrics[key]
-            const labelNormalizado = this.normalizarNombre(metric.label)
             const keyNormalizado = this.normalizarNombre(metric.key)
-            return labelNormalizado === nombreNormalizado || keyNormalizado === nombreNormalizado
+            const aliasMatch = (metric.aliases || []).some(alias => this.normalizarNombre(alias) === nombreNormalizado)
+            return keyNormalizado === nombreNormalizado || aliasMatch
           })
           
           if (metricKey && rango.valorInferiorNumerico !== null && rango.valorSuperiorNumerico !== null) {
             this.metrics[metricKey].recommendedMin = rango.valorInferiorNumerico
             this.metrics[metricKey].recommendedMax = rango.valorSuperiorNumerico
-            console.log(`Rango cargado para ${this.metrics[metricKey].label}: ${rango.valorInferiorNumerico} - ${rango.valorSuperiorNumerico}`)
           }
         })
       } catch (e) {
-        console.error('Error cargando rangos:', e)
+        console.error(this.$t('dashboard_metrics_error_loading_ranges'), e)
       }
     },
     
@@ -242,23 +266,19 @@ export default {
           }
         }
       } catch (e) {
-        console.error('Error cargando datos', e)
+        console.error(this.$t('dashboard_metrics_error_loading_data'), e)
       }
     },
 
     mapTipoToKey(tipo) {
       if (!tipo) return null
-      const norm = String(tipo).toLowerCase().replace(/\s*\(.*\)/, '').trim()
-      const map = {
-        glucosa: 'glucosa',
-        hemoglobina: 'hemoglobina',
-        'colesterol total': 'colesterol',
-        triglicéridos: 'trigliceridos',
-        trigliceridos: 'trigliceridos',
-        creatinina: 'creatinina',
-        hematocrito: 'hematocrito'
-      }
-      return map[norm] || norm
+      const norm = this.normalizarNombre(String(tipo).replace(/\s*\(.*\)/, '').trim())
+      const metric = Object.values(this.metrics).find(m => {
+        const keyMatch = this.normalizarNombre(m.key) === norm
+        const aliasMatch = (m.aliases || []).some(alias => this.normalizarNombre(alias) === norm)
+        return keyMatch || aliasMatch
+      })
+      return metric ? metric.key : norm
     },
 
     getLatestValue(metricKey) {
@@ -282,13 +302,13 @@ export default {
         const value = this.getLatestValue(key)
         
         this.drawGaugeChart(container, value, {
-          label: metric.label,
+          label: this.getMetricLabel(metric),
           unit: metric.unit,
           min: metric.gaugeMin,
           max: metric.gaugeMax,
           recommendedMin: metric.recommendedMin,
           recommendedMax: metric.recommendedMax,
-          ariaLabel: `Medidor de ${metric.label}`
+          ariaLabel: this.$t('dashboard_metric_gauge_aria', { metric: this.getMetricLabel(metric) })
         })
       })
     },
@@ -301,16 +321,16 @@ export default {
       const data = this.prepareChartData(this.entries, metric.key)
 
       if (data.length === 0) {
-        container.innerHTML = '<div class="chart-empty">No hay datos disponibles para esta métrica</div>'
+        this.renderChartEmpty(container, this.$t('dashboard_metric_no_data'))
         return
       }
 
       const options = {
-        label: metric.label,
+        label: this.getMetricLabel(metric),
         color: metric.color,
         recommendedMin: metric.recommendedMin,
         recommendedMax: metric.recommendedMax,
-        ariaLabel: `Gráfico de ${metric.label}`
+        ariaLabel: this.$t('dashboard_metric_chart_aria', { metric: this.getMetricLabel(metric) })
       }
 
       switch (this.chartType) {
@@ -318,7 +338,7 @@ export default {
           this.drawTimeSeriesChart(container, data, options)
           break
         case 'interactive':
-          this.drawInteractiveTimeSeriesChart(container, data, { ...options, height: 400 })
+          this.drawInteractiveTimeSeriesChart(container, data, { ...options, height: DASHBOARD_METRICS_UI.INTERACTIVE_CHART_HEIGHT })
           break
         case 'bar':
           this.drawBarChart(container, data, options)

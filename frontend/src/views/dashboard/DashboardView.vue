@@ -93,7 +93,7 @@ export default {
 .logout-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--surface-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -107,12 +107,12 @@ export default {
 }
 
 .logout-modal {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 2rem;
   max-width: 400px;
   width: 90%;
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-xl);
   animation: slideUp 0.3s ease;
 }
 
@@ -179,13 +179,13 @@ export default {
 
 .btn-confirm {
   background: var(--danger-color);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .btn-confirm:hover {
   background: var(--danger-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-lg);
 }
 
 .btn-cancel {

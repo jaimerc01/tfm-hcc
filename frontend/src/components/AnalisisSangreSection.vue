@@ -1,7 +1,8 @@
 <template>
-  <div class="analisis-section" role="tabpanel">
+  <section class="analisis-section" :aria-busy="saving ? 'true' : 'false'" aria-labelledby="analisis-heading">
+    <h2 id="analisis-heading" class="sr-only">{{ $t('analysis') }}</h2>
     <div class="info-box">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M12 16v-4"></path>
         <path d="M12 8h.01"></path>
@@ -15,14 +16,14 @@
     <!-- Chart Section -->
     <div class="chart-section">
       <div class="chart-header">
-        <h4>
+        <h3>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="20" x2="18" y2="10"></line>
             <line x1="12" y1="20" x2="12" y2="4"></line>
             <line x1="6" y1="20" x2="6" y2="14"></line>
           </svg>
           {{ $t('historical_evolution') }}
-        </h4>
+        </h3>
         <div class="chart-controls">
           <div class="control-group">
             <label class="form-label" for="chart-type-select">{{ $t('chart_type') }}</label>
@@ -36,16 +37,56 @@
           <div class="control-group">
             <label class="form-label" for="chart-param-select">{{ $t('parameter') }}</label>
             <select id="chart-param-select" v-model="chartParam" @change="drawChart" class="form-input chart-select">
-              <option v-for="a in analytes" :key="a.key" :value="a.key">{{ a.label }}</option>
+              <option v-for="a in analytes" :key="a.key" :value="a.key">{{ getAnalyteLabel(a) }}</option>
             </select>
           </div>
         </div>
       </div>
-      <div ref="chart" class="chart-container" aria-hidden="false"></div>
+      <div
+        ref="chart"
+        class="chart-container"
+        role="img"
+        :aria-label="$t('analysis_chart_aria_label', { label: chartCurrentMetricLabel })"
+      ></div>
+
+      <p id="analysis-chart-summary" class="chart-summary" role="status" aria-live="polite">
+        {{ chartSummaryText }}
+      </p>
+
+      <div class="chart-alt-actions">
+        <button
+          type="button"
+          class="btn-secondary"
+          :aria-expanded="showChartDataTable ? 'true' : 'false'"
+          aria-controls="analysis-chart-data-table"
+          @click="showChartDataTable = !showChartDataTable"
+        >
+          {{ showChartDataTable ? $t('analysis_hide_data_table') : $t('analysis_show_data_table') }}
+        </button>
+      </div>
+
+      <div v-if="showChartDataTable" id="analysis-chart-data-table" class="results-table-container">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>{{ $t('date_col') }}</th>
+              <th>{{ $t('value_col') }}</th>
+              <th>{{ $t('status') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, idx) in chartRows" :key="`${row.createdAt || 'no-date'}-${idx}`">
+              <td class="date-cell">{{ formatDate(row.createdAt) }}</td>
+              <td>{{ row.value }} <span class="unit-small">{{ row.unit }}</span></td>
+              <td>{{ row.statusText }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       
       <!-- Chart info helper -->
       <div class="chart-info" v-if="chartType">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
           <circle cx="12" cy="12" r="10"></circle>
           <path d="M12 16v-4"></path>
           <path d="M12 8h.01"></path>
@@ -56,19 +97,19 @@
 
     <!-- Add Entry Form -->
     <div class="add-entry-section">
-      <h4 class="section-subtitle">
+      <h3 class="section-subtitle">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 5v14"></path>
           <path d="M5 12h14"></path>
         </svg>
         {{ $t('add_new_result') }}
-      </h4>
+      </h3>
 
       <div class="form-grid-analisis">
         <div class="form-group">
           <label class="form-label" for="param-select">{{ $t('parameter_required') }} <span class="required">*</span></label>
           <select id="param-select" v-model="selected" class="form-input">
-            <option v-for="a in analytes" :key="a.key" :value="a.key">{{ a.label }}</option>
+            <option v-for="a in analytes" :key="a.key" :value="a.key">{{ getAnalyteLabel(a) }}</option>
           </select>
         </div>
 
@@ -77,11 +118,15 @@
           <div class="input-with-unit">
             <input 
               id="value-input"
+              ref="valueInput"
               class="form-input" 
               :class="{'input-error': !validation.isValid && String(value).trim() !== ''}" 
               type="text" 
               v-model="value" 
-              placeholder="Ej: 95" 
+              :placeholder="$t('analysis_value_placeholder')" 
+              inputmode="decimal"
+              pattern="[0-9]+([.,][0-9]+)?"
+              :aria-invalid="!validation.isValid && String(value).trim() !== '' ? 'true' : 'false'"
               :aria-describedby="!validation.isValid && String(value).trim() !== '' ? 'validation-error' : 'range-hint'" />
             <span class="unit-badge">{{ unitForSelected }}</span>
           </div>
@@ -99,18 +144,18 @@
         <div class="form-group">
           <label class="form-label" for="date-input">{{ $t('date_required') }} <span class="required">*</span></label>
           <input id="date-input" type="datetime-local" v-model="inputDate" class="form-input" />
-          <p class="form-help">{{ $t('date_col') }} y hora del análisis</p>
+          <p class="form-help">{{ $t('analysis_datetime_help') }}</p>
         </div>
 
         <div class="form-group form-actions-inline">
-          <label class="form-label">&nbsp;</label>
+          <div class="form-label-spacer" aria-hidden="true"></div>
           <button 
             type="button"
             class="btn-primary btn-add"
             @click="addEntry" 
             :disabled="!canAdd || saving"
-            :aria-label="saving ? 'Guardando análisis de sangre...' : 'Añadir análisis de sangre a la historia clínica'"
-            :aria-describedby="!validation.isValid ? 'validation-error' : 'range-hint'">
+            :aria-label="saving ? $t('analysis_add_aria_saving') : $t('analysis_add_aria')"
+            :aria-describedby="!validation.isValid && String(value).trim() !== '' ? 'validation-error' : 'range-hint'">
             <div v-if="saving" class="spinner-small"></div>
             <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 5v14"></path>
@@ -151,7 +196,7 @@
                     <circle cx="12" cy="5" r="1"></circle>
                     <circle cx="12" cy="19" r="1"></circle>
                   </svg>
-                  <strong>{{ e.label }}</strong>
+                  <strong>{{ getEntryLabel(e) }}</strong>
                 </div>
               </td>
               <td>
@@ -161,8 +206,8 @@
               <td class="actions-col">
                 <button 
                   type="button"
-                  @click="removeEntry(idx)"
-                  :aria-label="`Eliminar resultado de ${e.label} del ${formatDate(e.createdAt)}`"
+                  @click="removeEntry(idx, $event)"
+                  :aria-label="$t('analysis_delete_entry_aria', { label: getEntryLabel(e), date: formatDate(e.createdAt) })"
                   class="btn-icon btn-danger">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <polyline points="3 6 5 6 21 6"></polyline>
@@ -178,15 +223,15 @@
       <div class="form-actions">
         <button 
           type="button"
-          @click="clearAll" 
+          @click="clearAll($event)" 
           :disabled="saving"
-          :aria-label="`Borrar todos los ${entries.length} resultados de análisis de sangre`"
+          :aria-label="$t('analysis_clear_all_aria', { count: entries.length })"
           class="btn-danger">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           </svg>
-          Borrar todos los resultados
+          {{ $t('analysis_clear_all_button') }}
         </button>
       </div>
     </div>
@@ -220,7 +265,7 @@
       {{ error }}
     </div>
 
-    <div :class="['toast-notification', showToast ? 'show' : '']">
+    <div :class="['toast-notification', showToast ? 'show' : '']" role="status" aria-live="polite" aria-atomic="true">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
@@ -229,7 +274,12 @@
 
     <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteModal" class="modal-overlay" role="dialog" aria-modal="true" @click.self="closeDeleteModal">
-      <div class="modal">
+      <div
+        ref="deleteModal"
+        class="modal"
+        tabindex="-1"
+        @keydown="onModalKeydown('delete', $event)"
+      >
         <div class="modal-header">
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger-color)">
             <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
@@ -238,17 +288,18 @@
           </svg>
           <h3>{{ $t('confirm_delete') }}</h3>
         </div>
-        <p class="modal-text">¿Estás seguro de que quieres eliminar este resultado? Esta acción no se puede deshacer.</p>
-          <p class="modal-text">{{ $t('delete_result_confirm') }}</p>
+        <p class="modal-text">{{ $t('delete_result_confirm') }}</p>
         
         <div class="modal-actions">
           <button 
+            ref="deleteCancelButton"
             type="button"
             class="btn-secondary"
             @click="closeDeleteModal">
             {{ $t('cancel') }}
           </button>
           <button 
+            ref="deleteConfirmButton"
             type="button"
             class="btn-danger"
             @click="confirmDelete">
@@ -264,7 +315,12 @@
 
     <!-- Clear All Confirmation Modal -->
     <div v-if="showClearAllModal" class="modal-overlay" role="dialog" aria-modal="true" @click.self="closeClearAllModal">
-      <div class="modal">
+      <div
+        ref="clearAllModal"
+        class="modal"
+        tabindex="-1"
+        @keydown="onModalKeydown('clear', $event)"
+      >
         <div class="modal-header">
           <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger-color)">
             <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
@@ -279,12 +335,14 @@
         
         <div class="modal-actions">
           <button 
+            ref="clearCancelButton"
             type="button"
             class="btn-secondary"
             @click="closeClearAllModal">
             {{ $t('cancel') }}
           </button>
           <button 
+            ref="clearConfirmButton"
             type="button"
             class="btn-danger"
             @click="confirmClearAll"
@@ -299,12 +357,30 @@
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script>
 import { useChart } from '@/composables/useChart'
 import { getThemeColor } from '@/utils/themeColors'
+
+const ANALYSIS_UI = Object.freeze({
+  MESSAGE_CLEAR_MS: 3000,
+  TOAST_MS: 2000,
+  CHART_HEIGHT_INTERACTIVE: 400,
+  CHART_HEIGHT_BAR: 350,
+  CHART_HEIGHT_GAUGE: 250,
+  GAUGE_DEFAULT_MIN: 0,
+  GAUGE_DEFAULT_MAX: 100,
+  GAUGE_MAX_BY_PARAM: {
+    glucosa: 300,
+    hemoglobina: 20,
+    colesterol: 400,
+    trigliceridos: 500,
+    creatinina: 3,
+    hematocrito: 60
+  }
+})
 
 export default {
   name: 'AnalisisSangreSection',
@@ -330,7 +406,8 @@ export default {
       analytes: [
         { 
           key: 'glucosa', 
-          label: 'Glucosa', 
+          labelKey: 'glucose',
+          aliases: ['glucosa', 'glucose'],
           unit: 'mg/dL', 
           // Rangos de validación del formulario (amplios)
           validationMin: 0, 
@@ -342,7 +419,8 @@ export default {
         },
         { 
           key: 'hemoglobina', 
-          label: 'Hemoglobina', 
+          labelKey: 'hemoglobin',
+          aliases: ['hemoglobina', 'hemoglobin'],
           unit: 'g/dL', 
           validationMin: 0, 
           validationMax: 25, 
@@ -352,7 +430,8 @@ export default {
         },
         { 
           key: 'colesterol', 
-          label: 'Colesterol total', 
+          labelKey: 'total_cholesterol',
+          aliases: ['colesterol', 'colesterol total', 'colesteroltotal', 'total cholesterol'],
           unit: 'mg/dL', 
           validationMin: 0, 
           validationMax: 500, // Aumentado para permitir valores altos como 250-300
@@ -362,7 +441,8 @@ export default {
         },
         { 
           key: 'trigliceridos', 
-          label: 'Triglicéridos', 
+          labelKey: 'triglycerides',
+          aliases: ['trigliceridos', 'triglicéridos', 'triglycerides'],
           unit: 'mg/dL', 
           validationMin: 0, 
           validationMax: 2000, 
@@ -372,7 +452,8 @@ export default {
         },
         { 
           key: 'creatinina', 
-          label: 'Creatinina', 
+          labelKey: 'creatinine',
+          aliases: ['creatinina', 'creatinine'],
           unit: 'mg/dL', 
           validationMin: 0, 
           validationMax: 50, 
@@ -382,7 +463,8 @@ export default {
         },
         { 
           key: 'hematocrito', 
-          label: 'Hematocrito', 
+          labelKey: 'hematocrit',
+          aliases: ['hematocrito', 'hematocrit'],
           unit: '%', 
           validationMin: 0, 
           validationMax: 100, 
@@ -401,13 +483,17 @@ export default {
       msg: '',
       error: null,
       showToast: false,
-      showToastMessage: 'Guardado correctamente',
+      showToastMessage: '',
       showDeleteModal: false,
       deleteIndex: null,
-      showClearAllModal: false
+      showClearAllModal: false,
+      showChartDataTable: false,
+      deleteTriggerEl: null,
+      clearAllTriggerEl: null
     }
   },
   async created() { 
+    this.showToastMessage = this.$t('analysis_toast_saved')
     await this.loadRangos()
     await this.load()
     this.inputDate = this.localNowForInput() 
@@ -424,6 +510,84 @@ export default {
     }
   },
   computed: {
+    selectedChartAnalyte() {
+      return this.analytes.find(x => x.key === this.chartParam) || null
+    },
+    chartCurrentMetricLabel() {
+      return this.selectedChartAnalyte ? this.getAnalyteLabel(this.selectedChartAnalyte) : this.$t('parameter')
+    },
+    chartEntries() {
+      if (!Array.isArray(this.entries)) return []
+      const param = this.chartParam || 'glucosa'
+      return this.entries
+        .filter(e => e && (e.key === param || this.mapTipoToKey(e.label || e.tipo || e.key) === param))
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    },
+    latestChartEntry() {
+      if (!this.chartEntries.length) return null
+      return this.chartEntries[this.chartEntries.length - 1]
+    },
+    latestChartEntryNumericValue() {
+      if (!this.latestChartEntry) return null
+      const raw = String(this.latestChartEntry.value || this.latestChartEntry.valor || '').replace(',', '.')
+      const parsed = Number(raw)
+      return Number.isFinite(parsed) ? parsed : null
+    },
+    latestOutOfRecommendedRange() {
+      if (!this.selectedChartAnalyte) return false
+      if (this.latestChartEntryNumericValue === null) return false
+      const min = this.selectedChartAnalyte.recommendedMin
+      const max = this.selectedChartAnalyte.recommendedMax
+      if (min === null || max === null) return false
+      return this.latestChartEntryNumericValue < min || this.latestChartEntryNumericValue > max
+    },
+    chartSummaryText() {
+      const label = this.chartCurrentMetricLabel
+      const type = this.$t(`analysis_chart_type_${this.chartType || 'interactive'}`)
+      if (!this.chartEntries.length) {
+        return this.$t('analysis_chart_summary_empty', { label, type })
+      }
+
+      const latest = this.latestChartEntry
+      const latestValue = this.latestChartEntryNumericValue
+      const unit = (this.selectedChartAnalyte && this.selectedChartAnalyte.unit) || latest.unit || ''
+      const date = this.formatDate(latest.createdAt)
+      const status = this.latestOutOfRecommendedRange
+        ? this.$t('analysis_chart_status_out_of_range')
+        : this.$t('analysis_chart_status_in_range')
+
+      return this.$t('analysis_chart_summary_with_data', {
+        label,
+        type,
+        count: this.chartEntries.length,
+        latestValue: latestValue ?? latest.value,
+        unit,
+        latestDate: date,
+        status
+      })
+    },
+    chartRows() {
+      const analyte = this.selectedChartAnalyte
+      const min = analyte ? analyte.recommendedMin : null
+      const max = analyte ? analyte.recommendedMax : null
+      return this.chartEntries
+        .slice()
+        .reverse()
+        .map(entry => {
+          const raw = String(entry.value || entry.valor || '').replace(',', '.')
+          const num = Number(raw)
+          let statusText = this.$t('analysis_chart_status_no_reference')
+          if (Number.isFinite(num) && min !== null && max !== null) {
+            statusText = num < min || num > max
+              ? this.$t('analysis_chart_status_out_of_range')
+              : this.$t('analysis_chart_status_in_range')
+          }
+          return {
+            ...entry,
+            statusText
+          }
+        })
+    },
     unitForSelected() {
       const a = this.analytes.find(x => x.key === this.selected)
       return a ? a.unit : ''
@@ -434,28 +598,102 @@ export default {
       
       // Si hay rangos recomendados del servidor, mostrarlos
       if (a.recommendedMin !== null && a.recommendedMax !== null) {
-        return `Rango recomendado: ${a.recommendedMin}–${a.recommendedMax} ${a.unit}`
+        return this.$t('analysis_range_recommended', {
+          min: a.recommendedMin,
+          max: a.recommendedMax,
+          unit: a.unit
+        })
       }
       
       // Si no hay rangos recomendados, mostrar mensaje genérico
-      return `Introduce el valor del análisis en ${a.unit}`
+      return this.$t('analysis_range_enter_value', { unit: a.unit })
     },
   canAdd() { return this.value !== null && String(this.value).trim() !== '' && this.validation.isValid },
     validation() {
       const a = this.analytes.find(x => x.key === this.selected)
       const raw = String(this.value).trim()
-      if (!a) return { isValid: false, message: 'Seleccione un parámetro' }
-      if (raw === '') return { isValid: false, message: 'Introduce un valor' }
+      if (!a) return { isValid: false, message: this.$t('analysis_validation_select_param') }
+      if (raw === '') return { isValid: false, message: this.$t('analysis_validation_enter_value') }
       // allow comma or dot as decimal separator
       const normalized = raw.replace(',', '.')
       const num = Number(normalized)
-      if (Number.isNaN(num)) return { isValid: false, message: 'Valor no numérico' }
-      if (a.validationMin != null && num < a.validationMin) return { isValid: false, message: `Valor mínimo ${a.validationMin} ${a.unit}` }
-      if (a.validationMax != null && num > a.validationMax) return { isValid: false, message: `Valor máximo ${a.validationMax} ${a.unit}` }
+      if (Number.isNaN(num)) return { isValid: false, message: this.$t('analysis_validation_non_numeric') }
+      if (a.validationMin != null && num < a.validationMin) {
+        return { isValid: false, message: this.$t('analysis_validation_min', { min: a.validationMin, unit: a.unit }) }
+      }
+      if (a.validationMax != null && num > a.validationMax) {
+        return { isValid: false, message: this.$t('analysis_validation_max', { max: a.validationMax, unit: a.unit }) }
+      }
       return { isValid: true, message: '' , value: num }
     }
   },
   methods: {
+    focusFirstInvalidField() {
+      if (!this.validation.isValid && this.$refs.valueInput) {
+        this.$refs.valueInput.focus()
+      }
+    },
+    focusModalInitial(type) {
+      this.$nextTick(() => {
+        if (type === 'delete' && this.$refs.deleteCancelButton) {
+          this.$refs.deleteCancelButton.focus()
+          return
+        }
+        if (type === 'clear' && this.$refs.clearCancelButton) {
+          this.$refs.clearCancelButton.focus()
+          return
+        }
+        const fallback = type === 'delete' ? this.$refs.deleteModal : this.$refs.clearAllModal
+        if (fallback) fallback.focus()
+      })
+    },
+    restoreTriggerFocus(type) {
+      const trigger = type === 'delete' ? this.deleteTriggerEl : this.clearAllTriggerEl
+      if (trigger && typeof trigger.focus === 'function') {
+        this.$nextTick(() => trigger.focus())
+      }
+      if (type === 'delete') this.deleteTriggerEl = null
+      if (type === 'clear') this.clearAllTriggerEl = null
+    },
+    onModalKeydown(type, event) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        if (type === 'delete') this.closeDeleteModal()
+        if (type === 'clear') this.closeClearAllModal()
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const focusableRefs = type === 'delete'
+        ? [this.$refs.deleteCancelButton, this.$refs.deleteConfirmButton]
+        : [this.$refs.clearCancelButton, this.$refs.clearConfirmButton]
+      const focusable = focusableRefs.filter(Boolean)
+      if (!focusable.length) return
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    },
+    getAnalyteLabel(analyte) {
+      if (!analyte) return ''
+      return this.$t(analyte.labelKey || analyte.key)
+    },
+    getEntryLabel(entry) {
+      if (!entry) return ''
+      if (entry.key) {
+        const analyte = this.analytes.find(a => a.key === entry.key)
+        if (analyte) return this.getAnalyteLabel(analyte)
+      }
+      return entry.label || entry.tipo || entry.key || ''
+    },
     /**
      * Carga los rangos de referencia desde el servidor y actualiza los analytes
      */
@@ -472,25 +710,18 @@ export default {
           
           // Buscar el analyte correspondiente
           const analyte = this.analytes.find(a => {
-            const labelNormalizado = this.normalizarNombre(a.label)
             const keyNormalizado = this.normalizarNombre(a.key)
-            return labelNormalizado === nombreNormalizado || keyNormalizado === nombreNormalizado
+            const aliasMatch = (a.aliases || []).some(alias => this.normalizarNombre(alias) === nombreNormalizado)
+            return keyNormalizado === nombreNormalizado || aliasMatch
           })
           
           if (analyte && rango.valorInferiorNumerico !== null && rango.valorSuperiorNumerico !== null) {
-            console.log(`DEBUG Rango recibido para ${rango.nombre}:`, {
-              valorInferior: rango.valorInferior,
-              valorSuperior: rango.valorSuperior,
-              valorInferiorNumerico: rango.valorInferiorNumerico,
-              valorSuperiorNumerico: rango.valorSuperiorNumerico
-            })
             analyte.recommendedMin = rango.valorInferiorNumerico
             analyte.recommendedMax = rango.valorSuperiorNumerico
-            console.log(`Rango cargado para ${analyte.label}: min=${analyte.recommendedMin}, max=${analyte.recommendedMax}`)
           }
         })
       } catch (e) {
-        console.error('Error cargando rangos:', e)
+        console.error(this.$t('analysis_error_loading_ranges'), e)
         // No bloqueamos la carga del componente si fallan los rangos
       }
     },
@@ -512,16 +743,12 @@ export default {
     mapTipoToKey(tipo) {
       if (!tipo) return null
       const norm = this.normalizarNombre(tipo)
-      const map = {
-        glucosa: 'glucosa',
-        hemoglobina: 'hemoglobina',
-        'colesteroltotal': 'colesterol',
-        colesterol: 'colesterol',
-        trigliceridos: 'trigliceridos',
-        creatinina: 'creatinina',
-        hematocrito: 'hematocrito'
-      }
-      return map[norm] || norm
+      const analyte = this.analytes.find(a => {
+        const keyMatch = this.normalizarNombre(a.key) === norm
+        const aliasMatch = (a.aliases || []).some(alias => this.normalizarNombre(alias) === norm)
+        return keyMatch || aliasMatch
+      })
+      return analyte ? analyte.key : norm
     },
     async load() {
       try {
@@ -547,7 +774,7 @@ export default {
                 return {
                   id: p.id || null,
                   key: mappedKey || p.key || null,
-                  label: p.label || p.tipo || p.key || (analyte ? analyte.label : ''),
+                  label: p.label || p.tipo || p.key || '',
                   // backend may send 'valor' (string/number) so normalize to string for display
                   value: (p.value !== undefined && p.value !== null) ? String(p.value) : (p.valor !== undefined && p.valor !== null) ? String(p.valor) : '',
                   unit: analyte ? analyte.unit : (p.unit || p.unidad || ''),
@@ -572,8 +799,8 @@ export default {
         await this.$nextTick()
         this.drawChart()
       } catch (e) { 
-        console.error('No se pudo cargar análisis', e)
-        this.error = 'No se pudo cargar análisis'
+        console.error(this.$t('analysis_error_loading'), e)
+        this.error = this.$t('analysis_error_loading')
         this.entries = []
         await this.$nextTick()
         this.drawChart()
@@ -599,7 +826,10 @@ export default {
     },
 
     async addEntry() {
-      if (!this.canAdd) return
+      if (!this.canAdd) {
+        this.focusFirstInvalidField()
+        return
+      }
       
       this.saving = true
       try {
@@ -616,7 +846,7 @@ export default {
           }
         } catch (e) { /* ignore and use now */ }
 
-        const newEntry = { key: a.key, label: a.label, value: formatted, unit: a.unit, createdAt }
+        const newEntry = { key: a.key, label: this.getAnalyteLabel(a), value: formatted, unit: a.unit, createdAt }
         
         // Añadir solo la nueva entrada al servidor (POST añade sin eliminar existentes)
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
@@ -631,13 +861,13 @@ export default {
         this.inputDate = this.localNowForInput()
         
         // Show success message
-        this.msg = 'Resultado añadido y guardado.'
-        this.showTemporaryToast('Guardado correctamente')
-        setTimeout(() => this.msg = '', 3000)
+        this.msg = this.$t('analysis_result_added')
+        this.showTemporaryToast(this.$t('analysis_toast_saved'))
+        setTimeout(() => this.msg = '', ANALYSIS_UI.MESSAGE_CLEAR_MS)
         
       } catch (e) {
-        console.error('Error guardando análisis', e)
-        this.error = 'Error guardando el resultado'
+        console.error(this.$t('analysis_error_saving'), e)
+        this.error = this.$t('analysis_error_saving')
         // Reload to restore state
         await this.load()
       } finally {
@@ -645,14 +875,17 @@ export default {
       }
     },
 
-    removeEntry(i) {
+    removeEntry(i, event) {
+      this.deleteTriggerEl = event && event.currentTarget ? event.currentTarget : null
       this.deleteIndex = i
       this.showDeleteModal = true
+      this.focusModalInitial('delete')
     },
 
     closeDeleteModal() {
       this.showDeleteModal = false
       this.deleteIndex = null
+      this.restoreTriggerFocus('delete')
     },
 
     async confirmDelete() {
@@ -666,9 +899,6 @@ export default {
         if (entry && entry.id) {
           const svc = await import('@/services/historiaClinicaService').then(m => m.default)
           await svc.deleteDatoClinico(entry.id)
-        } else {
-          // Si no tiene ID (entrada local no guardada aún), solo remover del array
-          console.warn('Entry sin ID, solo se eliminará localmente')
         }
         
         // Reload from server to ensure consistency
@@ -678,32 +908,35 @@ export default {
         this.closeDeleteModal()
         
         // Show success message
-        this.msg = 'Resultado eliminado correctamente.'
-        this.showTemporaryToast('Eliminado correctamente')
-        setTimeout(() => this.msg = '', 3000)
+        this.msg = this.$t('analysis_result_deleted')
+        this.showTemporaryToast(this.$t('analysis_toast_deleted'))
+        setTimeout(() => this.msg = '', ANALYSIS_UI.MESSAGE_CLEAR_MS)
       } catch (err) {
-        console.error('Error eliminando resultado', err)
-        this.error = 'No se pudo eliminar el resultado'
+        console.error(this.$t('analysis_error_deleting'), err)
+        this.error = this.$t('analysis_error_deleting')
         // Reload to restore state
         await this.load()
         this.closeDeleteModal()
       }
     },
 
-    clearAll() {
+    clearAll(event) {
       // Verificar que hay entradas para eliminar
       if (!this.entries || this.entries.length === 0) {
-        this.msg = 'No hay resultados para eliminar.'
-        setTimeout(() => this.msg = '', 3000)
+        this.msg = this.$t('analysis_no_results_to_delete')
+        setTimeout(() => this.msg = '', ANALYSIS_UI.MESSAGE_CLEAR_MS)
         return
       }
       
       // Mostrar modal de confirmación
+      this.clearAllTriggerEl = event && event.currentTarget ? event.currentTarget : null
       this.showClearAllModal = true
+      this.focusModalInitial('clear')
     },
     
     closeClearAllModal() {
       this.showClearAllModal = false
+      this.restoreTriggerFocus('clear')
     },
     
     async confirmClearAll() {
@@ -716,7 +949,6 @@ export default {
         const entriesToDelete = this.entries.filter(e => e && e.id)
         
         if (entriesToDelete.length === 0) {
-          console.warn('No hay entradas con ID para eliminar')
           this.entries = []
           this.drawChart() // Redibujar gráfico vacío
           return
@@ -733,12 +965,13 @@ export default {
         await this.load()
         
         this.showClearAllModal = false
-        this.msg = 'Todos los resultados eliminados correctamente.'
-        this.showTemporaryToast('Eliminado correctamente')
-        setTimeout(() => this.msg = '', 3000)
+        this.restoreTriggerFocus('clear')
+        this.msg = this.$t('analysis_results_deleted')
+        this.showTemporaryToast(this.$t('analysis_toast_deleted'))
+        setTimeout(() => this.msg = '', ANALYSIS_UI.MESSAGE_CLEAR_MS)
       } catch (e) { 
-        console.error('Error borrando análisis', e)
-        this.error = 'Error borrando análisis: ' + (e.message || 'Error desconocido')
+        console.error(this.$t('analysis_error_clear_all'), e)
+        this.error = `${this.$t('analysis_error_clear_all')}: ${e.message || this.$t('error')}`
         setTimeout(() => this.error = '', 5000)
         // Recargar para restaurar estado
         await this.load()
@@ -747,12 +980,19 @@ export default {
       }
     },
 
-    showTemporaryToast(message = 'Guardado correctamente') {
-      this.showToastMessage = message
+    showTemporaryToast(message) {
+      this.showToastMessage = message || this.$t('analysis_toast_saved')
       this.showToast = true
-      setTimeout(() => this.showToast = false, 2000)
+      setTimeout(() => this.showToast = false, ANALYSIS_UI.TOAST_MS)
     }
     ,
+    renderChartEmpty(container, message) {
+      container.innerHTML = ''
+      const empty = document.createElement('div')
+      empty.className = 'chart-empty'
+      empty.textContent = message
+      container.appendChild(empty)
+    },
     localNowForInput() {
       const d = new Date()
       // get local iso without seconds fraction to match input step
@@ -772,7 +1012,7 @@ export default {
       // Preparar datos para el parámetro seleccionado
       const param = this.chartParam || 'glucosa'
       const analyteDef = this.analytes.find(a => a.key === param) || {}
-      const label = analyteDef.label || param
+      const label = analyteDef.key ? this.getAnalyteLabel(analyteDef) : param
 
       // Opciones comunes para todos los gráficos
       const baseOptions = {
@@ -780,7 +1020,7 @@ export default {
         color: getThemeColor('--chart-emphasis'),
         recommendedMin: analyteDef.recommendedMin,
         recommendedMax: analyteDef.recommendedMax,
-        ariaLabel: `Histórico de ${label}`
+        ariaLabel: this.$t('analysis_chart_aria_label', { label })
       }
 
       // Para el gauge, usar el último valor
@@ -790,43 +1030,22 @@ export default {
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0]
         
         if (!latestEntry) {
-          container.innerHTML = '<div class="chart-empty">No hay datos disponibles para esta métrica</div>'
+          this.renderChartEmpty(container, this.$t('analysis_chart_no_metric_data'))
           return
         }
 
         const value = parseFloat(String(latestEntry.value || latestEntry.valor || '0').replace(',', '.'))
         
         // Determinar rango del gauge basado en el analito
-        let gaugeMin = 0
-        let gaugeMax = 100
-        
-        switch(param) {
-          case 'glucosa':
-            gaugeMax = 300
-            break
-          case 'hemoglobina':
-            gaugeMax = 20
-            break
-          case 'colesterol':
-            gaugeMax = 400
-            break
-          case 'trigliceridos':
-            gaugeMax = 500
-            break
-          case 'creatinina':
-            gaugeMax = 3
-            break
-          case 'hematocrito':
-            gaugeMax = 60
-            break
-        }
+        const gaugeMin = ANALYSIS_UI.GAUGE_DEFAULT_MIN
+        const gaugeMax = ANALYSIS_UI.GAUGE_MAX_BY_PARAM[param] || ANALYSIS_UI.GAUGE_DEFAULT_MAX
 
         this.drawGaugeChart(container, value, {
           ...baseOptions,
           min: gaugeMin,
           max: gaugeMax,
           unit: analyteDef.unit || '',
-          height: 250
+          height: ANALYSIS_UI.CHART_HEIGHT_GAUGE
         })
         return
       }
@@ -835,7 +1054,7 @@ export default {
       const chartData = this.prepareChartData(this.entries, param)
 
       if (chartData.length === 0) {
-        container.innerHTML = `<div class="chart-empty">No hay datos históricos de ${label}.</div>`
+        this.renderChartEmpty(container, this.$t('analysis_chart_no_historical_data', { label }))
         return
       }
 
@@ -848,14 +1067,14 @@ export default {
         case 'interactive':
           this.drawInteractiveTimeSeriesChart(container, chartData, {
             ...baseOptions,
-            height: 400
+            height: ANALYSIS_UI.CHART_HEIGHT_INTERACTIVE
           })
           break
         
         case 'bar':
           this.drawBarChart(container, chartData, {
             ...baseOptions,
-            height: 350
+            height: ANALYSIS_UI.CHART_HEIGHT_BAR
           })
           break
         
@@ -873,10 +1092,10 @@ export default {
 
     getChartTypeInfo() {
       const info = {
-        line: 'Gráfico de línea simple para ver la tendencia general.',
-        interactive: 'Gráfico interactivo con zoom. Usa el selector inferior para explorar períodos específicos.',
-        bar: 'Gráfico de barras para comparar valores entre mediciones.',
-        gauge: 'Medidor que muestra el último valor registrado y su posición en el rango normal.'
+        line: this.$t('analysis_chart_info_line'),
+        interactive: this.$t('analysis_chart_info_interactive'),
+        bar: this.$t('analysis_chart_info_bar'),
+        gauge: this.$t('analysis_chart_info_gauge')
       }
       return info[this.chartType] || ''
     }
@@ -891,6 +1110,28 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.chart-summary {
+  margin: 0.75rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.chart-alt-actions {
+  margin-top: 0.75rem;
 }
 
 /* Controles de gráfico mejorados */
@@ -948,11 +1189,11 @@ export default {
 
 /* Add Entry Section */
 .add-entry-section {
-  background: white;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .section-subtitle {
@@ -986,6 +1227,11 @@ export default {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+}
+
+.form-label-spacer {
+  min-height: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .btn-add {
@@ -1034,16 +1280,16 @@ export default {
 }
 
 .input-error:focus {
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+  box-shadow: var(--focus-ring-danger) !important;
 }
 
 /* Results Section */
 .results-section {
-  background: white;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .results-table-container {
@@ -1152,10 +1398,10 @@ export default {
   right: 2rem;
   bottom: 2rem;
   background: var(--success-color);
-  color: white;
+  color: var(--text-inverse);
   padding: 1rem 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-toast);
   opacity: 0;
   transform: translateY(20px);
   transition: all 0.3s ease;
@@ -1173,6 +1419,24 @@ export default {
 
 .toast-notification svg {
   flex-shrink: 0;
+}
+
+.modal button:focus-visible,
+.chart-alt-actions button:focus-visible,
+.btn-icon:focus-visible,
+.btn-danger:focus-visible,
+.btn-secondary:focus-visible,
+.btn-primary:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-notification,
+  .results-table tbody tr {
+    transition: none;
+    animation: none;
+  }
 }
 
 /* Responsive */

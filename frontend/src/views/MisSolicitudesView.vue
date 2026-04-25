@@ -332,7 +332,7 @@ export default {
   height: 64px;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   border-radius: 12px;
-  color: white;
+  color: var(--text-inverse);
   flex-shrink: 0;
 }
 
@@ -472,7 +472,7 @@ export default {
 
 /* Cards */
 .solicitud-card {
-  background: white;
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
@@ -480,7 +480,7 @@ export default {
 }
 
 .solicitud-card:hover {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-2px);
 }
 
@@ -594,31 +594,31 @@ export default {
 
 .btn-accept {
   background: var(--success-color);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .btn-accept:hover {
   background: var(--success-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-lg);
 }
 
 .btn-reject {
   background: var(--danger-color);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .btn-reject:hover {
   background: var(--danger-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--surface-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -632,12 +632,12 @@ export default {
 }
 
 .modal {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 2rem;
   max-width: 400px;
   width: 90%;
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-xl);
   animation: slideUp 0.3s ease;
 }
 
@@ -713,24 +713,24 @@ export default {
 
 .btn-confirm-accept {
   background: var(--success-color);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .btn-confirm-accept:hover {
   background: var(--success-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-lg);
 }
 
 .btn-confirm-reject {
   background: var(--danger-color);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .btn-confirm-reject:hover {
   background: var(--danger-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-lg);
 }
 
 .btn-cancel {

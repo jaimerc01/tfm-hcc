@@ -1,7 +1,7 @@
 <template>
-  <div class="antecedentes-section" role="tabpanel">
+  <div class="antecedentes-section">
     <div class="info-box">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M12 16v-4"></path>
         <path d="M12 8h.01"></path>
@@ -14,7 +14,7 @@
 
     <div class="form-group full-width">
       <label class="form-label" for="antecedentes-text">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
           <circle cx="9" cy="7" r="4"></circle>
           <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -32,19 +32,28 @@
         aria-describedby="antecedentes-counter"
         :maxlength="charLimit"></textarea>
       <div id="antecedentes-counter" class="char-counter">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
           <polyline points="9 11 12 14 22 4"></polyline>
           <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
         </svg>
-        {{ wordCount }} palabras · {{ charCount }}/{{ charLimit }} caracteres
+        {{ $t('antecedentes_counter', { words: wordCount, chars: charCount, limit: charLimit }) }}
         <span v-if="remainingChars < 200" :class="remainingChars < 50 ? 'text-danger' : 'text-warning'">
-          ({{ remainingChars }} restantes)
+          {{ $t('antecedentes_remaining', { remaining: remainingChars }) }}
         </span>
       </div>
     </div>
 
+    <div v-if="error" class="alert alert-danger" role="alert" aria-live="assertive">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 16v-4"></path>
+        <path d="M12 8h.01"></path>
+      </svg>
+      {{ error }}
+    </div>
+
     <div v-if="msgAnte" class="alert alert-success" role="status" aria-live="polite">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
       {{ msgAnte }}
@@ -55,7 +64,8 @@
         type="button"
         class="btn-primary"
         @click="saveAntecedentes" 
-        :disabled="savingAntecedentes">
+        :disabled="savingAntecedentes"
+        :aria-disabled="savingAntecedentes ? 'true' : 'false'">
         <div v-if="savingAntecedentes" class="spinner-small"></div>
         <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -66,8 +76,8 @@
       </button>
     </div>
 
-    <div :class="['toast-notification', showToast ? 'show' : '']">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <div :class="['toast-notification', showToast ? 'show' : '']" role="status" aria-live="polite" aria-atomic="true">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
       {{ $t('saved_antecedentes') }}
@@ -130,6 +140,12 @@ export default {
       this.showToast = true
       setTimeout(() => this.showToast = false, 2000)
     }
+  },
+  beforeUnmount() {
+    if (this.autosaveTimer) {
+      clearTimeout(this.autosaveTimer)
+      this.autosaveTimer = null
+    }
   }
 }
 </script>
@@ -182,15 +198,32 @@ export default {
   color: var(--primary-color);
 }
 
+.form-input:focus-visible,
+.btn-primary:focus-visible {
+  outline: 3px solid var(--focus-color, #005fcc);
+  outline-offset: 2px;
+}
+
+.alert-danger {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 8px;
+  background: var(--alert-danger-bg);
+  color: var(--alert-danger-text);
+  border: 1px solid var(--alert-danger-border);
+}
+
 .toast-notification {
   position: fixed;
   right: 2rem;
   bottom: 2rem;
   background: var(--success-color);
-  color: white;
+  color: var(--text-inverse);
   padding: 1rem 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-toast);
   opacity: 0;
   transform: translateY(20px);
   transition: all 0.3s ease;
@@ -216,6 +249,16 @@ export default {
     bottom: 1rem;
     left: 1rem;
     width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-notification,
+  .spinner-small,
+  .btn-primary {
+    transition: none;
+    animation: none;
+    transform: none;
   }
 }
 </style>
