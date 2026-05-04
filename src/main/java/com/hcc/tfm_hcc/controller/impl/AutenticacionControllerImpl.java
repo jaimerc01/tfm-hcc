@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
+import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.AutenticacionController;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
@@ -37,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RestController
-@RequestMapping("/authentication")
+@RequestMapping(RestUrls.AUTH_BASE)
 @CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true")
 @RequiredArgsConstructor
 public class AutenticacionControllerImpl implements AutenticacionController {
@@ -49,7 +50,7 @@ public class AutenticacionControllerImpl implements AutenticacionController {
      * {@inheritDoc}
      */
     @Override
-    @PostMapping("/login")
+    @PostMapping(RestUrls.AUTH_LOGIN)
     public ResponseEntity<LoginResponse> autenticar(@RequestBody LoginUsuarioDTO loginUsuarioDTO) 
             throws IllegalArgumentException, SecurityException {
         String nif = loginUsuarioDTO != null ? loginUsuarioDTO.getNif() : "null";
@@ -76,7 +77,7 @@ public class AutenticacionControllerImpl implements AutenticacionController {
      * {@inheritDoc}
      */
     @Override
-    @PostMapping("/signup")
+    @PostMapping(RestUrls.AUTH_SIGNUP)
     public ResponseEntity<UsuarioDTO> registrar(@RequestBody UsuarioDTO usuarioDTO) 
             throws IllegalArgumentException, IllegalStateException {
         String nif = usuarioDTO != null ? usuarioDTO.getNif() : "null";

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 
 /**
@@ -40,7 +41,7 @@ public interface AdminController {
      * 
      * @return ResponseEntity con lista de UsuarioDTO de médicos registrados
      */
-    @GetMapping("/medicos")
+    @GetMapping(RestUrls.ADMIN_MEDICOS)
     ResponseEntity<List<UsuarioDTO>> listarMedicos();
 
     /**
@@ -49,7 +50,7 @@ public interface AdminController {
      * @param medicoDTO Datos del médico a crear
      * @return ResponseEntity con el UsuarioDTO del médico creado
      */
-    @PostMapping("/medicos")
+    @PostMapping(RestUrls.ADMIN_MEDICOS)
     ResponseEntity<UsuarioDTO> crearMedico(@RequestBody UsuarioDTO medicoDTO);
 
     /**
@@ -59,7 +60,7 @@ public interface AdminController {
      * @param medicoDTO Datos actualizados del médico
      * @return ResponseEntity con el UsuarioDTO del médico actualizado
      */
-    @PutMapping("/medicos/{id}")
+    @PutMapping(RestUrls.ADMIN_MEDICO_ID)
     ResponseEntity<UsuarioDTO> actualizarMedico(@PathVariable("id") UUID id, @RequestBody UsuarioDTO medicoDTO);
 
     /**
@@ -69,7 +70,7 @@ public interface AdminController {
      * @param id ID único del médico a eliminar
      * @return ResponseEntity vacío confirmando la eliminación
      */
-    @DeleteMapping("/medicos/{id}")
+    @DeleteMapping(RestUrls.ADMIN_MEDICO_ID)
     ResponseEntity<Void> eliminarMedico(@PathVariable("id") UUID id);
 
     /**
@@ -80,6 +81,6 @@ public interface AdminController {
      * @param asignar true para asignar perfil médico, false para revocarlo
      * @return ResponseEntity vacío confirmando la operación
      */
-    @PutMapping("/medicos/{id}/perfil-medico")
+    @PutMapping(RestUrls.ADMIN_MEDICO_PERFIL)
     ResponseEntity<Void> setPerfilMedico(@PathVariable("id") UUID id, @RequestParam("asignar") boolean asignar);
 }

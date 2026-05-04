@@ -2,9 +2,8 @@ package com.hcc.tfm_hcc.repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import com.hcc.tfm_hcc.model.AccessLog;
@@ -25,7 +24,7 @@ import com.hcc.tfm_hcc.model.AccessLog;
  * @since 1.0
  */
 @Repository
-public interface AccessLogRepository extends CrudRepository<AccessLog, UUID> {
+public interface AccessLogRepository extends MongoRepository<AccessLog, String> {
     
     /**
      * Busca todos los registros de acceso de un usuario específico.

@@ -1,14 +1,12 @@
 package com.hcc.tfm_hcc.model;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -29,9 +27,12 @@ import lombok.NoArgsConstructor;
  * @version 1.0
  * @since 1.0
  */
-@Entity
+@Document(collection = "log_acceso")
+@CompoundIndexes({
+    @CompoundIndex(name = "idx_log_acceso_usuario_timestamp", def = "{'id_usuario': 1, 'timestamp': -1}"),
+    @CompoundIndex(name = "idx_log_acceso_timestamp", def = "{'timestamp': -1}")
+})
 @Data
-@Table(name = "log_acceso")
 @NoArgsConstructor
 public class AccessLog {
 
@@ -39,57 +40,55 @@ public class AccessLog {
      * Identificador único del registro de acceso.
      */
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+    private String id;
 
     /**
      * Fecha y hora exacta cuando se realizó el acceso.
      */
-    @Column(name = "timestamp", nullable = false)
+    @Field("timestamp")
     private LocalDateTime timestamp;
 
     /**
      * ID del usuario que realizó el acceso.
      * Almacena el identificador único del usuario para trazabilidad.
      */
-    @Column(name = "id_usuario")
+    @Field("id_usuario")
     private String usuarioId;
 
     /**
      * Método HTTP utilizado en la solicitud (GET, POST, PUT, DELETE, etc.).
      */
-    @Column(name = "metodo", length = 10)
+    @Field("metodo")
     private String metodo;
 
     /**
      * Ruta o endpoint accedido en la solicitud.
      */
-    @Column(name = "ruta", length = 500)
+    @Field("ruta")
     private String ruta;
 
     /**
      * Código de estado HTTP de la respuesta (200, 404, 500, etc.).
      */
-    @Column(name = "estado")
+    @Field("estado")
     private Integer estado;
 
     /**
      * Dirección IP desde la cual se realizó la solicitud.
      */
-    @Column(name = "ip", length = 50)
+    @Field("ip")
     private String ip;
 
     /**
      * User-Agent del navegador o cliente que realizó la solicitud.
      */
-    @Column(name = "user_agent", length = 500)
+    @Field("user_agent")
     private String userAgent;
 
     /**
      * Duración en milisegundos que tomó procesar la solicitud.
      */
-    @Column(name = "duracion_ms")
+    @Field("duracion_ms")
     private Long duracionMs;
 
     /**
@@ -97,7 +96,7 @@ public class AccessLog {
      * 
      * @return UUID del registro de acceso
      */
-    public UUID getId() { 
+    public String getId() { 
         return id; 
     }
 }

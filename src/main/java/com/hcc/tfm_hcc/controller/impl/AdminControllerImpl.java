@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.AdminController;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.facade.AdminFacade;
@@ -41,7 +42,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RestController
-@RequestMapping("/admin")
+@RequestMapping(RestUrls.ADMIN_BASE)
 @RequiredArgsConstructor
 public class AdminControllerImpl implements AdminController {
 
@@ -53,7 +54,7 @@ public class AdminControllerImpl implements AdminController {
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    @GetMapping("/medicos")
+    @GetMapping(RestUrls.ADMIN_MEDICOS)
     public ResponseEntity<List<UsuarioDTO>> listarMedicos() {
         log.info("Listando todos los médicos del sistema");
         return adminFacade.listarMedicos();
@@ -67,7 +68,7 @@ public class AdminControllerImpl implements AdminController {
      * @return ResponseEntity con el UsuarioDTO encontrado
      */
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    @GetMapping("/usuarios/by-nif")
+    @GetMapping(RestUrls.ADMIN_USUARIOS_BY_NIF)
     public ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(@RequestParam("nif") String nif) {
         log.info("Buscando usuario por NIF: {}", nif);
         return adminFacade.buscarUsuarioPorNif(nif);
@@ -78,7 +79,7 @@ public class AdminControllerImpl implements AdminController {
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    @PostMapping("/medicos")
+    @PostMapping(RestUrls.ADMIN_MEDICOS)
     public ResponseEntity<UsuarioDTO> crearMedico(@RequestBody UsuarioDTO medicoDTO) {
         log.info("Creando nuevo médico: {}", medicoDTO.getNif());
         return adminFacade.crearMedico(medicoDTO);
@@ -89,7 +90,7 @@ public class AdminControllerImpl implements AdminController {
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    @PutMapping("/medicos/{id}")
+    @PutMapping(RestUrls.ADMIN_MEDICO_ID)
     public ResponseEntity<UsuarioDTO> actualizarMedico(@PathVariable("id") UUID id, @RequestBody UsuarioDTO medicoDTO) {
         log.info("Actualizando médico con ID: {}", id);
         return adminFacade.actualizarMedico(id, medicoDTO);
@@ -100,7 +101,7 @@ public class AdminControllerImpl implements AdminController {
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    @DeleteMapping("/medicos/{id}")
+    @DeleteMapping(RestUrls.ADMIN_MEDICO_ID)
     public ResponseEntity<Void> eliminarMedico(@PathVariable("id") UUID id) {
         log.info("Eliminando médico con ID: {}", id);
         return adminFacade.eliminarMedico(id);
@@ -111,7 +112,7 @@ public class AdminControllerImpl implements AdminController {
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    @PutMapping("/medicos/{id}/perfil-medico")
+    @PutMapping(RestUrls.ADMIN_MEDICO_PERFIL)
     public ResponseEntity<Void> setPerfilMedico(@PathVariable("id") UUID id, @RequestParam("asignar") boolean asignar) {
         log.info("Modificando perfil médico para usuario ID: {}, asignar: {}", id, asignar);
         return adminFacade.setPerfilMedico(id, asignar);

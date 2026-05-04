@@ -26,6 +26,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hcc.tfm_hcc.controller.HistorialClinicoController;
+import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
@@ -68,7 +69,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RestController
-@RequestMapping("/historia")
+@RequestMapping(RestUrls.HISTORIA_BASE)
 @RequiredArgsConstructor
 public class HistorialClinicoControllerImpl implements HistorialClinicoController {
 
@@ -88,7 +89,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return Lista de DTOs con metadatos de archivos del usuario actual
      */
     @Override
-    @GetMapping("/archivos")
+    @GetMapping(RestUrls.HISTORIA_ARCHIVOS)
     public List<ArchivoClinicoDTO> listMine() {
         log.debug("Solicitando lista de archivos clínicos para el usuario autenticado");
         
@@ -121,7 +122,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @throws IOException si hay error en el procesamiento del archivo
      */
     @Override
-    @PostMapping(path = "/archivos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(path = RestUrls.HISTORIA_ARCHIVOS, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ArchivoClinicoDTO> upload(@RequestParam("file") MultipartFile file) throws IOException {
         log.debug("Iniciando subida de archivo clínico: {}", 
                  file != null ? file.getOriginalFilename() : "null");
@@ -164,7 +165,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return ResponseEntity con el Resource del archivo para descarga
      */
     @Override
-    @GetMapping("/files/{id}")
+    @GetMapping(RestUrls.HISTORIA_ARCHIVO_ID)
     public ResponseEntity<Resource> download(@PathVariable("id") UUID id) {
         log.debug("Solicitando descarga de archivo clínico con ID: {}", id);
         
@@ -209,7 +210,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @throws IOException si hay error al eliminar el archivo físico
      */
     @Override
-    @DeleteMapping("/files/{id}")
+    @DeleteMapping(RestUrls.HISTORIA_ARCHIVO_ID)
     public ResponseEntity<Void> delete(@PathVariable("id") UUID id) throws IOException {
         log.debug("Solicitando eliminación de archivo clínico con ID: {}", id);
         
@@ -269,7 +270,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping("/identificacion")
+    @PutMapping(RestUrls.HISTORIA_IDENTIFICACION)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody String identificacionJson) {
         log.debug("Actualizando información de identificación del usuario");
@@ -294,7 +295,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping("/antecedentes")
+    @PutMapping(RestUrls.HISTORIA_ANTECEDENTES)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HistorialClinicoDTO> actualizarAntecedentes(@RequestBody String antecedentesFamiliares) {
         log.debug("Actualizando antecedentes familiares del usuario");
@@ -320,7 +321,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping("/alergias")
+    @PutMapping(RestUrls.HISTORIA_ALERGIAS)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HistorialClinicoDTO> actualizarAlergias(@RequestBody String alergiasJson) {
         log.debug("Actualizando información de alergias del usuario");
@@ -345,7 +346,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @param alergiasJson Datos de alergias en formato texto plano (una por línea)
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    @PostMapping("/alergias")
+    @PostMapping(RestUrls.HISTORIA_ALERGIAS)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HistorialClinicoDTO> añadirAlergias(@RequestBody String alergiasJson) {
         log.debug("Añadiendo nuevas alergias del usuario");
@@ -371,7 +372,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping("/analisis-sangre")
+    @PutMapping(RestUrls.HISTORIA_ANALISIS_SANGRE)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody String analisisJson) {
         log.debug("Actualizando análisis de sangre del usuario");
@@ -399,7 +400,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @param analisisJson Datos de análisis de sangre en formato JSON
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    @PostMapping("/analisis-sangre")
+    @PostMapping(RestUrls.HISTORIA_ANALISIS_SANGRE)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson) {
         log.debug("Añadiendo nuevos análisis de sangre del usuario");
@@ -428,7 +429,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return ResponseEntity vacío confirmando la eliminación
      */
     @Override
-    @DeleteMapping("/datos-clinicos/{id}")
+    @DeleteMapping(RestUrls.HISTORIA_DATOS_CLINICOS_ID)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> borrarDatoClinico(@PathVariable("id") UUID id) {
         log.debug("Solicitando eliminación de dato clínico con ID: {}", id);
@@ -456,7 +457,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @DeleteMapping("/antecedentes/{index}")
+    @DeleteMapping(RestUrls.HISTORIA_ANTECEDENTE_INDEX)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("index") int index) {
         log.debug("Solicitando eliminación de antecedente en índice: {}", index);
@@ -485,7 +486,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping("/antecedentes/{index}")
+    @PutMapping(RestUrls.HISTORIA_ANTECEDENTE_INDEX)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("index") int index, @RequestBody String texto) {
         log.debug("Solicitando edición de antecedente en índice: {}", index);

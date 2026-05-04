@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.UsuarioController;
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
 import com.hcc.tfm_hcc.dto.UpdateUsuarioRequest;
@@ -47,7 +48,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RestController
-@RequestMapping("/usuario")
+@RequestMapping(RestUrls.USUARIO_BASE)
 @RequiredArgsConstructor
 public class UsuarioControllerImpl implements UsuarioController {
 
@@ -61,7 +62,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * {@inheritDoc}
      */
     @Override
-    @GetMapping("/nombre")
+    @GetMapping(RestUrls.USUARIO_NOMBRE)
     @PreAuthorize("isAuthenticated()")
     public String getNombreUsuario() {
         log.debug("Consultando nombre de usuario autenticado");
@@ -72,7 +73,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * {@inheritDoc}
      */
     @Override
-    @GetMapping("/me")
+    @GetMapping(RestUrls.USUARIO_ME)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioDTO> getUsuarioActual() {
         log.info("Consultando datos del usuario autenticado");
@@ -102,7 +103,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * {@inheritDoc}
      */
     @Override
-    @PutMapping("/password")
+    @PutMapping(RestUrls.USUARIO_PASSWORD)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest body) {
         log.info("Solicitud de cambio de contraseña para usuario autenticado");
@@ -131,7 +132,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * {@inheritDoc}
      */
     @Override
-    @GetMapping("/solicitudes")
+    @GetMapping(RestUrls.USUARIO_SOLICITUDES)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SolicitudAsignacion>> listarMisSolicitudes() {
         log.info("Listando solicitudes para usuario autenticado");
@@ -157,7 +158,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * {@inheritDoc}
      */
     @Override
-    @PutMapping("/solicitudes/{solicitudId}")
+    @PutMapping(RestUrls.USUARIO_SOLICITUD_ID)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("solicitudId") String solicitudId, 
                                                                           @RequestBody Map<String, String> body) {
@@ -196,7 +197,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * {@inheritDoc}
      */
     @Override
-    @GetMapping("/notificaciones")
+    @GetMapping(RestUrls.USUARIO_NOTIFICACIONES)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Object>> listarMisNotificaciones(@RequestParam("page") int page,
                                                                         @RequestParam("size") int size) {
@@ -223,7 +224,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * {@inheritDoc}
      */
     @Override
-    @PostMapping("/notificaciones/marcar-leidas")
+    @PostMapping(RestUrls.USUARIO_NOTIFICACIONES_MARCAR_LEIDAS)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<String> marcarTodasNotificacionesLeidas() {
         log.info("Marcando todas las notificaciones como leídas");
@@ -254,7 +255,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @param req UpdateUsuarioRequest con los datos a actualizar
      * @return ResponseEntity con el UsuarioDTO actualizado
      */
-    @PutMapping("/me")
+    @PutMapping(RestUrls.USUARIO_ME)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioDTO> updateUsuarioActual(@Valid @RequestBody UpdateUsuarioRequest req) {
         log.info("Actualizando datos del usuario autenticado");
@@ -299,7 +300,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      *
      * @return ResponseEntity vacío confirmando la eliminación
      */
-    @DeleteMapping("/me")
+    @DeleteMapping(RestUrls.USUARIO_ME)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteCuenta() {
         log.info("Eliminando cuenta del usuario autenticado");
@@ -326,7 +327,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @param hasta Fecha de fin del período (opcional)
      * @return ResponseEntity con la lista de logs de acceso
      */
-    @GetMapping("/logs")
+    @GetMapping(RestUrls.USUARIO_LOGS)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Object> misLogs(@RequestParam(required = false) String desde, 
                                           @RequestParam(required = false) String hasta) {
@@ -361,7 +362,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      *
      * @return ResponseEntity con el conteo de notificaciones no leídas
      */
-    @GetMapping("/notificaciones/no-leidas")
+    @GetMapping(RestUrls.USUARIO_NOTIFICACIONES_NO_LEIDAS)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Object>> contarNotificacionesNoLeidas() {
         log.debug("Contando notificaciones no leídas");
@@ -387,7 +388,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @param id ID de la notificación a marcar como leída
      * @return ResponseEntity confirmando la operación
      */
-    @PutMapping("/notificaciones/{id}/leida")
+    @PutMapping(RestUrls.USUARIO_NOTIFICACION_LEIDA)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> marcarNotificacionLeida(@PathVariable("id") String id) {
         log.info("Marcando notificación como leída: {}", id);
@@ -414,7 +415,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @param id ID de la notificación a eliminar
      * @return ResponseEntity confirmando la eliminación
      */
-    @DeleteMapping("/notificaciones/{id}")
+    @DeleteMapping(RestUrls.USUARIO_NOTIFICACION_ID)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> eliminarNotificacion(@PathVariable("id") String id) {
         log.info("Eliminando notificación: {}", id);
@@ -441,7 +442,7 @@ public class UsuarioControllerImpl implements UsuarioController {
      *
      * @return ResponseEntity con los datos exportados del usuario
      */
-    @GetMapping("/export")
+    @GetMapping(RestUrls.USUARIO_EXPORT)
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Object> exportUsuario() {
         log.info("Exportando datos del usuario autenticado");

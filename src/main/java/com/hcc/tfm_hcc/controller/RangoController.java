@@ -1,5 +1,6 @@
 package com.hcc.tfm_hcc.controller;
 
+import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.dto.RangoDTO;
 import com.hcc.tfm_hcc.model.Rango;
 import com.hcc.tfm_hcc.repository.RangoRepository;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @RestController
-@RequestMapping("/rangos")
+@RequestMapping(RestUrls.RANGOS_BASE)
 @RequiredArgsConstructor
 public class RangoController {
 

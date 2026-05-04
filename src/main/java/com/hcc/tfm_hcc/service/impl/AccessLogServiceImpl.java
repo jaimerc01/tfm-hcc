@@ -1,5 +1,7 @@
 package com.hcc.tfm_hcc.service.impl;
 
+import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +52,10 @@ public class AccessLogServiceImpl implements AccessLogService {
      * Prepara el log con valores por defecto si es necesario
      */
     private void prepararAccessLog(AccessLog accessLog) {
+        if (accessLog.getId() == null || accessLog.getId().isBlank()) {
+            accessLog.setId(UUID.randomUUID().toString());
+        }
+
         // Establecer timestamp si no está presente
         if (accessLog.getTimestamp() == null) {
             accessLog.setTimestamp(java.time.LocalDateTime.now());

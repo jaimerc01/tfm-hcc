@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
@@ -41,7 +42,7 @@ public interface UsuarioController {
      *
      * @return Nombre del usuario autenticado
      */
-    @GetMapping("/nombre")
+    @GetMapping(RestUrls.USUARIO_NOMBRE)
     String getNombreUsuario();
 
     /**
@@ -50,7 +51,7 @@ public interface UsuarioController {
      *
      * @return ResponseEntity con el UsuarioDTO del usuario actual
      */
-    @GetMapping("/me")
+    @GetMapping(RestUrls.USUARIO_ME)
     ResponseEntity<UsuarioDTO> getUsuarioActual();
 
     /**
@@ -60,7 +61,7 @@ public interface UsuarioController {
      * @param body ChangePasswordRequest con contraseña actual y nueva contraseña
      * @return ResponseEntity con mensaje de confirmación o error
      */
-    @PutMapping("/password")
+    @PutMapping(RestUrls.USUARIO_PASSWORD)
     ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest body);
 
     /**
@@ -69,7 +70,7 @@ public interface UsuarioController {
      *
      * @return ResponseEntity con lista de SolicitudAsignacion del usuario
      */
-    @GetMapping("/solicitudes")
+    @GetMapping(RestUrls.USUARIO_SOLICITUDES)
     ResponseEntity<List<SolicitudAsignacion>> listarMisSolicitudes();
 
     /**
@@ -80,7 +81,7 @@ public interface UsuarioController {
      * @param body Map con el nuevo estado de la solicitud
      * @return ResponseEntity con la SolicitudAsignacion actualizada
      */
-    @PutMapping("/solicitudes/{solicitudId}")
+    @PutMapping(RestUrls.USUARIO_SOLICITUD_ID)
     ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("solicitudId") String solicitudId, 
                                                                   @RequestBody Map<String, String> body);
 
@@ -92,7 +93,7 @@ public interface UsuarioController {
      * @param size Tamaño de la página (número de notificaciones por página)
      * @return ResponseEntity con Map de notificaciones paginadas
      */
-    @GetMapping("/notificaciones")
+    @GetMapping(RestUrls.USUARIO_NOTIFICACIONES)
     ResponseEntity<Map<String, Object>> listarMisNotificaciones(@RequestParam("page") int page, 
                                                                  @RequestParam("size") int size);
 
@@ -102,6 +103,6 @@ public interface UsuarioController {
      *
      * @return ResponseEntity con mensaje de confirmación
      */
-    @PostMapping("/notificaciones/marcar-leidas")
+    @PostMapping(RestUrls.USUARIO_NOTIFICACIONES_MARCAR_LEIDAS)
     ResponseEntity<String> marcarTodasNotificacionesLeidas();
 }

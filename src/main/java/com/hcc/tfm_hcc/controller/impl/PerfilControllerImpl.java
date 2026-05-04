@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.PerfilController;
 import com.hcc.tfm_hcc.facade.PerfilFacade;
 import com.hcc.tfm_hcc.model.Perfil;
@@ -32,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RestController
-@RequestMapping("/perfil")
+@RequestMapping(RestUrls.PERFIL_BASE)
 @RequiredArgsConstructor
 public class PerfilControllerImpl implements PerfilController {
 
@@ -43,7 +44,7 @@ public class PerfilControllerImpl implements PerfilController {
      * {@inheritDoc}
      */
     @Override
-    @GetMapping("/rol/{rol}")
+    @GetMapping(RestUrls.PERFIL_ROL)
     public ResponseEntity<Perfil> getPerfilByRol(@PathVariable("rol") String rol) {
         log.info("Consultando perfil para rol: {}", rol);
         

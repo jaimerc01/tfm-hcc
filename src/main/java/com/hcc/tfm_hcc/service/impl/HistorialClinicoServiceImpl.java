@@ -21,6 +21,7 @@ import com.hcc.tfm_hcc.dto.DatoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.RangoDTO;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
+import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.DatoClinico;
 import com.hcc.tfm_hcc.model.HistorialClinico;
 import com.hcc.tfm_hcc.model.Usuario;
@@ -28,6 +29,7 @@ import com.hcc.tfm_hcc.repository.DatoClinicoRepository;
 import com.hcc.tfm_hcc.repository.HistorialClinicoRepository;
 import com.hcc.tfm_hcc.repository.RangoRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.AuditoriaCambioService;
 import com.hcc.tfm_hcc.service.HistorialClinicoService;
 
 @Service
@@ -44,6 +46,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     private final UsuarioRepository usuarioRepository;
     private final DatoClinicoRepository datoClinicoRepository;
     private final RangoRepository rangoRepository;
+    private final AuditoriaCambioService auditoriaCambioService;
     private final ObjectMapper objectMapper;
 
     public HistorialClinicoServiceImpl(
@@ -51,12 +54,14 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             UsuarioFacade usuarioFacade,
             UsuarioRepository usuarioRepository,
             DatoClinicoRepository datoClinicoRepository,
-            RangoRepository rangoRepository) {
+            RangoRepository rangoRepository,
+            AuditoriaCambioService auditoriaCambioService) {
         this.historiaRepo = historiaRepo;
         this.usuarioFacade = usuarioFacade;
         this.usuarioRepository = usuarioRepository;
         this.datoClinicoRepository = datoClinicoRepository;
         this.rangoRepository = rangoRepository;
+        this.auditoriaCambioService = auditoriaCambioService;
         this.objectMapper = new ObjectMapper();
     }
 
@@ -227,10 +232,25 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         if (historial == null) {
             throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
         }
-        // Actualizar los antecedentes familiares con el nuevo texto, reemplazando el valor anterior
+        
+        String valorAnterior = historial.getAntecedentesFamiliares();
         actualizarAntecedentesFamiliares(historial, antecedentesFamiliares);
         
         historiaRepo.save(historial);
+        
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            "ANTECEDENTES_FAMILIARES",
+            "historial_clinico",
+            historial.getId().toString(),
+            valorAnterior,
+            antecedentesFamiliares,
+            AuditoriaCambio.TipoOperacion.UPDATE,
+            "Actualización de antecedentes familiares"
+        );
+        
         return toDto(historial);
     }
 
@@ -255,9 +275,31 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
         }
         
-        procesarAlergias(alergiasJson, historial, true); // true = eliminar existentes
+        List<DatoClinico> alergiasAnteriores = datoClinicoRepository
+            .findByHistorialClinicoAndTipo(historial, TIPO_ALERGIA_INTOLERANCIA);
+        String valorAnterior = alergiasAnteriores.isEmpty() ? ""
+            : alergiasAnteriores.stream()
+                .map(DatoClinico::getObservacion)
+                .filter(obs -> obs != null && !obs.isEmpty())
+                .collect(Collectors.joining(", "));
+        
+        procesarAlergias(alergiasJson, historial, true);
         
         historiaRepo.save(historial);
+        
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            "ALERGIA_INTOLERANCIA",
+            "dato_clinico",
+            historial.getId().toString(),
+            valorAnterior,
+            alergiasJson,
+            AuditoriaCambio.TipoOperacion.UPDATE,
+            "Reemplazo completo de alergias e intolerancias"
+        );
+        
         return toDto(historial);
     }
 
@@ -271,7 +313,6 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
         }
         
-        // Extraer el campo 'alergias' si el string es un JSON
         String soloAlergias = alergiasJson;
         if (alergiasJson != null && alergiasJson.trim().startsWith("{")) {
             try {
@@ -284,9 +325,23 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
                 // Si falla el parseo, usar el texto original
             }
         }
-        procesarAlergias(soloAlergias, historial, false); // false = NO eliminar existentes
+        procesarAlergias(soloAlergias, historial, false);
         
         historiaRepo.save(historial);
+        
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            "ALERGIA_INTOLERANCIA",
+            "dato_clinico",
+            historial.getId().toString(),
+            "",
+            soloAlergias,
+            AuditoriaCambio.TipoOperacion.CREATE,
+            "Adición de nuevas alergias e intolerancias"
+        );
+        
         return toDto(historial);
     }
 
@@ -349,9 +404,23 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
         }
         
-        procesarAnalisisSangre(analisisJson, historial, true); // true = eliminar existentes
+        procesarAnalisisSangre(analisisJson, historial, true);
         
         historiaRepo.save(historial);
+        
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            "ANALISIS_SANGRE",
+            "dato_clinico",
+            historial.getId().toString(),
+            "",
+            analisisJson,
+            AuditoriaCambio.TipoOperacion.UPDATE,
+            "Reemplazo completo de análisis de sangre"
+        );
+        
         return toDto(historial);
     }
     
@@ -365,9 +434,23 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
         }
         
-        procesarAnalisisSangre(analisisJson, historial, false); // false = NO eliminar existentes
+        procesarAnalisisSangre(analisisJson, historial, false);
         
         historiaRepo.save(historial);
+        
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            "ANALISIS_SANGRE",
+            "dato_clinico",
+            historial.getId().toString(),
+            "",
+            analisisJson,
+            AuditoriaCambio.TipoOperacion.CREATE,
+            "Adición de nuevos análisis de sangre"
+        );
+        
         return toDto(historial);
     }
 
@@ -564,7 +647,22 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         }
         validarPropiedadDatoClinico(datoClinico, historial);
         
+        String valorAnterior = datoClinico.getTipo() + ": " + datoClinico.getValor() + " " + datoClinico.getUnidad();
+        
         datoClinicoRepository.delete(datoClinico);
+        
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            datoClinico.getTipo(),
+            "dato_clinico",
+            id.toString(),
+            valorAnterior,
+            "",
+            AuditoriaCambio.TipoOperacion.DELETE,
+            "Eliminación de dato clínico"
+        );
     }
 
     /**
@@ -609,10 +707,26 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         List<String> antecedentes = obtenerListaAntecedentes(historial);
         validarIndiceAntecedente(index, antecedentes);
         
+        String antecedenteBorrado = antecedentes.get(index);
+        
         antecedentes.remove(index);
         actualizarAntecedentesFamiliares(historial, String.join(SEPARADOR_ANTECEDENTES, antecedentes));
         
         historiaRepo.save(historial);
+        
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            "ANTECEDENTES_FAMILIARES",
+            "historial_clinico",
+            historial.getId().toString(),
+            antecedenteBorrado,
+            "",
+            AuditoriaCambio.TipoOperacion.DELETE,
+            "Eliminación de antecedente familiar"
+        );
+        
         return toDto(historial);
     }
 
@@ -629,11 +743,27 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         List<String> antecedentes = obtenerListaAntecedentes(historial);
         validarIndiceAntecedente(index, antecedentes);
         
+        String valorAnterior = antecedentes.get(index);
+        
         String entradaConTimestamp = crearEntradaConTimestamp(texto);
         antecedentes.set(index, entradaConTimestamp);
         actualizarAntecedentesFamiliares(historial, String.join(SEPARADOR_ANTECEDENTES, antecedentes));
         
         historiaRepo.save(historial);
+        
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            "ANTECEDENTES_FAMILIARES",
+            "historial_clinico",
+            historial.getId().toString(),
+            valorAnterior,
+            entradaConTimestamp,
+            AuditoriaCambio.TipoOperacion.UPDATE,
+            "Edición de antecedente familiar"
+        );
+        
         return toDto(historial);
     }
 
