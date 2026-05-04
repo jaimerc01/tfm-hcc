@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: Historia Clinica Comun
+  datasource:
+    url: jdbc:postgresql://localhost:5432/HCC_DEV
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  data:
+    mongodb:
+      # Si usas Atlas o una conexión compartida desde la extensión, exporta aquí la URI completa.
+      # La contraseña debe ir por variable de entorno para no dejar secretos en el repositorio.
+      uri: ${MONGODB_URI:mongodb+srv://jaimerc01:${MONGODB_PASSWORD}@hcc.u68mkjv.mongodb.net/hcc_logs?appName=hcc&retryWrites=true&w=majority&authSource=admin}
+      auto-index-creation: true
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  
+server:
+  port: 8081 # Puerto HTTPS (cuando SSL habilitado)
+  # Puerto HTTP adicional para redirigir a HTTPS (configurado en HttpToHttpsRedirectConfig)
+  http:
+    port: 8080
+  # Descomentar y ajustar estas propiedades en producción con un keystore válido
+  # ssl:
+  #   enabled: true
+  #   key-store: classpath:keystore/keystore.p12
+  #   key-store-password: ${SSL_KEY_STORE_PASSWORD}
+  #   key-store-type: PKCS12
+  #   key-alias: tfm-hcc
+
+security:
+  jwt:
+    secret-key: ${JWT_SECRET}
+    expiration-time: 3600000 # 1 hour in milliseconds 
+  enforce-https: false # Cambiar a true en producción para redirigir HTTP->HTTPS

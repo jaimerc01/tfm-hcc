@@ -1,0 +1,105 @@
+/* Form utilities and documented helpers
+
+Usage notes:
+- Use the `.form-row` helper to group inputs horizontally with a consistent gap.
+- Use `.form-actions` for action buttons inside forms. It's already referenced in components.
+- Use `.hint` for helper text under inputs (linked with `aria-describedby`).
+- Add `.form-label` for consistent label styling when not using `.simple-form`.
+- These are intentionally small and composable to avoid duplication.
+*/
+
+@import './variables.css';
+
+.form-row { display:flex; gap:var(--spacing); align-items:flex-start }
+.form-row > * { flex:1 }
+
+.form-label { display:block; margin:calc(var(--spacing) / 2) 0 calc(var(--spacing) / 4); font-weight:600 }
+
+/* .form-actions exists in shared.css but we keep semantic docs here */
+.form-actions { display:flex; gap:.5rem; align-items:center }
+
+.hint { color:var(--muted); font-size:.9rem; margin-top:.5rem }
+
+/* small helper for right-aligned action area */
+.form-actions--right { justify-content:flex-end }
+
+/* utility to visually-hide elements for screen readers */
+.visually-hidden { position:absolute !important; height:1px; width:1px; overflow:hidden; clip:rect(1px, 1px, 1px, 1px); white-space:nowrap }
+
+/* ================================
+   Modern Form Controls
+   ================================ */
+
+/* Enhanced form inputs */
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--neutral-300, var(--border));
+  border-radius: var(--radius-md, var(--radius));
+  font-size: 0.875rem;
+  line-height: 1.4;
+  background: white;
+  color: var(--neutral-900, var(--text-color));
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary-400, var(--primary-color));
+  box-shadow: 0 0 0 3px var(--primary-100, rgba(74, 144, 226, 0.1));
+}
+
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled {
+  background: var(--neutral-50);
+  color: var(--neutral-500, var(--muted));
+  cursor: not-allowed;
+}
+
+.form-input.error,
+.form-select.error,
+.form-textarea.error {
+  border-color: var(--danger-400, var(--error-color));
+}
+
+.form-input.error:focus,
+.form-select.error:focus,
+.form-textarea.error:focus {
+  box-shadow: 0 0 0 3px var(--danger-100, rgba(239, 68, 68, 0.1));
+}
+
+/* Form validation messages */
+.form-error {
+  font-size: 0.75rem;
+  color: var(--danger-600, var(--error-color));
+  margin-top: 0.25rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.form-success {
+  font-size: 0.75rem;
+  color: var(--success-600);
+  margin-top: 0.25rem;
+  line-height: 1.4;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Range hint for medical values */
+.range-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  font-style: italic;
+  line-height: 1.3;
+}
