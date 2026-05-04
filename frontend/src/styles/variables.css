@@ -1,0 +1,178 @@
+/* Medical Application Design System - Colors for Healthcare */
+:root {
+  /* Primary Blue - Medical Trust & Professionalism */
+  --primary-color: #054A91;      /* Main blue for medical apps */
+  --primary-hover: #043d78;      /* Darker on hover */
+  --primary-active: #032f5d;     /* Darkest on click */
+  --primary-light: #cfe0f5;      /* Light blue for highlights */
+  --primary-100: #e6f0fb;
+  --primary-400: #4f8fd6;
+  --on-primary: #ffffff;
+  
+  /* Secondary Green - Balance & Positive Actions */
+  --secondary-color: #7DBA84;    /* Main green for secondary actions */
+  --secondary-hover: #66986d;    /* Darker green on hover */
+  --secondary-active: #3f6344;   /* Darkest green on click */
+  --secondary-light: #d9eadb;    /* Light green for highlights */
+
+  /* Success Green - Health & Positive Actions */
+  --success-color: var(--secondary-color);
+  --success-hover: var(--secondary-hover);
+  --success-active: var(--secondary-active);
+  --success-light: var(--secondary-light);
+  --success-600: var(--secondary-active);
+  --success-soft-bg: #eef7ef;
+  
+  /* Tertiary Yellow - Attention & Accent */
+  --tertiary-color: #FFD23F;     /* Main yellow for accents and alerts */
+  --tertiary-hover: #d8b034;     /* Darker yellow on hover */
+  --tertiary-active: #b38f27;    /* Darkest yellow on click */
+  --tertiary-light: #ffe89a;     /* Light yellow for highlights */
+  --tertiary-soft-bg: #fff8d6;
+
+  /* Danger Orange-Red - Alerts & Errors */
+  --danger-color: #f15946;
+  --danger-hover: #d94c3b;
+  --danger-active: #b83f31;
+  --danger-light: #f8b8b0;
+  --danger-100: #fde4e0;
+  --danger-400: #f48a7e;
+  --danger-600: #b83f31;
+  --danger-soft-bg: #fff2ef;
+  --error-color: var(--danger-color);
+  
+  /* Warning Orange - Caution & Attention */
+  --warning-color: var(--tertiary-color);
+  --warning-hover: var(--tertiary-hover);
+  --warning-active: var(--tertiary-active);
+  --warning-light: var(--tertiary-light);
+  --warning-soft-bg: var(--tertiary-soft-bg);
+  
+  /* Text colors optimized for medical readability */
+  --text-primary: #404040;       /* Main text - high contrast */
+  --text-secondary: #525252;     /* Secondary text */
+  --muted: #737373;              /* Muted text */
+  --text-placeholder: #a3a3a3;   /* Placeholder text */
+  --text-color: var(--text-primary);
+  --text-inverse: #ffffff;
+  
+  /* Background colors for medical interfaces */
+  --card-bg: #f1f0f8;            /* Light lavender for cards */
+  --bg-light: #fafafa;           /* Very light gray background */
+  --bg-medium: #f5f5f5;          /* Light gray background */
+  --neutral-50: #f9fafb;
+  --neutral-300: #d1d5db;
+  --neutral-500: #6b7280;
+  --neutral-900: #111827;
+  --surface-info-bg: #eff6ff;
+  --surface-info-border: #bfdbfe;
+  --surface-info-text: #1e40af;
+  --surface-info-icon: #3b82f6;
+  --surface-overlay: rgba(0, 0, 0, 0.5);
+  --surface-overlay-soft: rgba(0, 0, 0, 0.2);
+  --surface-overlay-subtle: rgba(0, 0, 0, 0.08);
+  --surface-overlay-medium: rgba(0, 0, 0, 0.25);
+  --surface-overlay-strong: rgba(0, 0, 0, 0.45);
+  --surface-nav-dark: #34495e;
+  --surface-nav-dark-hover: #22313a;
+  --surface-nav-dark-text: #ecf0f1;
+  --surface-nav-dark-muted: #bdc3c7;
+  --surface-nav-divider-strong: rgba(255, 255, 255, 0.08);
+  --surface-nav-divider-medium: rgba(255, 255, 255, 0.06);
+  --surface-nav-divider-soft: rgba(255, 255, 255, 0.03);
+  --brand-accent: #42b983;
+  --brand-accent-hover: #369870;
+  --register-bg-start: #f5f7fa;
+  --register-bg-end: #e9ecef;
+  
+  /* Border colors for clean medical layouts */
+  --border: #e5e5e5;             /* Standard border */
+  --border-light: #f5f5f5;       /* Light border */
+  --border-focus: #0284c7;       /* Focus border (primary) */
+  --border-medium: #cccccc;
+  --border-subtle: #eeeeee;
+  
+  /* Spacing system for consistent layouts */
+  --spacing: 1rem;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  /* Border radius for medical applications */
+  --radius: 6px;                 /* Standard radius - subtle */
+  --radius-sm: 4px;              /* Small radius */
+  --radius-lg: 8px;              /* Large radius */
+  --radius-xl: 12px;             /* Extra large radius */
+  
+  /* Shadows for medical applications - subtle and clean */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-soft: 0 2px 8px rgb(0 0 0 / 0.1);
+  --shadow-popover: 0 4px 12px rgb(0 0 0 / 0.2);
+  --shadow-toast: 0 10px 25px rgb(0 0 0 / 0.2);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-modal-strong: 0 20px 60px rgb(0 0 0 / 0.35);
+
+  /* Alpha overlays and contrast helpers */
+  --white-alpha-20: rgba(255, 255, 255, 0.2);
+  --white-alpha-30: rgba(255, 255, 255, 0.3);
+  --white-alpha-90: rgba(255, 255, 255, 0.9);
+
+  /* Focus rings */
+  --focus-ring-info: 0 0 0 3px rgb(2 132 199 / 0.1);
+  --focus-ring-danger: 0 0 0 3px rgb(220 38 38 / 0.1);
+  
+  /* Button specific variables - no gradients for medical clarity */
+  --button-shadow: var(--shadow-sm);
+  --button-shadow-hover: var(--shadow-md);
+  --button-shadow-active: var(--shadow-sm);
+  
+  /* Transitions for smooth interactions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-medium: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Medical-specific status colors */
+  --status-normal: var(--success-color);
+  --status-attention: var(--warning-color);
+  --status-critical: var(--danger-color);
+  --status-info: var(--primary-color);
+
+  /* Alert and badge surfaces */
+  --alert-danger-bg: var(--danger-soft-bg);
+  --alert-danger-text: var(--danger-active);
+  --alert-danger-border: var(--danger-light);
+  --alert-success-bg: var(--success-soft-bg);
+  --alert-success-text: var(--success-active);
+  --alert-success-border: var(--success-light);
+  --alert-warning-bg: var(--warning-soft-bg);
+  --alert-warning-text: var(--warning-active);
+  --alert-warning-border: var(--warning-light);
+  --alert-info-bg: var(--surface-info-bg);
+  --alert-info-text: var(--surface-info-text);
+  --alert-info-border: var(--surface-info-border);
+  --badge-success-bg: #dcfce7;
+  --badge-success-text: var(--success-active);
+  --badge-danger-bg: var(--danger-100);
+  --badge-danger-text: var(--danger-active);
+  --badge-warning-bg: #ffe8a3;
+  --badge-warning-text: #5c4200;
+  --badge-info-bg: #dbeafe;
+  --badge-info-text: var(--surface-info-text);
+
+  /* Chart specific colors */
+  --chart-default: var(--primary-color);
+  --chart-emphasis: #c73333;
+  --metric-hematocrito: #7c3aed;
+  --chart-recommended-band: #d2f0d9;
+  --chart-gauge-bg: #e5e7eb;
+  --chart-label-muted: #6b7280;
+  --chart-label-strong: #374151;
+  
+  /* Focus outline for accessibility */
+  --focus-outline: 2px solid var(--primary-color);
+  --focus-outline-offset: 2px;
+}

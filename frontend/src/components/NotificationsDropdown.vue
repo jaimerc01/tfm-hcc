@@ -1,0 +1,147 @@
+<template>
+  <div class="notifications" @click.stop>
+    <button class="notif__button" @click="toggle" :aria-expanded="open">
+      🔔 <span v-if="unreadCount>0" class="notif__badge">{{ unreadCount }}</span>
+    </button>
+
+    <div v-if="open" class="notif__menu">
+      <div class="notif__header">{{ $t('notifications') }}</div>
+      <ul>
+        <li v-for="n in notifications" :key="n.id" :class="{ 'notif--unread': !n.leida }">
+          <div class="notif__message" @click.stop.prevent="onNotificationClick(n)">{{ n.mensaje }}</div>
+          <div class="notif__time">{{ formatDate(n.fechaCreacion) }}</div>
+          <button class="notif__delete" @click.stop.prevent="onDelete(n)" :aria-label="$t('delete')">✕</button>
+        </li>
+        <li v-if="notifications.length===0" class="notif__empty">{{ $t('no_notifications') }}</li>
+      </ul>
+      <div class="notif__footer">
+        <button @click="markAllRead">{{ $t('mark_all_read') }}</button>
+        <button v-if="notifications.length < total" @click="loadMore" :disabled="loading">{{ loading ? $t('loading') : $t('load_more') }}</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import notiService, { markNotificationRead, deleteNotification, fetchUnreadCount } from '@/services/notiService'
+
+export default {
+  name: 'NotificationsDropdown',
+  setup() {
+    const open = ref(false)
+  const notifications = ref([])
+  const page = ref(0)
+  const size = 5
+  const total = ref(0)
+  const loading = ref(false)
+
+  const router = useRouter()
+
+  const load = async (p = 0) => {
+      try {
+        loading.value = true
+        const res = await notiService.listMyNotifications(p, size)
+        const body = res.data || { items: [], total: 0 }
+        if (p === 0) {
+          notifications.value = body.items || []
+        } else {
+          notifications.value = notifications.value.concat(body.items || [])
+        }
+        total.value = body.total || 0
+        page.value = p
+      } catch (e) {
+        console.error('No se pudieron cargar notificaciones', e)
+      } finally { loading.value = false }
+    }
+
+    onMounted(() => load(0))
+
+    // Load only the unread count initially to render badge quickly
+    const loadUnreadCount = async () => {
+      try {
+        const r = await fetchUnreadCount()
+        const body = r.data || { noLeidas: 0 }
+        // Update local unread flag counts by not fetching full list
+        // We won't alter notifications array here; badge value is computed from server count
+        // but keep a small local representation: set total to at least unread count
+        total.value = Math.max(total.value || 0, body.noLeidas || 0)
+      } catch (e) { console.error('Error al obtener contador de notificaciones', e) }
+    }
+
+    onMounted(() => loadUnreadCount())
+
+    const toggle = () => { open.value = !open.value }
+    const unreadCount = computed(() => {
+      if (notifications.value && notifications.value.length) return notifications.value.filter(n => !n.leida).length
+      return total.value || 0
+    })
+
+    const markAllRead = async () => {
+      try {
+        await notiService.markAllRead()
+  notifications.value.forEach(n => n.leida = true)
+  // optionally refresh counts from server
+  // reload first page to get up-to-date state
+  await load(0)
+      } catch (e) {
+        console.error('Error marcando leídas', e)
+      }
+    }
+
+    const formatDate = (d) => {
+      if (!d) return ''
+      try { return new Date(d).toLocaleString() } catch(e) { return d }
+    }
+
+    const onNotificationClick = async (n) => {
+      if (!n) return
+      try {
+        if (!n.leida) {
+          await markNotificationRead(n.id)
+          n.leida = true
+        }
+      } catch (e) { console.error('Error marcando notificación leída', e) }
+      if (n.enlace) {
+        router.push({ path: n.enlace })
+      }
+      open.value = false
+    }
+
+    const onDelete = async (n) => {
+      if (!n) return
+      try {
+        await deleteNotification(n.id)
+        notifications.value = notifications.value.filter(x => x.id !== n.id)
+        total.value = Math.max(0, total.value - 1)
+      } catch (e) { console.error('Error eliminando notificación', e) }
+    }
+
+    const loadMore = async () => {
+      if (notifications.value.length >= total.value) return
+      await load(page.value + 1)
+    }
+
+  return { open, notifications, toggle, unreadCount, markAllRead, formatDate, onNotificationClick, onDelete, loadMore, loading, total }
+  }
+}
+</script>
+
+<style scoped>
+.notifications { position: relative; display: inline-block; }
+.notif__button { background: transparent; border: none; color: var(--surface-nav-dark-text); font-size: 1.1rem; cursor: pointer; }
+.notif__badge { background: var(--danger-color); color: var(--text-inverse); padding: 2px 6px; border-radius: 999px; margin-left: 4px; font-size: 0.75rem; }
+.notif__menu { position: absolute; right: 0; top: 36px; background: var(--surface-nav-dark); color: var(--text-inverse); min-width: 260px; border-radius: 6px; box-shadow: var(--shadow-popover); z-index: 2000; }
+.notif__header { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--surface-nav-divider-medium); font-weight: 600; }
+.notif__menu ul { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow:auto; }
+.notif__menu li { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--surface-nav-divider-soft); }
+.notif--unread { background: var(--surface-overlay-subtle); }
+.notif__message { font-size: 0.95rem; }
+.notif__time { font-size: 0.75rem; color: var(--surface-nav-dark-muted); }
+.notif__empty { padding: 0.5rem 0.75rem; color: var(--surface-nav-dark-muted) }
+.notif__footer { padding: 0.5rem; text-align: right; }
+.notif__footer button { background: transparent; border: 1px solid var(--surface-nav-divider-strong); color: var(--text-inverse); padding: 0.3rem 0.5rem; border-radius: 4px; cursor: pointer; }
+.notif__delete { background: transparent; border: none; color: var(--surface-nav-dark-muted); cursor: pointer; float: right; }
+.notif__delete:hover { color: var(--text-inverse); }
+</style>
