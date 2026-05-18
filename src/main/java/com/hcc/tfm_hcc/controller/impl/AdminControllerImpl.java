@@ -19,6 +19,9 @@ import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.AdminController;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.facade.AdminFacade;
+import com.hcc.tfm_hcc.exception.AdminValidationException;
+import com.hcc.tfm_hcc.exception.AdminOperacionException;
+import com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,21 +60,45 @@ public class AdminControllerImpl implements AdminController {
     @GetMapping(RestUrls.ADMIN_MEDICOS)
     public ResponseEntity<List<UsuarioDTO>> listarMedicos() {
         log.info("Listando todos los médicos del sistema");
-        return adminFacade.listarMedicos();
+        try {
+            ResponseEntity<List<UsuarioDTO>> result = adminFacade.listarMedicos();
+            log.info("Médicos listados exitosamente");
+            return result;
+        } catch (Exception e) {
+            log.error("Error al listar médicos: {}", e.getMessage(), e);
+            throw new AdminOperacionException("Error al listar médicos", e);
+        }
     }
 
     /**
-     * Busca un usuario específico por su NIF.
-     * Endpoint adicional para funcionalidades administrativas.
-     * 
-     * @param nif NIF del usuario a buscar
-     * @return ResponseEntity con el UsuarioDTO encontrado
+     * {@inheritDoc}
      */
+    @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @GetMapping(RestUrls.ADMIN_USUARIOS_BY_NIF)
     public ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(@RequestParam("nif") String nif) {
         log.info("Buscando usuario por NIF: {}", nif);
-        return adminFacade.buscarUsuarioPorNif(nif);
+        try {
+            if (nif == null || nif.trim().isEmpty()) {
+                log.warn("Intento de búsqueda con NIF nulo o vacío");
+                throw new AdminValidationException("El NIF es obligatorio");
+            }
+
+            ResponseEntity<UsuarioDTO> result = adminFacade.buscarUsuarioPorNif(nif);
+            if (result.getBody() == null) {
+                log.warn("Usuario no encontrado con NIF: {}", nif);
+                throw new UsuarioNoEncontradoException("Usuario no encontrado con NIF: " + nif);
+            }
+
+            log.info("Usuario encontrado exitosamente: {}", nif);
+            return result;
+        } catch (AdminValidationException | UsuarioNoEncontradoException e) {
+            log.warn("Error: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al buscar usuario por NIF: {}", e.getMessage(), e);
+            throw new AdminOperacionException("Error al buscar usuario", e);
+        }
     }
 
     /**
@@ -81,8 +108,28 @@ public class AdminControllerImpl implements AdminController {
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PostMapping(RestUrls.ADMIN_MEDICOS)
     public ResponseEntity<UsuarioDTO> crearMedico(@RequestBody UsuarioDTO medicoDTO) {
-        log.info("Creando nuevo médico: {}", medicoDTO.getNif());
-        return adminFacade.crearMedico(medicoDTO);
+        try {
+            if (medicoDTO == null) {
+                log.warn("Intento de crear médico sin datos");
+                throw new AdminValidationException("Los datos del médico son obligatorios");
+            }
+
+            if (medicoDTO.getNif() == null || medicoDTO.getNif().trim().isEmpty()) {
+                log.warn("Intento de crear médico sin NIF");
+                throw new AdminValidationException("El NIF del médico es obligatorio");
+            }
+
+            log.info("Creando nuevo médico: {}", medicoDTO.getNif());
+            ResponseEntity<UsuarioDTO> result = adminFacade.crearMedico(medicoDTO);
+            log.info("Médico creado exitosamente: {}", medicoDTO.getNif());
+            return result;
+        } catch (AdminValidationException e) {
+            log.warn("Error de validación al crear médico: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al crear médico: {}", e.getMessage(), e);
+            throw new AdminOperacionException("Error al crear médico", e);
+        }
     }
 
     /**
@@ -92,8 +139,28 @@ public class AdminControllerImpl implements AdminController {
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PutMapping(RestUrls.ADMIN_MEDICO_ID)
     public ResponseEntity<UsuarioDTO> actualizarMedico(@PathVariable("id") UUID id, @RequestBody UsuarioDTO medicoDTO) {
-        log.info("Actualizando médico con ID: {}", id);
-        return adminFacade.actualizarMedico(id, medicoDTO);
+        try {
+            if (id == null) {
+                log.warn("Intento de actualizar médico sin ID");
+                throw new AdminValidationException("El ID del médico es obligatorio");
+            }
+
+            if (medicoDTO == null) {
+                log.warn("Intento de actualizar médico sin datos");
+                throw new AdminValidationException("Los datos del médico son obligatorios");
+            }
+
+            log.info("Actualizando médico con ID: {}", id);
+            ResponseEntity<UsuarioDTO> result = adminFacade.actualizarMedico(id, medicoDTO);
+            log.info("Médico actualizado exitosamente: {}", id);
+            return result;
+        } catch (AdminValidationException e) {
+            log.warn("Error de validación al actualizar médico: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al actualizar médico: {}", e.getMessage(), e);
+            throw new AdminOperacionException("Error al actualizar médico", e);
+        }
     }
 
     /**
@@ -102,9 +169,24 @@ public class AdminControllerImpl implements AdminController {
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @DeleteMapping(RestUrls.ADMIN_MEDICO_ID)
-    public ResponseEntity<Void> eliminarMedico(@PathVariable("id") UUID id) {
-        log.info("Eliminando médico con ID: {}", id);
-        return adminFacade.eliminarMedico(id);
+    public ResponseEntity<UUID> eliminarMedico(@PathVariable("id") UUID id) {
+        try {
+            if (id == null) {
+                log.warn("Intento de eliminar médico sin ID");
+                throw new AdminValidationException("El ID del médico es obligatorio");
+            }
+
+            log.info("Eliminando médico con ID: {}", id);
+            ResponseEntity<UUID> result = adminFacade.eliminarMedico(id);
+            log.info("Médico eliminado exitosamente: {}", id);
+            return result;
+        } catch (AdminValidationException e) {
+            log.warn("Error de validación al eliminar médico: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al eliminar médico: {}", e.getMessage(), e);
+            throw new AdminOperacionException("Error al eliminar médico", e);
+        }
     }
 
     /**
@@ -113,8 +195,23 @@ public class AdminControllerImpl implements AdminController {
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PutMapping(RestUrls.ADMIN_MEDICO_PERFIL)
-    public ResponseEntity<Void> setPerfilMedico(@PathVariable("id") UUID id, @RequestParam("asignar") boolean asignar) {
-        log.info("Modificando perfil médico para usuario ID: {}, asignar: {}", id, asignar);
-        return adminFacade.setPerfilMedico(id, asignar);
+    public ResponseEntity<UUID> setPerfilMedico(@PathVariable("id") UUID id, @RequestParam("asignar") boolean asignar) {
+        try {
+            if (id == null) {
+                log.warn("Intento de modificar perfil médico sin ID");
+                throw new AdminValidationException("El ID del usuario es obligatorio");
+            }
+
+            log.info("Modificando perfil médico para usuario ID: {}, asignar: {}", id, asignar);
+            ResponseEntity<UUID> result = adminFacade.setPerfilMedico(id, asignar);
+            log.info("Perfil médico modificado exitosamente: {} -> {}", id, asignar);
+            return result;
+        } catch (AdminValidationException e) {
+            log.warn("Error de validación al modificar perfil: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al modificar perfil médico: {}", e.getMessage(), e);
+            throw new AdminOperacionException("Error al modificar perfil médico", e);
+        }
     }
 }

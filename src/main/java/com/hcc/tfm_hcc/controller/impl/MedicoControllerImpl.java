@@ -16,6 +16,9 @@ import com.hcc.tfm_hcc.controller.MedicoController;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
 import com.hcc.tfm_hcc.facade.MedicoFacade;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
+import com.hcc.tfm_hcc.exception.PacienteNoEncontradoException;
+import com.hcc.tfm_hcc.exception.SolicitudAsignacionException;
+import com.hcc.tfm_hcc.exception.MedicoOperacionException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,16 +62,19 @@ public class MedicoControllerImpl implements MedicoController {
         try {
             PacienteDTO paciente = medicoFacade.buscarPacientePorDniYFechaNacimiento(dni, fechaNacimiento);
             if (paciente == null) {
-                log.warn("No se encontró paciente con DNI: {} y fecha: {}", dni, fechaNacimiento);
-                return ResponseEntity.notFound().build();
+                log.warn("Paciente no encontrado con DNI: {} y fecha nacimiento: {}", dni, fechaNacimiento);
+                throw new PacienteNoEncontradoException("No se encontró paciente con los datos proporcionados");
             }
             
-            log.info("Paciente encontrado exitosamente: {}", paciente.getNif());
+            log.info("Paciente encontrado exitosamente: {}", dni);
             return ResponseEntity.ok(paciente);
             
+        } catch (PacienteNoEncontradoException e) {
+            log.warn("Error: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
-            log.error("Error al buscar paciente con DNI: {}, error: {}", dni, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            log.error("Error al buscar paciente: {}", e.getMessage(), e);
+            throw new MedicoOperacionException("Error al buscar paciente", e);
         }
     }
 
@@ -84,21 +90,23 @@ public class MedicoControllerImpl implements MedicoController {
         try {
             SolicitudAsignacion solicitud = medicoFacade.crearSolicitudAsignacion(nifPaciente);
             if (solicitud == null) {
-                log.warn("No se pudo crear solicitud para paciente NIF: {}", nifPaciente);
-                return ResponseEntity.badRequest().build();
+                log.warn("No se pudo crear solicitud para paciente: {}", nifPaciente);
+                throw new SolicitudAsignacionException("No se pudo crear la solicitud de asignación");
             }
             
-            log.info("Solicitud de asignación creada exitosamente: ID {}", solicitud.getId());
+            log.info("Solicitud de asignación creada exitosamente para paciente: {}", nifPaciente);
             return ResponseEntity.ok(solicitud);
             
-        } catch (com.hcc.tfm_hcc.exception.SolicitudExistenteException ex) {
-            log.warn("Solicitud existente para paciente NIF: {}, mensaje: {}", nifPaciente, ex.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(null); // Retornamos null en el body para mantener el tipo correcto
+        } catch (com.hcc.tfm_hcc.exception.SolicitudExistenteException _) {
+            log.warn("Solicitud ya existe para paciente: {}", nifPaciente);
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
                     
-        } catch (Exception ex) {
-            log.error("Error al crear solicitud para paciente NIF: {}, error: {}", nifPaciente, ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } catch (SolicitudAsignacionException e) {
+            log.warn("Error: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error al crear solicitud de asignación: {}", e.getMessage(), e);
+            throw new MedicoOperacionException("Error al crear solicitud de asignación", e);
         }
     }
 
@@ -113,12 +121,12 @@ public class MedicoControllerImpl implements MedicoController {
         
         try {
             List<SolicitudAsignacion> lista = medicoFacade.listarSolicitudesPendientes();
-            log.info("Se encontraron {} solicitudes pendientes", lista.size());
+            log.info("Se obtuvieron {} solicitudes pendientes para el médico", lista.size());
             return ResponseEntity.ok(lista);
             
         } catch (Exception e) {
             log.error("Error al listar solicitudes pendientes: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            throw new MedicoOperacionException("Error al listar solicitudes pendientes", e);
         }
     }
 
@@ -133,12 +141,12 @@ public class MedicoControllerImpl implements MedicoController {
         
         try {
             List<SolicitudAsignacion> lista = medicoFacade.listarSolicitudesEnviadas();
-            log.info("Se encontraron {} solicitudes enviadas", lista.size());
+            log.info("Se obtuvieron {} solicitudes enviadas para el médico", lista.size());
             return ResponseEntity.ok(lista);
             
         } catch (Exception e) {
             log.error("Error al listar solicitudes enviadas: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            throw new MedicoOperacionException("Error al listar solicitudes enviadas", e);
         }
     }
 }

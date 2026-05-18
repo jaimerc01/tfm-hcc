@@ -24,6 +24,10 @@ import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
+import com.hcc.tfm_hcc.exception.UsuarioNoAutenticadoException;
+import com.hcc.tfm_hcc.exception.UsuarioOperacionException;
+import com.hcc.tfm_hcc.exception.UsuarioSinPermisoException;
+import com.hcc.tfm_hcc.exception.UsuarioValidationException;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -82,7 +86,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
                 log.warn("No se encontró usuario autenticado");
-                return ResponseEntity.status(401).build();
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
             // Limpiar contraseña por seguridad
@@ -95,7 +99,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             
         } catch (Exception e) {
             log.error("Error al obtener datos del usuario autenticado: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error al obtener datos del usuario", e);
         }
     }
 
@@ -109,22 +113,26 @@ public class UsuarioControllerImpl implements UsuarioController {
         log.info("Solicitud de cambio de contraseña para usuario autenticado");
         
         try {
+            if (body == null) {
+                throw new UsuarioValidationException("El cuerpo de la solicitud es obligatorio");
+            }
+
             // Validar entrada
             if (body.getNewPassword() == null || body.getNewPassword().length() < 6) {
                 log.warn("Contraseña nueva demasiado corta");
-                return ResponseEntity.badRequest().body("Nueva contraseña demasiado corta");
+                throw new UsuarioValidationException("Nueva contraseña demasiado corta");
             }
             
             usuarioFacade.changePassword(body.getCurrentPassword(), body.getNewPassword());
             log.info("Contraseña cambiada exitosamente");
             return ResponseEntity.ok("Contraseña actualizada exitosamente");
             
-        } catch (IllegalArgumentException e) {
+        } catch (UsuarioValidationException e) {
             log.warn("Error de validación al cambiar contraseña: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             log.error("Error interno al cambiar contraseña: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body("Error al cambiar contraseña");
+            throw new UsuarioOperacionException("Error al cambiar contraseña", e);
         }
     }
 
@@ -141,7 +149,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
                 log.warn("Usuario no autenticado al listar solicitudes");
-                return ResponseEntity.status(401).build();
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
             List<SolicitudAsignacion> solicitudes = usuarioFacade.listarMisSolicitudes();
@@ -150,7 +158,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             
         } catch (Exception e) {
             log.error("Error al listar solicitudes del usuario: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error al listar solicitudes del usuario", e);
         }
     }
 
@@ -168,28 +176,31 @@ public class UsuarioControllerImpl implements UsuarioController {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
                 log.warn("Usuario no autenticado al actualizar solicitud");
-                return ResponseEntity.status(401).build();
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
             String nuevoEstado = body.get("estado");
             if (nuevoEstado == null || nuevoEstado.trim().isEmpty()) {
                 log.warn("Estado requerido no proporcionado");
-                return ResponseEntity.badRequest().build();
+                throw new UsuarioValidationException("Estado requerido no proporcionado");
             }
             
             SolicitudAsignacion updated = usuarioFacade.actualizarEstadoSolicitud(solicitudId, nuevoEstado);
             log.info("Estado de solicitud actualizado exitosamente: {} -> {}", solicitudId, nuevoEstado);
             return ResponseEntity.ok(updated);
             
-        } catch (IllegalArgumentException e) {
+        } catch (UsuarioValidationException e) {
             log.warn("Error de validación al actualizar solicitud: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         } catch (IllegalStateException e) {
             log.warn("Error de permisos al actualizar solicitud: {}", e.getMessage());
             return ResponseEntity.status(403).build();
+        } catch (UsuarioSinPermisoException e) {
+            log.warn("Error de permisos al actualizar solicitud: {}", e.getMessage());
+            return ResponseEntity.status(403).build();
         } catch (Exception e) {
             log.error("Error interno al actualizar solicitud: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error interno al actualizar solicitud", e);
         }
     }
 
@@ -207,7 +218,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
                 log.warn("Usuario no autenticado al listar notificaciones");
-                return ResponseEntity.status(401).build();
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
             Map<String, Object> resp = notificacionFacade.listarNotificacionesUsuarioActual(page, size);
@@ -216,7 +227,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             
         } catch (Exception e) {
             log.error("Error al listar notificaciones: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error al listar notificaciones", e);
         }
     }
 
@@ -233,7 +244,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
                 log.warn("Usuario no autenticado al marcar notificaciones");
-                return ResponseEntity.status(401).body("Usuario no autenticado");
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
             notificacionFacade.marcarTodasComoLeidasUsuarioActual();
@@ -242,7 +253,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             
         } catch (Exception e) {
             log.error("Error al marcar notificaciones como leídas: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().body("Error marcando notificaciones");
+            throw new UsuarioOperacionException("Error marcando notificaciones", e);
         }
     }
 
@@ -261,6 +272,10 @@ public class UsuarioControllerImpl implements UsuarioController {
         log.info("Actualizando datos del usuario autenticado");
         
         try {
+            if (req == null) {
+                throw new UsuarioValidationException("Los datos de usuario son obligatorios");
+            }
+
             UsuarioDTO parcial = new UsuarioDTO();
             parcial.setNombre(req.getNombre());
             parcial.setApellido1(req.getApellido1());
@@ -290,7 +305,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             log.error("Error interno al actualizar usuario: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error interno al actualizar usuario", e);
         }
     }
 
@@ -313,9 +328,12 @@ public class UsuarioControllerImpl implements UsuarioController {
         } catch (IllegalStateException e) {
             log.warn("Usuario no autenticado al eliminar cuenta");
             return ResponseEntity.status(401).build();
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al eliminar cuenta");
+            return ResponseEntity.status(401).build();
         } catch (Exception e) {
             log.error("Error al eliminar cuenta: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error al eliminar cuenta", e);
         }
     }
 
@@ -336,16 +354,18 @@ public class UsuarioControllerImpl implements UsuarioController {
         try {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
-                return ResponseEntity.status(401).build();
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
-            LocalDateTime d = null, h = null;
-            try { 
-                if (desde != null) d = LocalDateTime.parse(desde); 
-            } catch (Exception ignored) {}
-            try { 
-                if (hasta != null) h = LocalDateTime.parse(hasta); 
-            } catch (Exception ignored) {}
+            LocalDateTime d = null;
+            LocalDateTime h = null;
+            if (desde != null) {
+                d = LocalDateTime.parse(desde); 
+            }
+            if (hasta != null) {
+                h = LocalDateTime.parse(hasta); 
+            }
+            
             
             Object logs = usuarioFacade.getMisLogs(d, h);
             log.info("Logs consultados exitosamente");
@@ -353,7 +373,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             
         } catch (Exception e) {
             log.error("Error al consultar logs: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error al consultar logs", e);
         }
     }
 
@@ -370,7 +390,7 @@ public class UsuarioControllerImpl implements UsuarioController {
         try {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
-                return ResponseEntity.status(401).build();
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
             long count = notificacionFacade.contarNoLeidasUsuarioActual();
@@ -378,7 +398,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             
         } catch (Exception e) {
             log.error("Error al contar notificaciones no leídas: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error al contar notificaciones no leídas", e);
         }
     }
 
@@ -396,7 +416,7 @@ public class UsuarioControllerImpl implements UsuarioController {
         try {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
-                return ResponseEntity.status(401).build();
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
             notificacionFacade.marcarNotificacionComoLeida(id);
@@ -405,7 +425,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             
         } catch (Exception e) {
             log.error("Error al marcar notificación como leída: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error al marcar notificación como leída", e);
         }
     }
 
@@ -423,7 +443,7 @@ public class UsuarioControllerImpl implements UsuarioController {
         try {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
-                return ResponseEntity.status(401).build();
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
             notificacionFacade.eliminarNotificacionUsuarioActual(id);
@@ -432,7 +452,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             
         } catch (Exception e) {
             log.error("Error al eliminar notificación: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error al eliminar notificación", e);
         }
     }
 
@@ -450,7 +470,7 @@ public class UsuarioControllerImpl implements UsuarioController {
         try {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
-                return ResponseEntity.status(401).build();
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
             Object exportData = usuarioFacade.exportUsuario();
@@ -459,7 +479,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             
         } catch (Exception e) {
             log.error("Error al exportar datos del usuario: {}", e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new UsuarioOperacionException("Error al exportar datos del usuario", e);
         }
     }
 }

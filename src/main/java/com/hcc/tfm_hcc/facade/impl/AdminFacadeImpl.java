@@ -160,18 +160,18 @@ public class AdminFacadeImpl implements AdminFacade {
      * validando la existencia del médico y gestionando las dependencias apropiadamente.</p>
      * 
      * @param id Identificador único del médico a eliminar del sistema
-     * @return ResponseEntity vacío confirmando la eliminación exitosa
+     * @return ResponseEntity con el ID del médico eliminado para confirmación
      */
     @Override
-    public ResponseEntity<Void> eliminarMedico(UUID id) {
+    public ResponseEntity<UUID> eliminarMedico(UUID id) {
         log.debug("Solicitando eliminación de médico con ID: {}", id);
         
         try {
             validarIdMedico(id);
             
-            medicoService.eliminarMedico(id);
-            log.info("Médico eliminado exitosamente: ID {}", id);
-            return ResponseEntity.noContent().build();
+            UUID idEliminado = medicoService.eliminarMedico(id);
+            log.info("Médico eliminado exitosamente: ID {}", idEliminado);
+            return ResponseEntity.ok(idEliminado);
         } catch (IllegalArgumentException e) {
             log.warn("Error de validación al eliminar médico con ID {}: {}", id, e.getMessage());
             throw e;
@@ -189,10 +189,10 @@ public class AdminFacadeImpl implements AdminFacade {
      * 
      * @param id Identificador único del usuario para modificar su perfil
      * @param asignar true para asignar perfil médico, false para revocarlo
-     * @return ResponseEntity vacío confirmando la operación exitosa
+     * @return ResponseEntity con el ID del usuario afectado para confirmación
      */
     @Override
-    public ResponseEntity<Void> setPerfilMedico(UUID id, boolean asignar) {
+    public ResponseEntity<UUID> setPerfilMedico(UUID id, boolean asignar) {
         log.debug("Modificando perfil médico para usuario ID: {} - Asignar: {}", id, asignar);
         
         try {
@@ -201,7 +201,7 @@ public class AdminFacadeImpl implements AdminFacade {
             medicoService.setPerfilMedico(id, asignar);
             String accion = asignar ? "asignado" : "revocado";
             log.info("Perfil médico {} exitosamente para usuario ID: {}", accion, id);
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok(id);
         } catch (IllegalArgumentException e) {
             log.warn("Error de validación al modificar perfil médico para usuario ID {}: {}", id, e.getMessage());
             throw e;

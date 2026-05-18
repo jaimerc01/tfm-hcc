@@ -42,7 +42,6 @@ public interface UsuarioController {
      *
      * @return Nombre del usuario autenticado
      */
-    @GetMapping(RestUrls.USUARIO_NOMBRE)
     String getNombreUsuario();
 
     /**
@@ -51,7 +50,6 @@ public interface UsuarioController {
      *
      * @return ResponseEntity con el UsuarioDTO del usuario actual
      */
-    @GetMapping(RestUrls.USUARIO_ME)
     ResponseEntity<UsuarioDTO> getUsuarioActual();
 
     /**
@@ -61,7 +59,6 @@ public interface UsuarioController {
      * @param body ChangePasswordRequest con contraseña actual y nueva contraseña
      * @return ResponseEntity con mensaje de confirmación o error
      */
-    @PutMapping(RestUrls.USUARIO_PASSWORD)
     ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest body);
 
     /**
@@ -70,7 +67,6 @@ public interface UsuarioController {
      *
      * @return ResponseEntity con lista de SolicitudAsignacion del usuario
      */
-    @GetMapping(RestUrls.USUARIO_SOLICITUDES)
     ResponseEntity<List<SolicitudAsignacion>> listarMisSolicitudes();
 
     /**
@@ -81,7 +77,6 @@ public interface UsuarioController {
      * @param body Map con el nuevo estado de la solicitud
      * @return ResponseEntity con la SolicitudAsignacion actualizada
      */
-    @PutMapping(RestUrls.USUARIO_SOLICITUD_ID)
     ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("solicitudId") String solicitudId, 
                                                                   @RequestBody Map<String, String> body);
 
@@ -93,7 +88,6 @@ public interface UsuarioController {
      * @param size Tamaño de la página (número de notificaciones por página)
      * @return ResponseEntity con Map de notificaciones paginadas
      */
-    @GetMapping(RestUrls.USUARIO_NOTIFICACIONES)
     ResponseEntity<Map<String, Object>> listarMisNotificaciones(@RequestParam("page") int page, 
                                                                  @RequestParam("size") int size);
 
@@ -103,6 +97,5 @@ public interface UsuarioController {
      *
      * @return ResponseEntity con mensaje de confirmación
      */
-    @PostMapping(RestUrls.USUARIO_NOTIFICACIONES_MARCAR_LEIDAS)
     ResponseEntity<String> marcarTodasNotificacionesLeidas();
 }

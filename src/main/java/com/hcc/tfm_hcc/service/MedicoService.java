@@ -56,9 +56,10 @@ public interface MedicoService {
      * Elimina un médico del sistema.
      * 
      * @param id ID único del médico a eliminar
+     * @return UUID con el ID del médico eliminado
      * @throws IllegalArgumentException si el ID es inválido o el médico no existe
      */
-    void eliminarMedico(UUID id);
+    UUID eliminarMedico(UUID id);
 
     /**
      * Busca un paciente por su DNI y fecha de nacimiento.
@@ -102,7 +103,8 @@ public interface MedicoService {
      * 
      * @param id ID único del usuario al cual asignar o revocar el perfil médico
      * @param asignar true para asignar el perfil médico, false para revocarlo
+     * @return UUID con el ID del usuario afectado para confirmación
      * @throws IllegalArgumentException si el ID es inválido o el usuario no existe
      */
-    void setPerfilMedico(UUID id, boolean asignar);
+    UUID setPerfilMedico(UUID id, boolean asignar);
 }

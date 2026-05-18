@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -31,11 +30,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@CompoundIndexes({
-    @CompoundIndex(name = "idx_usuario_timestamp", def = "{'id_usuario': 1, 'fecha_cambio': -1}"),
-    @CompoundIndex(name = "idx_paciente_timestamp", def = "{'id_paciente': 1, 'fecha_cambio': -1}"),
-    @CompoundIndex(name = "idx_tabla_timestamp", def = "{'tabla': 1, 'fecha_cambio': -1}")
-})
+@CompoundIndex(name = "idx_usuario_timestamp", def = "{'id_usuario': 1, 'fecha_cambio': -1}")
+@CompoundIndex(name = "idx_paciente_timestamp", def = "{'id_paciente': 1, 'fecha_cambio': -1}")
+@CompoundIndex(name = "idx_tabla_timestamp", def = "{'tabla': 1, 'fecha_cambio': -1}")
 public class AuditoriaCambio {
 
     /**

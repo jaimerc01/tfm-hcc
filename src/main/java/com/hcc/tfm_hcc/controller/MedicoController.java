@@ -42,7 +42,6 @@ public interface MedicoController {
      * @return ResponseEntity con el PacienteDTO del paciente encontrado
      * @throws IllegalArgumentException si los datos de identificación no son válidos
      */
-    @GetMapping(RestUrls.MEDICO_PACIENTES_BUSCAR)
     ResponseEntity<PacienteDTO> buscarPaciente(@RequestParam("dni") String dni, 
                                                @RequestParam("fechaNacimiento") String fechaNacimiento);
     
@@ -55,7 +54,6 @@ public interface MedicoController {
      * @throws IllegalArgumentException si el NIF del paciente no es válido
      * @throws IllegalStateException si ya existe una solicitud activa para este paciente
      */
-    @PostMapping(RestUrls.MEDICO_SOLICITUDES_ASIGNACION)
     ResponseEntity<SolicitudAsignacion> crearSolicitudAsignacion(@RequestParam("nifPaciente") String nifPaciente);
     
     /**
@@ -64,7 +62,6 @@ public interface MedicoController {
      * 
      * @return ResponseEntity con lista de SolicitudAsignacion con estado pendiente
      */
-    @GetMapping(RestUrls.MEDICO_SOLICITUDES_PENDIENTES)
     ResponseEntity<List<SolicitudAsignacion>> listarSolicitudesPendientes();
     
     /**
@@ -73,6 +70,5 @@ public interface MedicoController {
      * 
      * @return ResponseEntity con lista de SolicitudAsignacion enviadas por el médico
      */
-    @GetMapping(RestUrls.MEDICO_SOLICITUDES_ENVIADAS)
     ResponseEntity<List<SolicitudAsignacion>> listarSolicitudesEnviadas();
 }

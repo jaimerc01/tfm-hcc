@@ -34,7 +34,7 @@ public interface HistorialClinicoFacade {
      * 
      * @return Lista de ArchivoClinicoDTO con los archivos del usuario actual
      */
-    List<ArchivoClinicoDTO> listMine();
+    List<ArchivoClinicoDTO> listarArchivos();
     
     /**
      * Sube un nuevo archivo clínico para el usuario autenticado.
@@ -106,7 +106,7 @@ public interface HistorialClinicoFacade {
      * @param alergiasJson Datos de alergias en formato texto (una por línea)
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO añadirAlergias(String alergiasJson);
+    HistorialClinicoDTO anadirAlergias(String alergiasJson);
     
     /**
      * Actualiza los análisis de sangre en el historial clínico.

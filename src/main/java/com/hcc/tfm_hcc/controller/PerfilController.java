@@ -37,6 +37,5 @@ public interface PerfilController {
      * @throws IllegalArgumentException si el rol especificado no es válido
      * @throws NullPointerException si el rol es null
      */
-    @GetMapping(RestUrls.PERFIL_ROL)
     ResponseEntity<Perfil> getPerfilByRol(@PathVariable("rol") String rol);
 }

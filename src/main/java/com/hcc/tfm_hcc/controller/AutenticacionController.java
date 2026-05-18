@@ -4,6 +4,8 @@ import org.springframework.http.ResponseEntity;
 
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.exception.InvalidLoginDataException;
+import com.hcc.tfm_hcc.exception.InvalidRegistrationDataException;
 import com.hcc.tfm_hcc.model.LoginResponse;
 
 /**
@@ -34,10 +36,10 @@ public interface AutenticacionController {
      *
      * @param usuarioDTO Datos completos del usuario a registrar
      * @return ResponseEntity con el UsuarioDTO del usuario registrado exitosamente
-     * @throws IllegalArgumentException si los datos del usuario no son válidos
+     * @throws InvalidRegistrationDataException si los datos del usuario no son válidos
      * @throws IllegalStateException si el usuario ya existe en el sistema
      */
-    ResponseEntity<UsuarioDTO> registrar(UsuarioDTO usuarioDTO);
+    ResponseEntity<UsuarioDTO> registrar(UsuarioDTO usuarioDTO) throws InvalidRegistrationDataException, IllegalStateException;
 
     /**
      * Autentica un usuario existente mediante sus credenciales.
@@ -46,8 +48,8 @@ public interface AutenticacionController {
      *
      * @param loginUsuarioDTO Credenciales del usuario (NIF/email y contraseña)
      * @return ResponseEntity con LoginResponse que incluye el token JWT y datos del usuario
-     * @throws IllegalArgumentException si las credenciales no son válidas
+     * @throws InvalidLoginDataException si las credenciales no son válidas
      * @throws SecurityException si la autenticación falla
      */
-    ResponseEntity<LoginResponse> autenticar(LoginUsuarioDTO loginUsuarioDTO) throws IllegalArgumentException, SecurityException;
+    ResponseEntity<LoginResponse> autenticar(LoginUsuarioDTO loginUsuarioDTO) throws InvalidLoginDataException, SecurityException;
 }

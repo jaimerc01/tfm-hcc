@@ -78,7 +78,7 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
      * @throws RuntimeException Si ocurre un error durante la consulta
      */
     @Override
-    public List<ArchivoClinicoDTO> listMine() {
+    public List<ArchivoClinicoDTO> listarArchivos() {
         log.debug("Obteniendo lista de archivos clínicos del usuario autenticado");
         
         try {
@@ -344,7 +344,7 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
      * @throws RuntimeException Si ocurre un error durante la operación
      */
     @Override
-    public HistorialClinicoDTO añadirAlergias(String alergiasJson) {
+    public HistorialClinicoDTO anadirAlergias(String alergiasJson) {
         log.debug("Añadiendo nuevas alergias en historial clínico");
         
         try {

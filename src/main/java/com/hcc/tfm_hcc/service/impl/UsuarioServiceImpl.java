@@ -11,6 +11,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.apache.commons.validator.routines.EmailValidator;
+
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO.AccesoDTO;
@@ -39,7 +41,6 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     // Constantes
     private static final String PERFIL_PACIENTE = "PACIENTE";
-    private static final String EMAIL_REGEX = "^[^@\\n]+@[^@\\n]+\\.[^@\\n]+$";
     private static final String TELEFONO_REGEX = "^[0-9+\\-() ]{0,20}$";
     private static final String NIF_REGEX = "^[0-9A-Za-z]{6,15}$";
     private static final int MAX_LONGITUD_NOMBRE = 100;
@@ -105,7 +106,8 @@ public class UsuarioServiceImpl implements UsuarioService {
      * Valida el formato del email
      */
     private void validarFormatoEmail(String email) {
-        if (!email.matches(EMAIL_REGEX)) {
+        EmailValidator emailValidator = EmailValidator.getInstance();
+        if (!emailValidator.isValid(email)) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_EMAIL_INVALIDO);
         }
     }

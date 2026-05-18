@@ -407,7 +407,7 @@ public class MedicoServiceImpl implements MedicoService {
     }
 
     @Override
-    public void eliminarMedico(UUID id) {
+    public UUID eliminarMedico(UUID id) {
         if(id == null) {
             String error = ErrorMessages.campoRequerido("ID del médico");
             log.error(error);
@@ -438,10 +438,11 @@ public class MedicoServiceImpl implements MedicoService {
             perfilUsuarioRepository.deleteAll(relaciones);
         }
         usuarioRepository.deleteById(id);
+        return id;
     }
 
     @Override
-    public void setPerfilMedico(UUID id, boolean asignar) {
+    public UUID setPerfilMedico(UUID id, boolean asignar) {
         if (id == null) {
             String error = ErrorMessages.campoRequerido("ID del usuario");
             log.error(error);
@@ -504,5 +505,6 @@ public class MedicoServiceImpl implements MedicoService {
                 perfilUsuarioRepository.save(pu2);
             }
         }
+        return id;
     }
 }

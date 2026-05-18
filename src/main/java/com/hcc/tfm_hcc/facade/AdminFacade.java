@@ -54,18 +54,18 @@ public interface AdminFacade {
      * Elimina un médico del sistema.
      * 
      * @param id ID único del médico a eliminar
-     * @return ResponseEntity vacío indicando el resultado de la operación
+     * @return ResponseEntity con el ID del médico eliminado para confirmación
      */
-    ResponseEntity<Void> eliminarMedico(UUID id);
+    ResponseEntity<UUID> eliminarMedico(UUID id);
     
     /**
      * Asigna o revoca el perfil de médico a un usuario existente.
      * 
      * @param id ID único del usuario al cual asignar o revocar el perfil médico
      * @param asignar true para asignar el perfil médico, false para revocarlo
-     * @return ResponseEntity vacío indicando el resultado de la operación
+     * @return ResponseEntity con el ID del usuario afectado para confirmación
      */
-    ResponseEntity<Void> setPerfilMedico(UUID id, boolean asignar);
+    ResponseEntity<UUID> setPerfilMedico(UUID id, boolean asignar);
     
     /**
      * Busca un usuario específico por su NIF.
