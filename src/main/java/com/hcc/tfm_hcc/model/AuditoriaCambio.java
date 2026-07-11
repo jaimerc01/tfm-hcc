@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.model;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
@@ -151,7 +152,7 @@ public class AuditoriaCambio {
     public static AuditoriaCambio crear() {
         AuditoriaCambio auditoria = new AuditoriaCambio();
         auditoria.setId(UUID.randomUUID().toString());
-        auditoria.setFechaCambio(LocalDateTime.now());
+        auditoria.setFechaCambio(LocalDateTime.now(ZoneId.of("Europe/Madrid")));
         return auditoria;
     }
 

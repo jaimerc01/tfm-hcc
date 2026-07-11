@@ -1,6 +1,6 @@
 package com.hcc.tfm_hcc.dto;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -13,14 +13,14 @@ import lombok.Data;
 public class UpdateUsuarioRequest {
 
     @NotBlank(message = "El nombre es obligatorio")
-    @Size(max = 100, message = "Nombre demasiado largo")
+    @Size(max = 100, message = "El nombre es demasiado largo")
     private String nombre;
 
     @NotBlank(message = "El primer apellido es obligatorio")
-    @Size(max = 100, message = "Primer apellido demasiado largo")
+    @Size(max = 100, message = "El primer apellido es demasiado largo")
     private String apellido1;
 
-    @Size(max = 100, message = "Segundo apellido demasiado largo")
+    @Size(max = 100, message = "El segundo apellido es demasiado largo")
     private String apellido2;
 
     @NotBlank(message = "El NIF es obligatorio")
@@ -34,5 +34,5 @@ public class UpdateUsuarioRequest {
     @Pattern(regexp = "^[0-9+\\-() ]{0,20}$", message = "Formato de teléfono inválido")
     private String telefono;
 
-    private Date fechaNacimiento; // Validación adicional de rango se podría añadir
+    private LocalDateTime fechaNacimiento; // Validación adicional de rango se podría añadir
 }

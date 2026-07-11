@@ -73,7 +73,7 @@ public class PerfilControllerImpl implements PerfilController {
         } catch (PerfilValidationException e) {
             log.warn("Parámetro inválido para consulta de perfil, rol: {}, error: {}", rol, e.getMessage());
             return ResponseEntity.badRequest().build();
-        } catch (PerfilNotFoundException e) {
+        } catch (PerfilNotFoundException _) {
             log.warn("Perfil no encontrado para rol: {}", rol);
             return ResponseEntity.notFound().build();
             

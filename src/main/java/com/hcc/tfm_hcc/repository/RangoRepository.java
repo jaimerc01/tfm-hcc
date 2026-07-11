@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import com.hcc.tfm_hcc.model.Rango;
 
@@ -31,7 +30,6 @@ import com.hcc.tfm_hcc.model.Rango;
  * @see Rango
  * @see JpaRepository
  */
-@Repository
 public interface RangoRepository extends JpaRepository<Rango, UUID> {
 
     /**

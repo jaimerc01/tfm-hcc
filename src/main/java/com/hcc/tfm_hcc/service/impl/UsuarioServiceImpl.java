@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.service.impl;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,27 +11,25 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.commons.validator.routines.EmailValidator;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.dto.UserExportDTO;
-import com.hcc.tfm_hcc.dto.UserExportDTO.AccesoDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.converter.UsuarioExportConverter;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
-import com.hcc.tfm_hcc.model.AccessLog;
 import com.hcc.tfm_hcc.model.MedicoPaciente;
-import com.hcc.tfm_hcc.model.PerfilUsuario;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.AccessLogRepository;
 import com.hcc.tfm_hcc.repository.MedicoPacienteRepository;
 import com.hcc.tfm_hcc.repository.NotificacionRepository;
 import com.hcc.tfm_hcc.model.Notificacion;
-import com.hcc.tfm_hcc.repository.PerfilRepository;
-import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
 import com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.PerfilUsuarioService;
 import com.hcc.tfm_hcc.service.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
@@ -40,21 +39,25 @@ import lombok.RequiredArgsConstructor;
 public class UsuarioServiceImpl implements UsuarioService {
 
     // Constantes
+    private static final Log log = LogFactory.getLog(UsuarioServiceImpl.class);
     private static final String PERFIL_PACIENTE = "PACIENTE";
+    private static final String ESTADO_ACEPTADA = "ACEPTADA";
+    private static final String ESTADO_RECHAZADA = "RECHAZADA";
     private static final String TELEFONO_REGEX = "^[0-9+\\-() ]{0,20}$";
     private static final String NIF_REGEX = "^[0-9A-Za-z]{6,15}$";
     private static final int MAX_LONGITUD_NOMBRE = 100;
+    private static final String ZONE_ID_EUROPE_MADRID = "Europe/Madrid"; // Zona horaria para la creación de usuarios
     
     // Dependencies injection by constructor
     private final UsuarioMapper usuarioMapper;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    private final PerfilRepository perfilRepository;
-    private final PerfilUsuarioRepository perfilUsuarioRepository;
+    private final PerfilUsuarioService perfilUsuarioService;
     private final AccessLogRepository accessLogRepository;
     private final SolicitudAsignacionRepository solicitudAsignacionRepository;
     private final NotificacionRepository notificacionRepository;
     private final MedicoPacienteRepository medicoPacienteRepository;
+    private final UsuarioExportConverter usuarioExportConverter;
 
     /**
      * Obtiene el NIF del usuario autenticado actual
@@ -141,30 +144,6 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
     }
 
-    /**
-     * Crea la relación PerfilUsuario con el perfil PACIENTE
-     */
-    private void crearPerfilPaciente(Usuario usuario) {
-        var perfilOpt = perfilRepository.getPerfilByRol(PERFIL_PACIENTE);
-        if (perfilOpt.isEmpty()) {
-            throw new IllegalStateException(
-                ErrorMessages.formatError("Perfil {0} no encontrado; se cancela el alta de usuario", PERFIL_PACIENTE)
-            );
-        }
-        
-        try {
-            PerfilUsuario perfilUsuario = new PerfilUsuario();
-            perfilUsuario.setPerfil(perfilOpt.get());
-            perfilUsuario.setUsuario(usuario);
-            perfilUsuario.setFechaCreacion(LocalDateTime.now());
-            perfilUsuarioRepository.save(perfilUsuario);
-        } catch (Exception e) {
-            throw new RuntimeException(
-                ErrorMessages.formatError("Error creando relación PerfilUsuario ({0})", PERFIL_PACIENTE), e
-            );
-        }
-    }
-
     @Override
     @Transactional
     public Usuario altaUsuario(UsuarioDTO usuarioDTO) {
@@ -175,14 +154,14 @@ public class UsuarioServiceImpl implements UsuarioService {
         
         // Crear usuario
         Usuario usuario = usuarioMapper.toEntity(usuarioDTO);
-        usuario.setFechaCreacion(LocalDateTime.now());
+        usuario.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
         usuario.setLastPasswordChange(null);
         usuario.setEstadoCuenta("ACTIVO"); // Estado activo por defecto al registrarse
         
         usuario = usuarioRepository.save(usuario);
         
         // Crear perfil PACIENTE obligatorio
-        crearPerfilPaciente(usuario);
+        perfilUsuarioService.asignarPerfil(usuario.getId(), PERFIL_PACIENTE);
         
         return usuario;
     }
@@ -225,8 +204,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         
         usuario.setPassword(passwordEncoder.encode(newPassword));
-        usuario.setFechaUltimaModificacion(LocalDateTime.now());
-        usuario.setLastPasswordChange(LocalDateTime.now());
+        usuario.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
+        usuario.setLastPasswordChange(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
         usuarioRepository.save(usuario);
     }
 
@@ -307,7 +286,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (parcial.getNif() != null && !parcial.getNif().equals(usuario.getNif())) {
             usuario.setNif(parcial.getNif());
         }
-        usuario.setFechaUltimaModificacion(LocalDateTime.now());
+        usuario.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
 
         return usuario;
     }
@@ -318,10 +297,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         Usuario usuario = obtenerUsuarioAutenticado();
         
         validarDatosActualizacion(parcial, usuario);
-        usuario = actualizarCamposUsuario(usuario, parcial);
+        Usuario usuarioActualizado = actualizarCamposUsuario(usuario, parcial);
         
-        usuarioRepository.save(usuario);
-        return usuarioMapper.toDto(usuario);
+        usuarioRepository.save(usuarioActualizado);
+        return usuarioMapper.toDto(usuarioActualizado);
     }
 
     /**
@@ -330,7 +309,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @NonNull
     private Usuario anonimizarUsuario(Usuario usuario) {
         usuario.setEstadoCuenta("ELIMINADO");
-        usuario.setFechaEliminacion(LocalDateTime.now());
+        usuario.setFechaEliminacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
         usuario.setNombre("_eliminado_");
         usuario.setApellido1(null);
         usuario.setApellido2(null);
@@ -338,7 +317,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setTelefono(null);
         usuario.setNif("DEL-" + usuario.getId().toString().substring(0, 8));
         usuario.setEspecialidad(null);
-        usuario.setFechaUltimaModificacion(LocalDateTime.now());
+        usuario.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
         return usuario;
     }
 
@@ -347,29 +326,14 @@ public class UsuarioServiceImpl implements UsuarioService {
     public void deleteCuentaActual() {
         Usuario usuario = obtenerUsuarioAutenticado();
         if (usuario != null) {
-            usuario = anonimizarUsuario(usuario);
-            usuarioRepository.save(usuario);
+            Usuario usuarioAnonimizado = anonimizarUsuario(usuario);
+            usuarioRepository.save(usuarioAnonimizado);
         }
-    }
-
-    /**
-     * Convierte un AccessLog a AccesoDTO
-     */
-    private AccesoDTO convertirAccessLogADTO(AccessLog log) {
-        return AccesoDTO.builder()
-                .timestamp(log.getTimestamp())
-                .metodo(log.getMetodo())
-                .ruta(log.getRuta())
-                .estado(log.getEstado())
-                .duracionMs(log.getDuracionMs())
-                .ip(log.getIp())
-                .userAgent(log.getUserAgent())
-                .build();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<AccesoDTO> getMisLogs(LocalDateTime desde, LocalDateTime hasta) {
+    public List<UserExportDTO.AccesoDTO> getMisLogs(LocalDateTime desde, LocalDateTime hasta) {
         Usuario usuario = obtenerUsuarioAutenticado();
         UsuarioDTO dto = usuarioMapper.toDto(usuario);
         
@@ -378,55 +342,13 @@ public class UsuarioServiceImpl implements UsuarioService {
                 : accessLogRepository.findByUsuarioIdOrderByTimestampDesc(dto.getId());
                 
         return logs.stream()
-                .map(this::convertirAccessLogADTO)
+            .map(usuarioExportConverter::toAccesoDto)
                 .toList();
     }
 
     /**
      * Construye el objeto UserExportDTO con los datos del usuario y sus accesos
      */
-    private UserExportDTO construirExportDTO(UsuarioDTO dto, List<AccessLog> logs) {
-        var accesos = logs.stream()
-                .limit(500)
-                .map(this::convertirAccessLogParaExport)
-                .toList();
-                
-        return UserExportDTO.builder()
-                .id(dto.getId())
-                .nombre(dto.getNombre())
-                .apellido1(dto.getApellido1())
-                .apellido2(dto.getApellido2())
-                .email(dto.getEmail())
-                .nif(dto.getNif())
-                .telefono(dto.getTelefono())
-                .fechaNacimiento(dto.getFechaNacimiento())
-                .fechaCreacion(dto.getFechaCreacion())
-                .fechaUltimaModificacion(dto.getFechaUltimaModificacion())
-                .estadoCuenta(usuarioRepository.findByNif(dto.getNif())
-                        .map(Usuario::getEstadoCuenta)
-                        .orElse(null))
-                .fechaEliminacion(usuarioRepository.findByNif(dto.getNif())
-                        .map(Usuario::getFechaEliminacion)
-                        .orElse(null))
-                .accesos(accesos)
-                .build();
-    }
-
-    /**
-     * Convierte AccessLog a UserExportDTO.AccesoDTO
-     */
-    private UserExportDTO.AccesoDTO convertirAccessLogParaExport(AccessLog log) {
-        return UserExportDTO.AccesoDTO.builder()
-                .timestamp(log.getTimestamp())
-                .metodo(log.getMetodo())
-                .ruta(log.getRuta())
-                .estado(log.getEstado())
-                .duracionMs(log.getDuracionMs())
-                .ip(log.getIp())
-                .userAgent(log.getUserAgent())
-                .build();
-    }
-
     @Override
     @Transactional(readOnly = true)
     public UserExportDTO exportUsuario() {
@@ -434,7 +356,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         UsuarioDTO dto = usuarioMapper.toDto(usuario);
         var logs = accessLogRepository.findByUsuarioIdOrderByTimestampDesc(dto.getId());
         
-        return construirExportDTO(dto, logs);
+        return usuarioExportConverter.toExportDto(dto, usuario, logs);
     }
 
     @Override
@@ -452,7 +374,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * Valida el estado de la solicitud
      */
     private void validarEstadoSolicitud(String nuevoEstado) {
-        if (!nuevoEstado.equalsIgnoreCase("ACEPTADA") && !nuevoEstado.equalsIgnoreCase("RECHAZADA")) {
+        if (!nuevoEstado.equalsIgnoreCase(ESTADO_ACEPTADA) && !nuevoEstado.equalsIgnoreCase(ESTADO_RECHAZADA)) {
             throw new IllegalArgumentException(ErrorMessages.formatError("Estado inválido: {0}", nuevoEstado));
         }
     }
@@ -470,7 +392,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * Crea relación médico-paciente si la solicitud es aceptada
      */
     private void procesarSolicitudAceptada(SolicitudAsignacion solicitud) {
-        if ("ACEPTADA".equalsIgnoreCase(solicitud.getEstado())) {
+        if (ESTADO_ACEPTADA.equalsIgnoreCase(solicitud.getEstado())) {
             var medico = solicitud.getMedico();
             var paciente = solicitud.getPaciente();
             
@@ -491,7 +413,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      */
     private void crearRelacionMedicoPaciente(Usuario medico, Usuario paciente) {
         MedicoPaciente relacion = new MedicoPaciente();
-        relacion.setFechaCreacion(LocalDateTime.now());
+        relacion.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
         relacion.setEstado("ACTIVA");
         relacion.setMedico(medico);
         relacion.setPaciente(paciente);
@@ -501,6 +423,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     /**
      * Envía notificación al médico sobre la respuesta del paciente
      */
+    // TODO: Internacionalizar el mensaje de notificación según el idioma del usuario
     private void enviarNotificacionMedico(SolicitudAsignacion solicitud) {
         try {
             var medico = solicitud.getMedico();
@@ -511,7 +434,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                     ? paciente.getNombre() 
                     : "un paciente";
                     
-                String accion = "ACEPTADA".equalsIgnoreCase(solicitud.getEstado()) 
+                String accion = ESTADO_ACEPTADA.equalsIgnoreCase(solicitud.getEstado()) 
                     ? "aceptado" 
                     : solicitud.getEstado().toLowerCase();
                     
@@ -521,18 +444,18 @@ public class UsuarioServiceImpl implements UsuarioService {
                 notificacion.setMensaje(mensaje);
                 notificacion.setLeida(false);
                 notificacion.setUsuario(medico);
-                notificacion.setFechaCreacion(LocalDateTime.now());
+                notificacion.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
                 notificacionRepository.save(notificacion);
             }
         } catch (Exception e) {
             // Error en notificación no debe afectar la operación principal
-            // Se podría loggear el error aquí
+            log.error("Error al enviar notificación al médico", e);
         }
     }
 
     @Override
     @Transactional
-    public SolicitudAsignacion actualizarEstadoSolicitud(String solicitudId, String nuevoEstado) {
+    public SolicitudAsignacion actualizarEstadoSolicitud(String idSolicitud, String nuevoEstado) {
         String nif = getNifUsuarioAutenticado();
         if (nif == null) {
             throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
@@ -540,22 +463,22 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         validarEstadoSolicitud(nuevoEstado);
         
-        if (solicitudId == null || solicitudId.isBlank()) {
-            throw new IllegalArgumentException(ErrorMessages.formatError("ID de solicitud inválido: {0}", solicitudId));
+        if (idSolicitud == null || idSolicitud.isBlank()) {
+            throw new IllegalArgumentException(ErrorMessages.formatError("ID de solicitud inválido: {0}", idSolicitud));
         }
         
-        UUID solicitudIdUUID = UUID.fromString(solicitudId);
-        if (solicitudIdUUID == null) {
-            throw new IllegalArgumentException(ErrorMessages.formatError("ID de solicitud inválido: {0}", solicitudId));
+        UUID idSolicitudUUID = UUID.fromString(idSolicitud);
+        if (idSolicitudUUID == null) {
+            throw new IllegalArgumentException(ErrorMessages.formatError("ID de solicitud inválido: {0}", idSolicitud));
         }
         
-        SolicitudAsignacion solicitud = solicitudAsignacionRepository.findById(solicitudIdUUID)
-                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.formatError("Solicitud no encontrada: {0}", solicitudId)));
+        SolicitudAsignacion solicitud = solicitudAsignacionRepository.findById(idSolicitudUUID)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.formatError("Solicitud no encontrada: {0}", idSolicitud)));
         
         validarPermisoModificacion(solicitud, nif);
         
         solicitud.setEstado(nuevoEstado.toUpperCase());
-        solicitud.setFechaUltimaModificacion(LocalDateTime.now());
+        solicitud.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
         
         SolicitudAsignacion solicitudGuardada = solicitudAsignacionRepository.save(solicitud);
         

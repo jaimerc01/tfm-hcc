@@ -5,13 +5,15 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
+import com.hcc.tfm_hcc.converter.UsuarioConverter;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.IncorrectCredentials;
+import com.hcc.tfm_hcc.facade.UsuarioFacade;
+import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.AutenticacionService;
-import com.hcc.tfm_hcc.service.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,8 +28,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AutenticacionServiceImpl implements AutenticacionService {
 
-    private final UsuarioService usuarioService;
+    private final UsuarioMapper usuarioMapper;
+    private final UsuarioFacade usuarioFacade;
     private final UsuarioRepository userRepository;
+    private final UsuarioConverter usuarioConverter;
     private final AuthenticationManager authenticationManager;
 
     /**
@@ -69,13 +73,16 @@ public class AutenticacionServiceImpl implements AutenticacionService {
     /**
      * Extrae el usuario del principal de autenticación
      */
-    private Usuario extraerUsuarioDelPrincipal(Object principal, String nif) {
+    private UsuarioDTO extraerUsuarioDelPrincipal(Object principal, String nif) {
+        UsuarioDTO usuarioDTO = null;
         if (principal instanceof Usuario usuario) {
-            return usuario; // Usuario ya viene con authorities desde UserDetailsService
+            usuarioDTO = usuarioMapper.toDto(usuario);
+            return usuarioDTO; // Usuario ya viene con authorities desde UserDetailsService
         }
         
         // Fallback a repositorio (no debería ocurrir normalmente)
         return userRepository.findByNif(nif)
+                .map(usuarioMapper::toDto)
                 .orElseThrow(() -> new IncorrectCredentials(ErrorMessages.ERROR_CREDENCIALES_INVALIDAS));
     }
 
@@ -88,8 +95,11 @@ public class AutenticacionServiceImpl implements AutenticacionService {
      */
     @Override
     public Usuario registrar(UsuarioDTO usuarioDTO) {
+        UsuarioDTO usuarioRegistrado = null;
         validarUsuarioDTO(usuarioDTO);
-        return usuarioService.altaUsuario(usuarioDTO);
+        usuarioRegistrado = usuarioFacade.altaUsuario(usuarioDTO);
+        
+        return usuarioConverter.toEntity(usuarioRegistrado);
     }
 
     /**
@@ -107,10 +117,11 @@ public class AutenticacionServiceImpl implements AutenticacionService {
         try {
             var token = crearTokenAutenticacion(loginUsuarioDTO);
             var authentication = authenticationManager.authenticate(token);
+            UsuarioDTO usuarioDTO = extraerUsuarioDelPrincipal(authentication.getPrincipal(), loginUsuarioDTO.getNif());
             
-            return extraerUsuarioDelPrincipal(authentication.getPrincipal(), loginUsuarioDTO.getNif());
+            return usuarioConverter.toEntity(usuarioDTO);
             
-        } catch (Exception e) {
+        } catch (Exception _) {
             throw new IncorrectCredentials(ErrorMessages.ERROR_CREDENCIALES_INVALIDAS);
         }
     }

@@ -4,11 +4,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.model.Notificacion;
 import com.hcc.tfm_hcc.service.NotificacionService;
+import com.hcc.tfm_hcc.exception.NotificacionValidationException;
+import com.hcc.tfm_hcc.exception.NotificacionOperacionException;
+import com.hcc.tfm_hcc.converter.NotificacionConverter;
+import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.exception.NotificacionAccesoException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,80 +56,83 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      * Servicio para operaciones de notificación.
      */
     private final NotificacionService notificacionService;
+    private final NotificacionConverter notificacionConverter;
 
     // ===============================
     // MÉTODOS DE LISTADO DE NOTIFICACIONES
     // ===============================
 
     /**
-     * Lista todas las notificaciones del usuario autenticado actual.
-     * 
-     * @return List<Map<String, Object>> Lista de notificaciones en formato Map
-     * @throws RuntimeException Si ocurre un error durante la consulta
+     * {@inheritDoc}
      */
     @Override
-    public List<Map<String, Object>> listarNotificacionesUsuarioActual() {
+    public List<NotificacionDTO> listarNotificacionesUsuarioActual() {
         log.debug("Obteniendo todas las notificaciones del usuario autenticado");
         
         try {
-            List<Notificacion> list = notificacionService.listarNotificacionesUsuarioActual();
-            
-            List<Map<String, Object>> resultado = list.stream().map(n -> {
-                Map<String, Object> m = Map.of(
-                    "id", n.getId(),
-                    "mensaje", n.getMensaje(),
-                    "leida", n.isLeida(),
-                    "fechaCreacion", n.getFechaCreacion(),
-                    "enlace", computeEnlace(n)
-                );
-                return m;
-            }).collect(Collectors.toList());
-            
-            log.info("Notificaciones obtenidas: {} registros", resultado.size());
-            return resultado;
+            List<Notificacion> listaNotificaciones = notificacionService.listarNotificacionesUsuarioActual();
+            List<NotificacionDTO> listaNotificacionesDTO = notificacionConverter.toDtoList(listaNotificaciones);
+
+            log.info("Notificaciones obtenidas: {} registros", listaNotificacionesDTO.size());
+            return listaNotificacionesDTO;
+        } catch (NotificacionValidationException e) {
+            log.warn("Validación al listar notificaciones: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             log.error("Error inesperado al obtener notificaciones del usuario: {}", e.getMessage(), e);
-            throw new RuntimeException("Error interno durante la consulta de notificaciones", e);
+            throw new NotificacionOperacionException("Error interno durante la consulta de notificaciones", e);
         }
     }
 
     /**
-     * Lista las notificaciones del usuario autenticado con paginación.
-     * 
-     * @param page Número de página (0-based)
-     * @param size Tamaño de página
-     * @return Map<String, Object> Mapa con elementos y total de notificaciones
-     * @throws IllegalArgumentException Si los parámetros de paginación son inválidos
-     * @throws RuntimeException Si ocurre un error durante la consulta
+     * {@inheritDoc}
      */
     @Override
-    public Map<String, Object> listarNotificacionesUsuarioActual(int page, int size) {
+    public NotificacionDTO crearNotificacionParaUsuario(String usuarioNif, String mensaje) {
+        log.debug("Creando notificación para usuario NIF: {} - mensaje: {}", usuarioNif, mensaje);
+        try {
+            Notificacion notificacion = notificacionService.crearNotificacionParaUsuario(usuarioNif, mensaje);
+            NotificacionDTO notificacionDTO = notificacionConverter.toDto(notificacion);
+            log.info("Notificación creada para NIF: {}", usuarioNif);
+            return notificacionDTO;
+        } catch (IllegalArgumentException e) {
+            log.warn("Validación al crear notificación para {}: {}", usuarioNif, e.getMessage());
+            throw new NotificacionValidationException(e.getMessage(), e);
+        } catch (SecurityException e) {
+            log.warn("Acceso denegado al crear notificación para {}: {}", usuarioNif, e.getMessage());
+            throw new NotificacionAccesoException(e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Error inesperado al crear notificación para {}: {}", usuarioNif, e.getMessage(), e);
+            throw new NotificacionOperacionException("Error interno al crear notificación", e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map<String, NotificacionDTO> listarNotificacionesUsuarioActual(int page, int size) {
         log.debug("Obteniendo notificaciones paginadas del usuario autenticado - Página: {}, Tamaño: {}", 
                 page, size);
         
         try {
             validarParametrosPaginacion(page, size);
             
-            var p = notificacionService.listarNotificacionesUsuarioActual(page, size);
-            var items = p.stream().map(n -> Map.of(
-                "id", n.getId(),
-                "mensaje", n.getMensaje(),
-                "leida", n.isLeida(),
-                "fechaCreacion", n.getFechaCreacion(),
-                "enlace", computeEnlace(n)
-            )).toList();
+            Page<Notificacion> pageNotificaciones = notificacionService.listarNotificacionesUsuarioActual(page, size);
             
-            Map<String, Object> resultado = Map.of("items", items, "total", p.getTotalElements());
+            List<NotificacionDTO> items = notificacionConverter.toDtoList(pageNotificaciones.getContent());
+            Map<String, NotificacionDTO> resultado = items.stream()
+                    .collect(Collectors.toMap(NotificacionDTO::getId, n -> n));
             
             log.info("Notificaciones paginadas obtenidas: {} de {} registros", 
-                    items.size(), p.getTotalElements());
+                    items.size(), pageNotificaciones.getTotalElements());
             return resultado;
         } catch (IllegalArgumentException e) {
             log.warn("Error de validación en paginación de notificaciones: {}", e.getMessage());
-            throw e;
+            throw new NotificacionValidationException(e.getMessage(), e);
         } catch (Exception e) {
             log.error("Error inesperado al obtener notificaciones paginadas: {}", e.getMessage(), e);
-            throw new RuntimeException("Error interno durante la consulta de notificaciones", e);
+            throw new NotificacionOperacionException("Error interno durante la consulta de notificaciones", e);
         }
     }
 
@@ -132,49 +141,50 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
     // ===============================
 
     /**
-     * Marca todas las notificaciones del usuario autenticado como leídas.
-     * 
-     * @throws RuntimeException Si ocurre un error durante la actualización
+     * {@inheritDoc}
      */
     @Override
-    public void marcarTodasComoLeidasUsuarioActual() {
+    public List<NotificacionDTO> marcarTodasComoLeidasUsuarioActual() {
         log.debug("Marcando todas las notificaciones como leídas para usuario autenticado");
         
         try {
-            notificacionService.marcarTodasComoLeidasUsuarioActual();
+            List<Notificacion> notificaciones = notificacionService.marcarTodasComoLeidasUsuarioActual();
+            List<NotificacionDTO> notificacionesDTO = notificacionConverter.toDtoList(notificaciones);
             
             log.info("Todas las notificaciones marcadas como leídas exitosamente");
+            return notificacionesDTO;
         } catch (Exception e) {
             log.error("Error inesperado al marcar notificaciones como leídas: {}", e.getMessage(), e);
-            throw new RuntimeException("Error interno al marcar notificaciones como leídas", e);
+            throw new NotificacionOperacionException("Error interno al marcar notificaciones como leídas", e);
         }
     }
 
     /**
-     * Marca una notificación específica como leída.
-     * 
-     * @param id ID de la notificación a marcar como leída
-     * @throws IllegalArgumentException Si el ID es nulo o vacío
-     * @throws RuntimeException Si ocurre un error durante la actualización
+     * {@inheritDoc}
      */
     @Override
-    public void marcarNotificacionComoLeida(String id) {
+    public NotificacionDTO marcarNotificacionComoLeida(String id) {
         log.debug("Marcando notificación como leída: {}", id);
         
         try {
             validarIdNotificacion(id);
             
-            notificacionService.marcarNotificacionComoLeida(id);
+            Notificacion notificacion = notificacionService.marcarNotificacionComoLeida(id);
+            NotificacionDTO notificacionDTO = notificacionConverter.toDto(notificacion);
             
             log.info("Notificación marcada como leída exitosamente: {}", id);
+            return notificacionDTO;
         } catch (IllegalArgumentException e) {
             log.warn("Error de validación al marcar notificación como leída: {} - Error: {}", 
                     id, e.getMessage());
-            throw e;
+            throw new NotificacionValidationException(e.getMessage(), e);
+        } catch (SecurityException e) {
+            log.warn("Acceso denegado al marcar notificación como leída: {} - Error: {}", id, e.getMessage());
+            throw new NotificacionAccesoException(e.getMessage(), e);
         } catch (Exception e) {
             log.error("Error inesperado al marcar notificación como leída: {} - Error: {}", 
                      id, e.getMessage(), e);
-            throw new RuntimeException("Error interno al marcar notificación como leída", e);
+            throw new NotificacionOperacionException("Error interno al marcar notificación como leída", e);
         }
     }
 
@@ -183,30 +193,31 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
     // ===============================
 
     /**
-     * Elimina una notificación específica del usuario autenticado.
-     * 
-     * @param id ID de la notificación a eliminar
-     * @throws IllegalArgumentException Si el ID es nulo o vacío
-     * @throws RuntimeException Si ocurre un error durante la eliminación
+     * {@inheritDoc}
      */
     @Override
-    public void eliminarNotificacionUsuarioActual(String id) {
+    public NotificacionDTO eliminarNotificacionUsuarioActual(String id) {
         log.debug("Eliminando notificación del usuario autenticado: {}", id);
         
         try {
             validarIdNotificacion(id);
             
-            notificacionService.eliminarNotificacionUsuarioActual(id);
+            Notificacion notificacion = notificacionService.eliminarNotificacionUsuarioActual(id);
+            NotificacionDTO notificacionDTO = notificacionConverter.toDto(notificacion);
             
             log.info("Notificación eliminada exitosamente: {}", id);
+            return notificacionDTO;
         } catch (IllegalArgumentException e) {
             log.warn("Error de validación al eliminar notificación: {} - Error: {}", 
                     id, e.getMessage());
-            throw e;
+            throw new NotificacionValidationException(e.getMessage(), e);
+        } catch (SecurityException e) {
+            log.warn("Acceso denegado al eliminar notificación: {} - Error: {}", id, e.getMessage());
+            throw new NotificacionAccesoException(e.getMessage(), e);
         } catch (Exception e) {
             log.error("Error inesperado al eliminar notificación: {} - Error: {}", 
                      id, e.getMessage(), e);
-            throw new RuntimeException("Error interno al eliminar notificación", e);
+            throw new NotificacionOperacionException("Error interno al eliminar notificación", e);
         }
     }
 
@@ -215,10 +226,7 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
     // ===============================
 
     /**
-     * Cuenta las notificaciones no leídas del usuario autenticado.
-     * 
-     * @return long Número de notificaciones no leídas
-     * @throws RuntimeException Si ocurre un error durante la consulta
+     * {@inheritDoc}
      */
     @Override
     public long contarNoLeidasUsuarioActual() {
@@ -231,7 +239,7 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
             return count;
         } catch (Exception e) {
             log.error("Error inesperado al contar notificaciones no leídas: {}", e.getMessage(), e);
-            throw new RuntimeException("Error interno al contar notificaciones no leídas", e);
+            throw new NotificacionOperacionException("Error interno al contar notificaciones no leídas", e);
         }
     }
 
@@ -272,24 +280,5 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
         }
     }
 
-    /**
-     * Computa el enlace apropiado para una notificación basado en su contenido.
-     * 
-     * @param n La notificación para la cual generar el enlace
-     * @return String El enlace apropiado o null si no se puede determinar
-     */
-    private String computeEnlace(Notificacion n) {
-        if (n == null || n.getMensaje() == null) {
-            return null;
-        }
-        
-        String msg = n.getMensaje().toLowerCase();
-        if (msg.contains("solicitud") || msg.contains("asignación") || msg.contains("asignacion")) {
-            return "/mis-solicitudes";
-        }
-        if (msg.contains("historia clínica") || msg.contains("historia clinica")) {
-            return "/historia-clinica";
-        }
-        return null;
-    }
+    
 }

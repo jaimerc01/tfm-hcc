@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.UsuarioController;
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
+import com.hcc.tfm_hcc.dto.NotificacionDTO;
 import com.hcc.tfm_hcc.dto.UpdateUsuarioRequest;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
@@ -109,21 +110,21 @@ public class UsuarioControllerImpl implements UsuarioController {
     @Override
     @PutMapping(RestUrls.USUARIO_PASSWORD)
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest body) {
+    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest changePassworRequest) {
         log.info("Solicitud de cambio de contraseña para usuario autenticado");
         
         try {
-            if (body == null) {
+            if (changePassworRequest == null) {
                 throw new UsuarioValidationException("El cuerpo de la solicitud es obligatorio");
             }
 
             // Validar entrada
-            if (body.getNewPassword() == null || body.getNewPassword().length() < 6) {
+            if (changePassworRequest.getNewPassword() == null || changePassworRequest.getNewPassword().length() < 6) {
                 log.warn("Contraseña nueva demasiado corta");
                 throw new UsuarioValidationException("Nueva contraseña demasiado corta");
             }
             
-            usuarioFacade.changePassword(body.getCurrentPassword(), body.getNewPassword());
+            usuarioFacade.changePassword(changePassworRequest.getCurrentPassword(), changePassworRequest.getNewPassword());
             log.info("Contraseña cambiada exitosamente");
             return ResponseEntity.ok("Contraseña actualizada exitosamente");
             
@@ -168,9 +169,10 @@ public class UsuarioControllerImpl implements UsuarioController {
     @Override
     @PutMapping(RestUrls.USUARIO_SOLICITUD_ID)
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("solicitudId") String solicitudId, 
+    // TODO: CORREGIR ESE REQUESTBODY Y HACER UN DTO
+    public ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("idSolicitud") String idSolicitud, 
                                                                           @RequestBody Map<String, String> body) {
-        log.info("Actualizando estado de solicitud: {}", solicitudId);
+        log.info("Actualizando estado de solicitud: {}", idSolicitud);
         
         try {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
@@ -185,8 +187,8 @@ public class UsuarioControllerImpl implements UsuarioController {
                 throw new UsuarioValidationException("Estado requerido no proporcionado");
             }
             
-            SolicitudAsignacion updated = usuarioFacade.actualizarEstadoSolicitud(solicitudId, nuevoEstado);
-            log.info("Estado de solicitud actualizado exitosamente: {} -> {}", solicitudId, nuevoEstado);
+            SolicitudAsignacion updated = usuarioFacade.actualizarEstadoSolicitud(idSolicitud, nuevoEstado);
+            log.info("Estado de solicitud actualizado exitosamente: {} -> {}", idSolicitud, nuevoEstado);
             return ResponseEntity.ok(updated);
             
         } catch (UsuarioValidationException e) {
@@ -210,7 +212,7 @@ public class UsuarioControllerImpl implements UsuarioController {
     @Override
     @GetMapping(RestUrls.USUARIO_NOTIFICACIONES)
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Map<String, Object>> listarMisNotificaciones(@RequestParam("page") int page,
+    public ResponseEntity<Map<String, NotificacionDTO>> listarMisNotificaciones(@RequestParam("page") int page,
                                                                         @RequestParam("size") int size) {
         log.info("Listando notificaciones para usuario autenticado - página: {}, tamaño: {}", page, size);
         
@@ -221,7 +223,7 @@ public class UsuarioControllerImpl implements UsuarioController {
                 throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
             
-            Map<String, Object> resp = notificacionFacade.listarNotificacionesUsuarioActual(page, size);
+            Map<String, NotificacionDTO> resp = notificacionFacade.listarNotificacionesUsuarioActual(page, size);
             log.info("Notificaciones listadas exitosamente");
             return ResponseEntity.ok(resp);
             
@@ -325,10 +327,10 @@ public class UsuarioControllerImpl implements UsuarioController {
             log.info("Cuenta eliminada exitosamente");
             return ResponseEntity.noContent().build();
             
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException _) {
             log.warn("Usuario no autenticado al eliminar cuenta");
             return ResponseEntity.status(401).build();
-        } catch (UsuarioNoAutenticadoException e) {
+        } catch (UsuarioNoAutenticadoException _) {
             log.warn("Usuario no autenticado al eliminar cuenta");
             return ResponseEntity.status(401).build();
         } catch (Exception e) {

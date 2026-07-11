@@ -1,11 +1,13 @@
 package com.hcc.tfm_hcc.service.impl;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hcc.tfm_hcc.model.AuditoriaCambio;
@@ -32,7 +34,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
+    private static final String EUROPE_MADRID = "Europe/Madrid";
     private final AuditoriaCambioRepository auditoriaCambioRepository;
+    @Lazy
+    private final AuditoriaCambioService auditoriaCambioService;
 
     @Override
     @Transactional
@@ -47,7 +52,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             auditoria.setId(java.util.UUID.randomUUID().toString());
         }
         if (auditoria.getFechaCambio() == null) {
-            auditoria.setFechaCambio(LocalDateTime.now());
+            auditoria.setFechaCambio(LocalDateTime.now(ZoneId.of(EUROPE_MADRID)));
         }
 
         AuditoriaCambio guardado = auditoriaCambioRepository.save(auditoria);
@@ -62,7 +67,6 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
     }
 
     @Override
-    @Transactional
     public AuditoriaCambio registrarCambio(
             String idUsuario,
             String idPaciente,
@@ -87,7 +91,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
         auditoria.setTipoOperacion(tipoOperacion);
         auditoria.setRazonCambio(razonCambio);
 
-        return registrarCambio(auditoria);
+        return auditoriaCambioService.registrarCambio(auditoria);
     }
 
     @Override
@@ -210,7 +214,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             return false;
         }
 
-        List<AuditoriaCambio> cambios = obtenerHistorialCambiosPaciente(idPaciente, desde, hasta);
+        List<AuditoriaCambio> cambios = auditoriaCambioService.obtenerHistorialCambiosPaciente(idPaciente, desde, hasta);
         
         // Detectar actividad anómala:
         // - Cambios sin razón/justificación
@@ -239,7 +243,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             return new AuditoriaCambioStats();
         }
 
-        List<AuditoriaCambio> cambios = obtenerHistorialCambiosPaciente(idPaciente);
+        List<AuditoriaCambio> cambios = auditoriaCambioService.obtenerHistorialCambiosPaciente(idPaciente);
         
         AuditoriaCambioStats stats = new AuditoriaCambioStats();
         stats.setIdPaciente(idPaciente);
@@ -286,8 +290,8 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             .count());
 
         // Detectar actividad anómala
-        LocalDateTime hace24Horas = LocalDateTime.now().minusHours(24);
-        stats.setActividadAnomala(hayAuditoriaSospechosa(idPaciente, hace24Horas, LocalDateTime.now()));
+        LocalDateTime hace24Horas = LocalDateTime.now(ZoneId.of(EUROPE_MADRID)).minusHours(24);
+        stats.setActividadAnomala(auditoriaCambioService.hayAuditoriaSospechosa(idPaciente, hace24Horas, LocalDateTime.now(ZoneId.of(EUROPE_MADRID))));
 
         log.debug("Estadísticas generadas para paciente {}: {}", idPaciente, stats);
         return stats;

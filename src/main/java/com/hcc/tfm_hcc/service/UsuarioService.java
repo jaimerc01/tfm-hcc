@@ -122,11 +122,11 @@ public interface UsuarioService {
      * Actualiza el estado de una solicitud de asignación médico-paciente.
      * Permite al paciente aceptar o rechazar solicitudes de médicos.
      * 
-     * @param solicitudId ID único de la solicitud a actualizar
+     * @param idSolicitud ID único de la solicitud a actualizar
      * @param nuevoEstado Nuevo estado de la solicitud (ACEPTADA, RECHAZADA)
      * @return SolicitudAsignacion actualizada con el nuevo estado
      * @throws IllegalArgumentException si el ID o estado son inválidos
      * @throws RuntimeException si el usuario no está autenticado o no tiene permisos sobre la solicitud
      */
-    SolicitudAsignacion actualizarEstadoSolicitud(String solicitudId, String nuevoEstado);
+    SolicitudAsignacion actualizarEstadoSolicitud(String idSolicitud, String nuevoEstado);
 }

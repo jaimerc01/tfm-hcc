@@ -25,7 +25,7 @@ public final class RestUrls {
     public static final String USUARIO_ME = "/me";
     public static final String USUARIO_PASSWORD = "/password";
     public static final String USUARIO_SOLICITUDES = "/solicitudes";
-    public static final String USUARIO_SOLICITUD_ID = "/solicitudes/{solicitudId}";
+    public static final String USUARIO_SOLICITUD_ID = "/solicitudes/{idSolicitud}";
     public static final String USUARIO_NOTIFICACIONES = "/notificaciones";
     public static final String USUARIO_NOTIFICACIONES_MARCAR_LEIDAS = "/notificaciones/marcar-leidas";
     public static final String USUARIO_NOTIFICACIONES_NO_LEIDAS = "/notificaciones/no-leidas";

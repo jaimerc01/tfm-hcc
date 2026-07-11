@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.exception.AdminOperacionException;
+import com.hcc.tfm_hcc.exception.AdminValidationException;
 import com.hcc.tfm_hcc.facade.AdminFacade;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.Usuario;
@@ -91,7 +93,7 @@ public class AdminFacadeImpl implements AdminFacade {
             return ResponseEntity.ok(medicos);
         } catch (Exception e) {
             log.error("Error al obtener lista de médicos: {}", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new AdminOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -114,12 +116,12 @@ public class AdminFacadeImpl implements AdminFacade {
             UsuarioDTO medicoCreado = medicoService.crearMedico(medicoDTO);
             log.info("Médico creado exitosamente con ID: {}", medicoCreado.getId());
             return ResponseEntity.ok(medicoCreado);
-        } catch (IllegalArgumentException e) {
+        } catch (AdminValidationException e) {
             log.warn("Error de validación al crear médico: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error inesperado al crear médico: {}", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new AdminOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -144,12 +146,12 @@ public class AdminFacadeImpl implements AdminFacade {
             UsuarioDTO medicoActualizado = medicoService.actualizarMedico(id, medicoDTO);
             log.info("Médico actualizado exitosamente: ID {}", id);
             return ResponseEntity.ok(medicoActualizado);
-        } catch (IllegalArgumentException e) {
+        } catch (AdminValidationException e) {
             log.warn("Error de validación al actualizar médico con ID {}: {}", id, e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error inesperado al actualizar médico con ID {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new AdminOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -172,12 +174,12 @@ public class AdminFacadeImpl implements AdminFacade {
             UUID idEliminado = medicoService.eliminarMedico(id);
             log.info("Médico eliminado exitosamente: ID {}", idEliminado);
             return ResponseEntity.ok(idEliminado);
-        } catch (IllegalArgumentException e) {
+        } catch (AdminValidationException e) {
             log.warn("Error de validación al eliminar médico con ID {}: {}", id, e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error inesperado al eliminar médico con ID {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new AdminOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -202,12 +204,12 @@ public class AdminFacadeImpl implements AdminFacade {
             String accion = asignar ? "asignado" : "revocado";
             log.info("Perfil médico {} exitosamente para usuario ID: {}", accion, id);
             return ResponseEntity.ok(id);
-        } catch (IllegalArgumentException e) {
+        } catch (AdminValidationException e) {
             log.warn("Error de validación al modificar perfil médico para usuario ID {}: {}", id, e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error inesperado al modificar perfil médico para usuario ID {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new AdminOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -234,14 +236,14 @@ public class AdminFacadeImpl implements AdminFacade {
                 return ResponseEntity.ok(usuarioDTO);
             } else {
                 log.warn("Usuario no encontrado con NIF: {}", nif);
-                throw new IllegalArgumentException(ErrorMessages.entidadNoEncontrada("Usuario", nif));
+                throw new AdminValidationException(ErrorMessages.entidadNoEncontrada("Usuario", nif));
             }
-        } catch (IllegalArgumentException e) {
+        } catch (AdminValidationException e) {
             log.warn("Error de validación al buscar usuario por NIF {}: {}", nif, e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error inesperado al buscar usuario por NIF {}: {}", nif, e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new AdminOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -253,27 +255,27 @@ public class AdminFacadeImpl implements AdminFacade {
      * Valida que los datos del médico sean correctos y completos.
      * 
      * @param medicoDTO Datos del médico a validar
-     * @throws IllegalArgumentException si los datos son inválidos
+     * @throws AdminValidationException si los datos son inválidos
      */
-    private void validarDatosMedico(UsuarioDTO medicoDTO) throws IllegalArgumentException {
+    private void validarDatosMedico(UsuarioDTO medicoDTO) {
         if (medicoDTO == null) {
-            throw new IllegalArgumentException(ErrorMessages.ERROR_CAMPO_REQUERIDO);
+            throw new AdminValidationException(ErrorMessages.ERROR_CAMPO_REQUERIDO);
         }
         
         if (medicoDTO.getNif() == null || medicoDTO.getNif().trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("NIF"));
+            throw new AdminValidationException(ErrorMessages.campoRequerido("NIF"));
         }
         
         if (medicoDTO.getNombre() == null || medicoDTO.getNombre().trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("nombre"));
+            throw new AdminValidationException(ErrorMessages.campoRequerido("nombre"));
         }
         
         if (medicoDTO.getApellido1() == null || medicoDTO.getApellido1().trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("primer apellido"));
+            throw new AdminValidationException(ErrorMessages.campoRequerido("primer apellido"));
         }
         
         if (medicoDTO.getEmail() == null || medicoDTO.getEmail().trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("email"));
+            throw new AdminValidationException(ErrorMessages.campoRequerido("email"));
         }
     }
 
@@ -281,11 +283,11 @@ public class AdminFacadeImpl implements AdminFacade {
      * Valida que el ID del médico sea válido.
      * 
      * @param id ID del médico a validar
-     * @throws IllegalArgumentException si el ID es inválido
+     * @throws AdminValidationException si el ID es inválido
      */
-    private void validarIdMedico(UUID id) throws IllegalArgumentException {
+    private void validarIdMedico(UUID id) {
         if (id == null) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("ID del médico"));
+            throw new AdminValidationException(ErrorMessages.campoRequerido("ID del médico"));
         }
     }
 
@@ -293,11 +295,11 @@ public class AdminFacadeImpl implements AdminFacade {
      * Valida que el ID del usuario sea válido.
      * 
      * @param id ID del usuario a validar
-     * @throws IllegalArgumentException si el ID es inválido
+     * @throws AdminValidationException si el ID es inválido
      */
-    private void validarIdUsuario(UUID id) throws IllegalArgumentException {
+    private void validarIdUsuario(UUID id) {
         if (id == null) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("ID del usuario"));
+            throw new AdminValidationException(ErrorMessages.campoRequerido("ID del usuario"));
         }
     }
 
@@ -305,15 +307,15 @@ public class AdminFacadeImpl implements AdminFacade {
      * Valida que el NIF sea válido.
      * 
      * @param nif NIF a validar
-     * @throws IllegalArgumentException si el NIF es inválido
+     * @throws AdminValidationException si el NIF es inválido
      */
-    private void validarNif(String nif) throws IllegalArgumentException {
+    private void validarNif(String nif) {
         if (nif == null || nif.trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("NIF"));
+            throw new AdminValidationException(ErrorMessages.campoRequerido("NIF"));
         }
         
         if (nif.trim().length() < 9) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("NIF válido"));
+            throw new AdminValidationException(ErrorMessages.campoRequerido("NIF válido"));
         }
     }
 }

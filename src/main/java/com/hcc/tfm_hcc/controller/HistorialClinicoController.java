@@ -6,16 +6,11 @@ import java.util.UUID;
 
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 
@@ -68,10 +63,10 @@ public interface HistorialClinicoController {
      * Elimina un archivo clínico del usuario autenticado.
      * 
      * @param id ID único del archivo clínico a eliminar
-     * @return ResponseEntity vacío confirmando la eliminación
+     * @return ResponseEntity con el ID del archivo eliminado
      * @throws IOException si hay error al eliminar el archivo físico
      */
-    ResponseEntity<Void> eliminarArchivo(@PathVariable("id") UUID id) throws IOException;
+    ResponseEntity<UUID> eliminarArchivo(@PathVariable("id") UUID id) throws IOException;
     
     /**
      * Obtiene el historial clínico completo del usuario autenticado.
@@ -83,10 +78,10 @@ public interface HistorialClinicoController {
     /**
      * Actualiza la información de identificación en el historial clínico.
      * 
-     * @param identificacionJson Datos de identificación en formato JSON
+     * @param historialClinicoDTO Datos de identificación
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody String identificacionJson);
+    ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody HistorialClinicoDTO historialClinicoDTO);
     
     /**
      * Actualiza los antecedentes familiares en el historial clínico.

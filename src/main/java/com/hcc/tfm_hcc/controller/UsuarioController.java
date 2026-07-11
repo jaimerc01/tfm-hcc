@@ -4,15 +4,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
+import com.hcc.tfm_hcc.dto.NotificacionDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
@@ -73,11 +70,11 @@ public interface UsuarioController {
      * Actualiza el estado de una solicitud de asignación específica.
      * Solo el usuario receptor puede cambiar el estado de la solicitud.
      *
-     * @param solicitudId ID único de la solicitud a actualizar
+     * @param idSolicitud ID único de la solicitud a actualizar
      * @param body Map con el nuevo estado de la solicitud
      * @return ResponseEntity con la SolicitudAsignacion actualizada
      */
-    ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("solicitudId") String solicitudId, 
+    ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("idSolicitud") String idSolicitud, 
                                                                   @RequestBody Map<String, String> body);
 
     /**
@@ -88,7 +85,7 @@ public interface UsuarioController {
      * @param size Tamaño de la página (número de notificaciones por página)
      * @return ResponseEntity con Map de notificaciones paginadas
      */
-    ResponseEntity<Map<String, Object>> listarMisNotificaciones(@RequestParam("page") int page, 
+    ResponseEntity<Map<String, NotificacionDTO>> listarMisNotificaciones(@RequestParam("page") int page, 
                                                                  @RequestParam("size") int size);
 
     /**

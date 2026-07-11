@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Repository;
 
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
@@ -25,7 +24,6 @@ import com.hcc.tfm_hcc.model.SolicitudAsignacion;
  * @version 1.0
  * @since 1.0
  */
-@Repository
 public interface SolicitudAsignacionRepository extends CrudRepository<SolicitudAsignacion, UUID> {
     
     /**

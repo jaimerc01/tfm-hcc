@@ -1,5 +1,7 @@
 package com.hcc.tfm_hcc.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -33,9 +35,35 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class NotificacionServiceImpl implements NotificacionService {
 
+    private static final String EUROPE_MADRID = "Europe/Madrid";
     private final NotificacionRepository notificacionRepository;
     private final UsuarioRepository usuarioRepository;
     private final UsuarioFacade usuarioFacade;
+
+    @Override
+    @Transactional
+    public Notificacion crearNotificacionParaUsuario(String usuarioNif, String mensaje) {
+        if (usuarioNif == null || usuarioNif.trim().isEmpty()) {
+            throw new IllegalArgumentException("El NIF del usuario no puede ser nulo o vacío");
+        }
+        if (mensaje == null) {
+            mensaje = "";
+        }
+
+        var usuarioOpt = usuarioRepository.findByNif(usuarioNif);
+        if (usuarioOpt.isEmpty()) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO + " (NIF: " + usuarioNif + ")");
+        }
+
+        Usuario usuario = usuarioOpt.get();
+        Notificacion n = new Notificacion();
+        n.setMensaje(mensaje);
+        n.setLeida(false);
+        n.setUsuario(usuario);
+        n.setFechaCreacion(LocalDateTime.now(ZoneId.of(EUROPE_MADRID)));
+
+        return notificacionRepository.save(n);
+    }
 
     /**
      * Obtiene el usuario actual autenticado
@@ -105,7 +133,7 @@ public class NotificacionServiceImpl implements NotificacionService {
     /**
      * Actualiza todas las notificaciones no leídas a leídas
      */
-    private void actualizarNotificacionesALeidas(List<Notificacion> notificaciones) {
+    private List<Notificacion> actualizarNotificacionesALeidas(List<Notificacion> notificaciones) {
         notificaciones.stream()
                 .filter(n -> !n.isLeida())
                 .forEach(n -> n.setLeida(true));
@@ -113,21 +141,22 @@ public class NotificacionServiceImpl implements NotificacionService {
         if (!notificaciones.isEmpty()) {
             notificacionRepository.saveAll(notificaciones);
         }
+        return notificaciones;
     }
 
     @Override
     @Transactional
-    public void marcarTodasComoLeidasUsuarioActual() {
+    public List<Notificacion> marcarTodasComoLeidasUsuarioActual() {
         Usuario usuario = obtenerUsuarioActual();
         List<Notificacion> notificaciones = notificacionRepository
                 .findByUsuarioOrderByFechaCreacionDesc(usuario);
         
-        actualizarNotificacionesALeidas(notificaciones);
+        return actualizarNotificacionesALeidas(notificaciones);
     }
 
     @Override
     @Transactional
-    public void marcarNotificacionComoLeida(String notificacionId) {
+    public Notificacion marcarNotificacionComoLeida(String notificacionId) {
         Usuario usuario = obtenerUsuarioActual();
         Notificacion notificacion = buscarYValidarNotificacion(notificacionId, usuario);
         
@@ -135,17 +164,16 @@ public class NotificacionServiceImpl implements NotificacionService {
             notificacion.setLeida(true);
             notificacionRepository.save(notificacion);
         }
+        return notificacion;
     }
 
     @Override
     @Transactional
-    public void eliminarNotificacionUsuarioActual(String notificacionId) {
+    public Notificacion eliminarNotificacionUsuarioActual(String notificacionId) {
         Usuario usuario = obtenerUsuarioActual();
         Notificacion notificacion = buscarYValidarNotificacion(notificacionId, usuario);
         
-        if (notificacion != null) {
-            notificacionRepository.delete(notificacion);
-        }
+        return softDeleteNotificacion(notificacion);
     }
 
     @Override
@@ -153,6 +181,12 @@ public class NotificacionServiceImpl implements NotificacionService {
     public long contarNoLeidasUsuarioActual() {
         Usuario usuario = obtenerUsuarioActual();
         return notificacionRepository.countByUsuarioAndLeidaFalse(usuario);
+    }
+
+    private Notificacion softDeleteNotificacion(Notificacion notificacion) {
+        notificacion.setLeida(true);
+        notificacion.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(EUROPE_MADRID)));
+        return notificacionRepository.save(notificacion);
     }
 
 }

@@ -18,6 +18,7 @@ import com.hcc.tfm_hcc.facade.MedicoFacade;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.exception.PacienteNoEncontradoException;
 import com.hcc.tfm_hcc.exception.SolicitudAsignacionException;
+import com.hcc.tfm_hcc.exception.SolicitudExistenteException;
 import com.hcc.tfm_hcc.exception.MedicoOperacionException;
 
 import lombok.RequiredArgsConstructor;
@@ -97,7 +98,7 @@ public class MedicoControllerImpl implements MedicoController {
             log.info("Solicitud de asignación creada exitosamente para paciente: {}", nifPaciente);
             return ResponseEntity.ok(solicitud);
             
-        } catch (com.hcc.tfm_hcc.exception.SolicitudExistenteException _) {
+        } catch (SolicitudExistenteException _) {
             log.warn("Solicitud ya existe para paciente: {}", nifPaciente);
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
                     

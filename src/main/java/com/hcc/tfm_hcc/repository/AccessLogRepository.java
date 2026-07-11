@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
 
 import com.hcc.tfm_hcc.model.AccessLog;
 
@@ -23,7 +22,6 @@ import com.hcc.tfm_hcc.model.AccessLog;
  * @version 1.0
  * @since 1.0
  */
-@Repository
 public interface AccessLogRepository extends MongoRepository<AccessLog, String> {
     
     /**

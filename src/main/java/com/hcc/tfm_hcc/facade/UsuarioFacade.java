@@ -117,11 +117,11 @@ public interface UsuarioFacade {
      * Actualiza el estado de una solicitud de asignación específica.
      * Solo el usuario receptor de la solicitud puede cambiar su estado.
      * 
-     * @param solicitudId ID único de la solicitud a actualizar
+     * @param idSolicitud ID único de la solicitud a actualizar
      * @param nuevoEstado Nuevo estado para la solicitud (PENDIENTE, APROBADA, RECHAZADA)
      * @return SolicitudAsignacion actualizada con el nuevo estado
      * @throws IllegalArgumentException si el estado especificado no es válido
      * @throws SecurityException si el usuario no tiene permisos para actualizar la solicitud
      */
-    SolicitudAsignacion actualizarEstadoSolicitud(String solicitudId, String nuevoEstado) throws IllegalArgumentException, SecurityException;
+    SolicitudAsignacion actualizarEstadoSolicitud(String idSolicitud, String nuevoEstado) throws IllegalArgumentException, SecurityException;
 }

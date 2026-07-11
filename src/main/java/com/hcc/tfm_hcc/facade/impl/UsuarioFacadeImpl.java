@@ -297,23 +297,23 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
     /**
      * Actualiza el estado de una solicitud de asignación.
      * 
-     * @param solicitudId ID de la solicitud a actualizar
+     * @param idSolicitud ID de la solicitud a actualizar
      * @param nuevoEstado Nuevo estado para la solicitud
      * @return SolicitudAsignacion La solicitud actualizada
      * @throws IllegalArgumentException Si los parámetros son inválidos
      * @throws RuntimeException Si ocurre un error durante la actualización
      */
     @Override
-    public SolicitudAsignacion actualizarEstadoSolicitud(String solicitudId, String nuevoEstado) {
-        log.debug("Actualizando estado de solicitud: {} -> {}", solicitudId, nuevoEstado);
+    public SolicitudAsignacion actualizarEstadoSolicitud(String idSolicitud, String nuevoEstado) {
+        log.debug("Actualizando estado de solicitud: {} -> {}", idSolicitud, nuevoEstado);
         
         try {
-            validarDatosSolicitud(solicitudId, nuevoEstado);
+            validarDatosSolicitud(idSolicitud, nuevoEstado);
             
-            SolicitudAsignacion resultado = usuarioService.actualizarEstadoSolicitud(solicitudId, nuevoEstado);
+            SolicitudAsignacion resultado = usuarioService.actualizarEstadoSolicitud(idSolicitud, nuevoEstado);
             
             log.info("Estado de solicitud actualizado exitosamente: {} -> {}", 
-                    solicitudId, nuevoEstado);
+                    idSolicitud, nuevoEstado);
             return resultado;
         } catch (IllegalArgumentException e) {
             log.warn("Error de validación en actualización de solicitud: {}", e.getMessage());
@@ -381,12 +381,12 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
     /**
      * Valida los datos para actualización de solicitud.
      * 
-     * @param solicitudId ID de la solicitud
+     * @param idSolicitud ID de la solicitud
      * @param nuevoEstado Nuevo estado
      * @throws IllegalArgumentException Si los datos son inválidos
      */
-    private void validarDatosSolicitud(String solicitudId, String nuevoEstado) {
-        if (solicitudId == null || solicitudId.trim().isEmpty()) {
+    private void validarDatosSolicitud(String idSolicitud, String nuevoEstado) {
+        if (idSolicitud == null || idSolicitud.trim().isEmpty()) {
             throw new IllegalArgumentException("El ID de la solicitud es obligatorio");
         }
         

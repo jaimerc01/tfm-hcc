@@ -51,7 +51,7 @@ public interface HistorialClinicoFacade {
      * @param id ID único del archivo clínico a obtener
      * @return ArchivoClinicoDTO con la información del archivo
      */
-    ArchivoClinicoDTO getMine(UUID id);
+    ArchivoClinicoDTO getArchivoClinico(UUID id);
     
     /**
      * Obtiene el recurso físico de un archivo clínico para descarga.
@@ -67,7 +67,7 @@ public interface HistorialClinicoFacade {
      * @param id ID único del archivo clínico a eliminar
      * @throws IOException si hay error al eliminar el archivo físico
      */
-    void delete(UUID id) throws IOException;
+    void borrarArchivoClinico(UUID id) throws IOException;
     
     /**
      * Obtiene el historial clínico completo del usuario autenticado.
@@ -79,10 +79,10 @@ public interface HistorialClinicoFacade {
     /**
      * Actualiza la información de identificación en el historial clínico.
      * 
-     * @param identificacionJson Datos de identificación en formato JSON
+     * @param historialClinicoDTO Datos de identificación
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarIdentificacion(String identificacionJson);
+    HistorialClinicoDTO actualizarIdentificacion(HistorialClinicoDTO historialClinicoDTO);
     
     /**
      * Actualiza los antecedentes familiares en el historial clínico.
@@ -122,7 +122,7 @@ public interface HistorialClinicoFacade {
      * @param analisisJson Datos de análisis de sangre en formato JSON
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO añadirAnalisisSangre(String analisisJson);
+    HistorialClinicoDTO anadirAnalisisSangre(String analisisJson);
     
     /**
      * Elimina un dato clínico específico del historial.

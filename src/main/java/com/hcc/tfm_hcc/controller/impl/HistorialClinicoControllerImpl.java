@@ -91,6 +91,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @GetMapping(RestUrls.HISTORIA_ARCHIVOS)
+    @PreAuthorize("isAuthenticated()")
     public List<ArchivoClinicoDTO> listarArchivos() throws ArchivoClinicoException {
         log.debug("Listando archivos clínicos del usuario autenticado");
         try {
@@ -119,6 +120,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PostMapping(path = RestUrls.HISTORIA_ARCHIVOS, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ArchivoClinicoDTO> subirArchivo(@RequestParam("file") MultipartFile file) 
             throws IOException, ArchivoClinicoException, DatosClinicosValidationException {
         log.debug("Iniciando subida de archivo clínico: {}", file != null ? file.getOriginalFilename() : "null");
@@ -159,16 +161,17 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @GetMapping(RestUrls.HISTORIA_ARCHIVO_ID)
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Resource> descargarArchivo(@PathVariable("id") UUID id) throws ArchivoClinicoException, DatosClinicosValidationException {
         log.debug("Solicitando descarga de archivo clínico con ID: {}", id);
         
         try {
-            ArchivoClinicoDTO meta = historialClinicoFacade.getMine(id);
+            ArchivoClinicoDTO archivoClinico = historialClinicoFacade.getArchivoClinico(id);
             Resource resource = historialClinicoFacade.getMineResource(id);
             
-            String nombreArchivo = obtenerNombreArchivoSeguro(meta.getNombreOriginal());
+            String nombreArchivo = obtenerNombreArchivoSeguro(archivoClinico.getNombreOriginal());
             String contentDisposition = construirContentDisposition(nombreArchivo);
-            MediaType mediaType = determinarMediaType(meta.getContentType());
+            MediaType mediaType = determinarMediaType(archivoClinico.getContentType());
             
             log.info("Descargando archivo clínico: {} (ID: {})", nombreArchivo, id);
             
@@ -198,18 +201,19 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * el archivo físico del sistema de almacenamiento.</p>
      * 
      * @param id Identificador único del archivo clínico a eliminar
-     * @return ResponseEntity vacío confirmando la eliminación exitosa
+     * @return ResponseEntity con el ID del archivo eliminado
      * @throws IOException si hay error al eliminar el archivo físico
      */
     @Override
     @DeleteMapping(RestUrls.HISTORIA_ARCHIVO_ID)
-    public ResponseEntity<Void> eliminarArchivo(@PathVariable("id") UUID id) throws IOException, DatosClinicosValidationException, ArchivoClinicoException {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<UUID> eliminarArchivo(@PathVariable("id") UUID id) throws IOException, DatosClinicosValidationException, ArchivoClinicoException {
         log.debug("Solicitando eliminación de archivo clínico con ID: {}", id);
         
         try {
-            historialClinicoFacade.delete(id);
+            historialClinicoFacade.borrarArchivoClinico(id);
             log.info("Archivo clínico eliminado exitosamente: ID {}", id);
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok(id);
         } catch (DatosClinicosValidationException e) {
             log.warn("Archivo clínico no encontrado para eliminación: ID {}", id);
             throw e;
@@ -258,17 +262,17 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * <p>Implementación que actualiza la información de identificación
      * del paciente en su historial clínico.</p>
      * 
-     * @param identificacionJson Datos de identificación en formato JSON
+     * @param historialClinicoDTO Datos de identificación 
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
     @PutMapping(RestUrls.HISTORIA_IDENTIFICACION)
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody String identificacionJson) throws HistorialClinicoException {
+    public ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody HistorialClinicoDTO historialClinicoDTO) throws HistorialClinicoException {
         log.debug("Actualizando información de identificación del usuario");
         
         try {
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarIdentificacion(identificacionJson);
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarIdentificacion(historialClinicoDTO);
             log.info("Información de identificación actualizada exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
@@ -399,7 +403,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
         
         try {
             String payload = procesarContenidoUrlEncoded(analisisJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.añadirAnalisisSangre(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAnalisisSangre(payload);
             log.info("Análisis de sangre añadidos exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (DatosClinicosValidationException e) {
