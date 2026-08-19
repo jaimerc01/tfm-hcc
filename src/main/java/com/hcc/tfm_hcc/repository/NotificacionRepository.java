@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import com.hcc.tfm_hcc.model.Notificacion;
 import com.hcc.tfm_hcc.model.Usuario;
@@ -27,7 +26,6 @@ import com.hcc.tfm_hcc.model.Usuario;
  * @version 1.0
  * @since 1.0
  */
-@Repository
 public interface NotificacionRepository extends JpaRepository<Notificacion, UUID> {
     
     /**

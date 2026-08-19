@@ -1,7 +1,6 @@
 package com.hcc.tfm_hcc.dto;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 import lombok.Data;
 
@@ -14,7 +13,7 @@ public class UsuarioDTO {
     private String apellido2;
     private String email;
     private String password;
-    private Date fechaNacimiento;
+    private LocalDateTime fechaNacimiento;
     private String nif;
     private String telefono;
     private String especialidad;

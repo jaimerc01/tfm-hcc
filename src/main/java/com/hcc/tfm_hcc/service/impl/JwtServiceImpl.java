@@ -243,7 +243,7 @@ public class JwtServiceImpl implements JwtService {
             Date issuedAt = extractIssuedAt(token);
             return validarCambioContrasena(userDetails, issuedAt);
             
-        } catch (Exception e) {
+        } catch (Exception _) {
             return false; // Si hay cualquier error, el token no es válido
         }
     }

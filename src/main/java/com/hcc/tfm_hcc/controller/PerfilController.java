@@ -1,10 +1,8 @@
 package com.hcc.tfm_hcc.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.model.Perfil;
 
 /**
@@ -37,6 +35,5 @@ public interface PerfilController {
      * @throws IllegalArgumentException si el rol especificado no es válido
      * @throws NullPointerException si el rol es null
      */
-    @GetMapping(RestUrls.PERFIL_ROL)
     ResponseEntity<Perfil> getPerfilByRol(@PathVariable("rol") String rol);
 }

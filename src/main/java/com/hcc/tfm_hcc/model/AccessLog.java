@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
-import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import lombok.Data;
@@ -28,10 +27,8 @@ import lombok.NoArgsConstructor;
  * @since 1.0
  */
 @Document(collection = "log_acceso")
-@CompoundIndexes({
-    @CompoundIndex(name = "idx_log_acceso_usuario_timestamp", def = "{'id_usuario': 1, 'timestamp': -1}"),
-    @CompoundIndex(name = "idx_log_acceso_timestamp", def = "{'timestamp': -1}")
-})
+@CompoundIndex(name = "idx_log_acceso_usuario_timestamp", def = "{'id_usuario': 1, 'timestamp': -1}")
+@CompoundIndex(name = "idx_log_acceso_timestamp", def = "{'timestamp': -1}")
 @Data
 @NoArgsConstructor
 public class AccessLog {

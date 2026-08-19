@@ -18,7 +18,7 @@ Usage notes:
 /* .form-actions exists in shared.css but we keep semantic docs here */
 .form-actions { display:flex; gap:.5rem; align-items:center }
 
-.hint { color:var(--muted); font-size:.9rem; margin-top:.5rem }
+.hint { color:var(--primary-color); font-size:.9rem; margin-top:.5rem }
 
 /* small helper for right-aligned action area */
 .form-actions--right { justify-content:flex-end }
@@ -58,7 +58,7 @@ Usage notes:
 .form-select:disabled,
 .form-textarea:disabled {
   background: var(--neutral-50);
-  color: var(--neutral-500, var(--muted));
+  color: var(--neutral-500, var(--primary-color));
   cursor: not-allowed;
 }
 
@@ -98,7 +98,7 @@ Usage notes:
 /* Range hint for medical values */
 .range-hint {
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--primary-color);
   margin-top: 0.25rem;
   font-style: italic;
   line-height: 1.3;

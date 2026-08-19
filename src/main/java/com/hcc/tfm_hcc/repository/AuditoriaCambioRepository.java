@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
-import org.springframework.stereotype.Repository;
 
 import com.hcc.tfm_hcc.model.AuditoriaCambio;
 
@@ -22,7 +21,6 @@ import com.hcc.tfm_hcc.model.AuditoriaCambio;
  * @version 1.0
  * @since 1.0
  */
-@Repository
 public interface AuditoriaCambioRepository extends MongoRepository<AuditoriaCambio, String> {
 
     /**

@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.service.impl;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
+    private static final String EUROPE_MADRID = "Europe/Madrid";
     private final AuditoriaCambioRepository auditoriaCambioRepository;
 
     @Override
@@ -47,7 +49,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             auditoria.setId(java.util.UUID.randomUUID().toString());
         }
         if (auditoria.getFechaCambio() == null) {
-            auditoria.setFechaCambio(LocalDateTime.now());
+            auditoria.setFechaCambio(LocalDateTime.now(ZoneId.of(EUROPE_MADRID)));
         }
 
         AuditoriaCambio guardado = auditoriaCambioRepository.save(auditoria);
@@ -286,8 +288,8 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             .count());
 
         // Detectar actividad anómala
-        LocalDateTime hace24Horas = LocalDateTime.now().minusHours(24);
-        stats.setActividadAnomala(hayAuditoriaSospechosa(idPaciente, hace24Horas, LocalDateTime.now()));
+        LocalDateTime hace24Horas = LocalDateTime.now(ZoneId.of(EUROPE_MADRID)).minusHours(24);
+        stats.setActividadAnomala(hayAuditoriaSospechosa(idPaciente, hace24Horas, LocalDateTime.now(ZoneId.of(EUROPE_MADRID))));
 
         log.debug("Estadísticas generadas para paciente {}: {}", idPaciente, stats);
         return stats;

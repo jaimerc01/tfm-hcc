@@ -4,15 +4,10 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 
 /**
@@ -41,8 +36,16 @@ public interface AdminController {
      * 
      * @return ResponseEntity con lista de UsuarioDTO de médicos registrados
      */
-    @GetMapping(RestUrls.ADMIN_MEDICOS)
     ResponseEntity<List<UsuarioDTO>> listarMedicos();
+
+    /**
+     * Busca un usuario específico por su NIF.
+     * Endpoint adicional para funcionalidades administrativas.
+     * 
+     * @param nif NIF del usuario a buscar
+     * @return ResponseEntity con el UsuarioDTO encontrado
+     */
+    ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(@RequestParam("nif") String nif);
 
     /**
      * Crea un nuevo usuario médico en el sistema.
@@ -50,7 +53,6 @@ public interface AdminController {
      * @param medicoDTO Datos del médico a crear
      * @return ResponseEntity con el UsuarioDTO del médico creado
      */
-    @PostMapping(RestUrls.ADMIN_MEDICOS)
     ResponseEntity<UsuarioDTO> crearMedico(@RequestBody UsuarioDTO medicoDTO);
 
     /**
@@ -60,7 +62,6 @@ public interface AdminController {
      * @param medicoDTO Datos actualizados del médico
      * @return ResponseEntity con el UsuarioDTO del médico actualizado
      */
-    @PutMapping(RestUrls.ADMIN_MEDICO_ID)
     ResponseEntity<UsuarioDTO> actualizarMedico(@PathVariable("id") UUID id, @RequestBody UsuarioDTO medicoDTO);
 
     /**
@@ -68,10 +69,9 @@ public interface AdminController {
      * Esta operación es permanente y elimina todos los datos asociados.
      * 
      * @param id ID único del médico a eliminar
-     * @return ResponseEntity vacío confirmando la eliminación
+     * @return ResponseEntity con el ID del médico eliminado para confirmación
      */
-    @DeleteMapping(RestUrls.ADMIN_MEDICO_ID)
-    ResponseEntity<Void> eliminarMedico(@PathVariable("id") UUID id);
+    ResponseEntity<UUID> eliminarMedico(@PathVariable("id") UUID id);
 
     /**
      * Asigna o revoca el perfil médico a un usuario específico.
@@ -79,8 +79,7 @@ public interface AdminController {
      * 
      * @param id ID único del usuario
      * @param asignar true para asignar perfil médico, false para revocarlo
-     * @return ResponseEntity vacío confirmando la operación
+     * @return ResponseEntity con el ID del usuario afectado para confirmación
      */
-    @PutMapping(RestUrls.ADMIN_MEDICO_PERFIL)
-    ResponseEntity<Void> setPerfilMedico(@PathVariable("id") UUID id, @RequestParam("asignar") boolean asignar);
+    ResponseEntity<UUID> setPerfilMedico(@PathVariable("id") UUID id, @RequestParam("asignar") boolean asignar);
 }

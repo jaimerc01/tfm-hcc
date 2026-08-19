@@ -6,16 +6,11 @@ import java.util.UUID;
 
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 
@@ -45,8 +40,7 @@ public interface HistorialClinicoController {
      * 
      * @return Lista de ArchivoClinicoDTO con los archivos del usuario actual
      */
-    @GetMapping(RestUrls.HISTORIA_ARCHIVOS)
-    List<ArchivoClinicoDTO> listMine();
+    List<ArchivoClinicoDTO> listarArchivos();
     
     /**
      * Sube un nuevo archivo clínico para el usuario autenticado.
@@ -55,8 +49,7 @@ public interface HistorialClinicoController {
      * @return ResponseEntity con el ArchivoClinicoDTO del archivo subido
      * @throws IOException si hay error en el procesamiento del archivo
      */
-    @PostMapping(RestUrls.HISTORIA_ARCHIVOS)
-    ResponseEntity<ArchivoClinicoDTO> upload(@RequestParam("file") MultipartFile file) throws IOException;
+    ResponseEntity<ArchivoClinicoDTO> subirArchivo(@RequestParam("file") MultipartFile file) throws IOException;
     
     /**
      * Descarga un archivo clínico específico del usuario autenticado.
@@ -64,35 +57,31 @@ public interface HistorialClinicoController {
      * @param id ID único del archivo clínico a descargar
      * @return ResponseEntity con el Resource del archivo para descarga
      */
-    @GetMapping(RestUrls.HISTORIA_ARCHIVO_ID)
-    ResponseEntity<Resource> download(@PathVariable("id") UUID id);
+    ResponseEntity<Resource> descargarArchivo(@PathVariable("id") UUID id);
     
     /**
      * Elimina un archivo clínico del usuario autenticado.
      * 
      * @param id ID único del archivo clínico a eliminar
-     * @return ResponseEntity vacío confirmando la eliminación
+     * @return ResponseEntity con el ID del archivo eliminado
      * @throws IOException si hay error al eliminar el archivo físico
      */
-    @DeleteMapping(RestUrls.HISTORIA_ARCHIVO_ID)
-    ResponseEntity<Void> delete(@PathVariable("id") UUID id) throws IOException;
+    ResponseEntity<UUID> eliminarArchivo(@PathVariable("id") UUID id) throws IOException;
     
     /**
      * Obtiene el historial clínico completo del usuario autenticado.
      * 
      * @return ResponseEntity con el HistorialClinicoDTO del usuario actual
      */
-    @GetMapping
     ResponseEntity<HistorialClinicoDTO> getMiHistoria();
     
     /**
      * Actualiza la información de identificación en el historial clínico.
      * 
-     * @param identificacionJson Datos de identificación en formato JSON
+     * @param historialClinicoDTO Datos de identificación
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    @PutMapping(RestUrls.HISTORIA_IDENTIFICACION)
-    ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody String identificacionJson);
+    ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody HistorialClinicoDTO historialClinicoDTO);
     
     /**
      * Actualiza los antecedentes familiares en el historial clínico.
@@ -100,7 +89,6 @@ public interface HistorialClinicoController {
      * @param antecedentesFamiliares Texto con los antecedentes familiares
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    @PutMapping(RestUrls.HISTORIA_ANTECEDENTES)
     ResponseEntity<HistorialClinicoDTO> actualizarAntecedentes(@RequestBody String antecedentesFamiliares);
     
     /**
@@ -109,7 +97,6 @@ public interface HistorialClinicoController {
      * @param alergiasJson Datos de alergias en formato JSON
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    @PutMapping(RestUrls.HISTORIA_ALERGIAS)
     ResponseEntity<HistorialClinicoDTO> actualizarAlergias(@RequestBody String alergiasJson);
     
     /**
@@ -118,7 +105,6 @@ public interface HistorialClinicoController {
      * @param analisisJson Datos de análisis de sangre en formato JSON
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    @PutMapping(RestUrls.HISTORIA_ANALISIS_SANGRE)
     ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody String analisisJson);
     
     /**
@@ -132,25 +118,24 @@ public interface HistorialClinicoController {
      * @param analisisJson Datos de análisis de sangre en formato JSON
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    @PostMapping(RestUrls.HISTORIA_ANALISIS_SANGRE)
     ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson);
     
     /**
      * Elimina un dato clínico específico del historial.
      * 
      * @param id ID único del dato clínico a eliminar
-     * @return ResponseEntity vacío confirmando la eliminación
+     * @return ResponseEntity con el ID del dato clínico eliminado para confirmación
      */
-    @DeleteMapping(RestUrls.HISTORIA_DATOS_CLINICOS_ID)
-    ResponseEntity<Void> borrarDatoClinico(@PathVariable("id") UUID id);
+    ResponseEntity<UUID> borrarDatoClinico(@PathVariable("id") UUID id);
     
+
+    //TODO: revisar por qué se utiliza el índice para editar y eliminar antecedentes, en lugar de un ID único como el resto de datos clínicos. Posible refactorización a futuro para unificar criterios de identificación.
     /**
      * Elimina un antecedente específico por su índice.
      * 
      * @param index Índice del antecedente a eliminar
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    @DeleteMapping(RestUrls.HISTORIA_ANTECEDENTE_INDEX)
     ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("index") int index);
     
     /**
@@ -160,6 +145,5 @@ public interface HistorialClinicoController {
      * @param texto Nuevo texto para el antecedente
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    @PutMapping(RestUrls.HISTORIA_ANTECEDENTE_INDEX)
     ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("index") int index, @RequestBody String texto);
 }

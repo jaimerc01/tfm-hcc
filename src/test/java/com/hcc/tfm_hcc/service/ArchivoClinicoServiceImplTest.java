@@ -55,6 +55,7 @@ class ArchivoClinicoServiceImplTest {
     private AutoCloseable mocks;
     private Usuario usuario;
 
+    @SuppressWarnings("null")
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
@@ -108,6 +109,7 @@ class ArchivoClinicoServiceImplTest {
         assertEquals(ErrorMessages.ERROR_ARCHIVO_VACIO, ex.getMessage());
     }
 
+    @SuppressWarnings("null")
     @Test
     void uploadMine_throwsWhenFileExceedsMaxSize() {
         ReflectionTestUtils.setField(service, "maxSizeBytes", 4L);
@@ -119,6 +121,7 @@ class ArchivoClinicoServiceImplTest {
         assertEquals(ErrorMessages.ERROR_TAMAÑO_EXCEDIDO, ex.getMessage());
     }
 
+    @SuppressWarnings("null")
     @Test
     void uploadMine_throwsWhenFilenameIsUnsafe() {
         when(usuarioRepository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
@@ -130,6 +133,7 @@ class ArchivoClinicoServiceImplTest {
         assertEquals(ErrorMessages.ERROR_NOMBRE_INVALIDO, ex.getMessage());
     }
 
+    @SuppressWarnings("null")
     @Test
     void uploadMine_throwsWhenContentTypeIsNotAllowed() {
         ReflectionTestUtils.setField(service, "allowedTypes", "application/pdf");
@@ -143,6 +147,7 @@ class ArchivoClinicoServiceImplTest {
         assertEquals(ErrorMessages.ERROR_TIPO_NO_PERMITIDO, ex.getMessage());
     }
 
+    @SuppressWarnings("null")
     @Test
     void uploadMine_savesMetadataAndFile() throws IOException {
         when(usuarioRepository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
@@ -214,7 +219,7 @@ class ArchivoClinicoServiceImplTest {
         when(archivoClinicoRepository.findByIdAndUsuarioId(archivoId, usuario.getId()))
                 .thenReturn(Optional.of(archivo));
 
-        service.deleteMine(archivoId);
+        service.borrarArchivo(archivoId);
 
         verify(archivoClinicoRepository).delete(archivo);
         assertTrue(Files.notExists(archivoFisico));
@@ -232,7 +237,7 @@ class ArchivoClinicoServiceImplTest {
         when(archivoClinicoRepository.findByIdAndUsuarioId(archivoId, usuario.getId()))
                 .thenReturn(Optional.of(archivo));
 
-        assertDoesNotThrow(() -> service.deleteMine(archivoId));
+        assertDoesNotThrow(() -> service.borrarArchivo(archivoId));
         verify(archivoClinicoRepository).delete(archivo);
     }
 }

@@ -3,7 +3,6 @@ package com.hcc.tfm_hcc.model;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,8 +13,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -81,11 +78,9 @@ public class Usuario extends BaseEntity implements UserDetails {
     private String email;
 
     /**
-     * Contraseña encriptada del usuario.
-     * Se almacena con hash y encriptación adicional.
+     * Contraseña del usuario almacenada únicamente como hash BCrypt.
      */
     @Column(name = "password", nullable = false)
-    @Convert(converter = AESEncryptionConverter.class)
     private String password;
 
     /**
@@ -93,8 +88,7 @@ public class Usuario extends BaseEntity implements UserDetails {
      * Utilizada para validaciones de identidad.
      */
     @Column(name = "fecha_nacimiento")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date fechaNacimiento;
+    private LocalDateTime fechaNacimiento;
 
     /**
      * NIF (Número de Identificación Fiscal) del usuario.

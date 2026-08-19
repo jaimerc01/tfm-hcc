@@ -23,7 +23,7 @@ import com.hcc.tfm_hcc.repository.HistorialClinicoRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.impl.HistorialClinicoServiceImpl;
 
-public class HistorialClinicoServiceImplTest {
+class HistorialClinicoServiceImplTest {
 
     @Mock
     UsuarioFacade usuarioFacade;
@@ -50,6 +50,7 @@ public class HistorialClinicoServiceImplTest {
         h.setUsuario(u);
     }
 
+    @SuppressWarnings("null")
     @Test
     void borrarDatoClinico_checksOwnershipAndDeletes() {
         var userDto = new com.hcc.tfm_hcc.dto.UsuarioDTO();
@@ -74,6 +75,7 @@ public class HistorialClinicoServiceImplTest {
         verify(datoRepo).delete(d);
     }
 
+    @SuppressWarnings("null")
     @Test
     void editarAntecedente_replacesEntry() {
         var userDto = new com.hcc.tfm_hcc.dto.UsuarioDTO();

@@ -37,29 +37,32 @@ public interface NotificacionService {
     /**
      * Marca todas las notificaciones del usuario autenticado como leídas.
      * 
+     * @return Lista de notificaciones actualizada después de marcar todas como leídas
      * @throws RuntimeException si el usuario no está autenticado
      */
-    void marcarTodasComoLeidasUsuarioActual();
+    List<Notificacion> marcarTodasComoLeidasUsuarioActual();
     
     /**
      * Marca una notificación específica como leída.
      * Solo puede marcar notificaciones que pertenezcan al usuario autenticado.
      * 
      * @param id ID único de la notificación a marcar como leída
+     * @return Notificacion actualizada después de marcarla como leída
      * @throws IllegalArgumentException si el ID es inválido o la notificación no existe
      * @throws RuntimeException si el usuario no está autenticado o no tiene permisos sobre la notificación
      */
-    void marcarNotificacionComoLeida(String id);
+    Notificacion marcarNotificacionComoLeida(String id);
     
     /**
      * Elimina una notificación específica del usuario autenticado.
      * Solo puede eliminar notificaciones que pertenezcan al usuario autenticado.
      * 
      * @param id ID único de la notificación a eliminar
+     * @return Notificacion eliminada
      * @throws IllegalArgumentException si el ID es inválido o la notificación no existe
      * @throws RuntimeException si el usuario no está autenticado o no tiene permisos sobre la notificación
      */
-    void eliminarNotificacionUsuarioActual(String id);
+    Notificacion eliminarNotificacionUsuarioActual(String id);
     
     /**
      * Lista las notificaciones del usuario autenticado con paginación.
@@ -79,4 +82,15 @@ public interface NotificacionService {
      * @throws RuntimeException si el usuario no está autenticado
      */
     long contarNoLeidasUsuarioActual();
+
+    /**
+     * Crea una notificación para un usuario identificado por su NIF.
+     *
+     * @param usuarioNif NIF del usuario destinatario
+     * @param mensaje   Mensaje de la notificación
+     * @return Notificacion creada y persistida
+     * @throws IllegalArgumentException si alguno de los parámetros es inválido
+     * @throws RuntimeException si ocurre un error en persistencia
+     */
+    Notificacion crearNotificacionParaUsuario(String usuarioNif, String mensaje);
 }

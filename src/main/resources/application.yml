@@ -33,3 +33,27 @@ security:
     secret-key: ${JWT_SECRET}
     expiration-time: 3600000 # 1 hour in milliseconds 
   enforce-https: false # Cambiar a true en producción para redirigir HTTP->HTTPS
+  tfm:
+    hcc:
+      encryption:
+        key: ${TFM_HCC_ENCRYPTION_KEY} # Clave para cifrado de datos sensibles (NIF, teléfono)
+
+---
+spring:
+  config:
+    activate:
+      on-profile: oauth-google
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - openid
+              - profile
+              - email
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com

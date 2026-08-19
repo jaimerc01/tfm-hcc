@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import com.hcc.tfm_hcc.model.MedicoPaciente;
 
@@ -24,7 +23,6 @@ import com.hcc.tfm_hcc.model.MedicoPaciente;
  * @version 1.0
  * @since 1.0
  */
-@Repository
 public interface MedicoPacienteRepository extends JpaRepository<MedicoPaciente, UUID> {
     
     /**

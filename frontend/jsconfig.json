@@ -1,16 +1,10 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "esnext",
-    "baseUrl": "./",
-    "moduleResolution": "node",
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
+    "target": "es2025",
+    "module": "node16",
+    "moduleResolution": "node16",
     "lib": [
-      "esnext",
+      "es2025",
       "dom",
       "dom.iterable",
       "scripthost"

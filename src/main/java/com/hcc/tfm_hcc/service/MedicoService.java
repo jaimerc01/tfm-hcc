@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import com.hcc.tfm_hcc.dto.PacienteDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
-import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
 /**
  * Servicio para la gestión de médicos en el sistema HCC.
@@ -56,9 +55,10 @@ public interface MedicoService {
      * Elimina un médico del sistema.
      * 
      * @param id ID único del médico a eliminar
+     * @return UUID con el ID del médico eliminado
      * @throws IllegalArgumentException si el ID es inválido o el médico no existe
      */
-    void eliminarMedico(UUID id);
+    UUID eliminarMedico(UUID id);
 
     /**
      * Busca un paciente por su DNI y fecha de nacimiento.
@@ -72,37 +72,12 @@ public interface MedicoService {
     PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento);
     
     /**
-     * Crea una solicitud de asignación médico-paciente.
-     * La solicitud es creada por el médico autenticado actualmente en el sistema.
-     * 
-     * @param nifPaciente NIF (Número de Identificación Fiscal) del paciente
-     * @return SolicitudAsignacion creada con estado pendiente
-     * @throws IllegalArgumentException si el NIF del paciente es inválido
-     * @throws RuntimeException si el médico no está autenticado o el paciente no existe
-     */
-    SolicitudAsignacion crearSolicitudAsignacion(String nifPaciente);
-    
-    /**
-     * Lista todas las solicitudes de asignación pendientes de aprobación.
-     * 
-     * @return Lista de SolicitudAsignacion con estado pendiente
-     */
-    List<SolicitudAsignacion> listarSolicitudesPendientes();
-    
-    /**
-     * Lista todas las solicitudes de asignación enviadas por el médico autenticado.
-     * 
-     * @return Lista de SolicitudAsignacion enviadas por el médico actual
-     * @throws RuntimeException si el médico no está autenticado
-     */
-    List<SolicitudAsignacion> listarSolicitudesEnviadas();
-    
-    /**
      * Asigna o revoca el perfil de médico a un usuario existente.
      * 
      * @param id ID único del usuario al cual asignar o revocar el perfil médico
      * @param asignar true para asignar el perfil médico, false para revocarlo
+     * @return UUID con el ID del usuario afectado para confirmación
      * @throws IllegalArgumentException si el ID es inválido o el usuario no existe
      */
-    void setPerfilMedico(UUID id, boolean asignar);
+    UUID setPerfilMedico(UUID id, boolean asignar);
 }

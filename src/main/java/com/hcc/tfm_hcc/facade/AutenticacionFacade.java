@@ -45,4 +45,18 @@ public interface AutenticacionFacade {
      * @throws IllegalArgumentException si los datos son inválidos o el usuario ya existe
      */
     ResponseEntity<UsuarioDTO> registrar(UsuarioDTO usuarioDTO) throws IllegalArgumentException;
+
+    /**
+     * Inicia el flujo OAuth2 para autenticación con Google.
+     *
+     * @return ResponseEntity de redirección al proveedor Google
+     */
+    ResponseEntity<Void> iniciarLoginGoogle();
+
+    /**
+     * Inicia el flujo OAuth2 para registro con Google.
+     *
+     * @return ResponseEntity de redirección al proveedor Google
+     */
+    ResponseEntity<Void> iniciarRegistroGoogle();
 }

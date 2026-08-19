@@ -2,12 +2,17 @@ package com.hcc.tfm_hcc.facade.impl;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.dto.PacienteDTO;
 import com.hcc.tfm_hcc.facade.MedicoFacade;
+import com.hcc.tfm_hcc.facade.SolicitudAsignacionFacade;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.service.MedicoService;
+import com.hcc.tfm_hcc.exception.SolicitudAsignacionException;
+import com.hcc.tfm_hcc.exception.MedicoOperacionException;
+import com.hcc.tfm_hcc.exception.MedicoValidationException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +52,7 @@ public class MedicoFacadeImpl implements MedicoFacade {
      * Servicio para operaciones médicas.
      */
     private final MedicoService medicoService;
+    private final SolicitudAsignacionFacade solicitudAsignacionFacade;
 
     // ===============================
     // MÉTODOS DE GESTIÓN DE PACIENTES
@@ -62,6 +68,7 @@ public class MedicoFacadeImpl implements MedicoFacade {
      * @throws RuntimeException Si ocurre un error durante la búsqueda
      */
     @Override
+    @PreAuthorize("hasRole('MEDICO')")
     public PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento) {
         log.debug("Buscando paciente por DNI: {} y fecha de nacimiento: {}", dni, fechaNacimiento);
         
@@ -72,14 +79,14 @@ public class MedicoFacadeImpl implements MedicoFacade {
             
             log.info("Paciente encontrado exitosamente: DNI {}", dni);
             return paciente;
-        } catch (IllegalArgumentException e) {
+        } catch (MedicoValidationException e) {
             log.warn("Error de validación en búsqueda de paciente: DNI {} - Error: {}", 
                     dni, e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error inesperado durante búsqueda de paciente: DNI {} - Error: {}", 
                      dni, e.getMessage(), e);
-            throw new RuntimeException("Error interno durante la búsqueda del paciente", e);
+            throw new MedicoOperacionException("Error interno durante la búsqueda del paciente", e);
         }
     }
 
@@ -96,25 +103,26 @@ public class MedicoFacadeImpl implements MedicoFacade {
      * @throws RuntimeException Si ocurre un error durante la creación
      */
     @Override
+    @PreAuthorize("hasRole('MEDICO')")
     public SolicitudAsignacion crearSolicitudAsignacion(String nifPaciente) {
         log.debug("Creando solicitud de asignación para paciente: {}", nifPaciente);
         
         try {
             validarNifPaciente(nifPaciente);
             
-            SolicitudAsignacion solicitud = medicoService.crearSolicitudAsignacion(nifPaciente);
+            SolicitudAsignacion solicitud = solicitudAsignacionFacade.crearSolicitudAsignacion(nifPaciente);
             
             log.info("Solicitud de asignación creada exitosamente: ID {} para paciente {}", 
                     solicitud.getId(), nifPaciente);
             return solicitud;
-        } catch (IllegalArgumentException e) {
+        } catch (MedicoValidationException e) {
             log.warn("Error de validación al crear solicitud de asignación: Paciente {} - Error: {}", 
                     nifPaciente, e.getMessage());
-            throw e;
+            throw new SolicitudAsignacionException(e.getMessage(), e);
         } catch (Exception e) {
             log.error("Error inesperado al crear solicitud de asignación: Paciente {} - Error: {}", 
                      nifPaciente, e.getMessage(), e);
-            throw new RuntimeException("Error interno durante la creación de solicitud de asignación", e);
+            throw new MedicoOperacionException("Error interno durante la creación de solicitud de asignación", e);
         }
     }
 
@@ -125,18 +133,19 @@ public class MedicoFacadeImpl implements MedicoFacade {
      * @throws RuntimeException Si ocurre un error durante la consulta
      */
     @Override
+    @PreAuthorize("hasRole('MEDICO')")
     public List<SolicitudAsignacion> listarSolicitudesPendientes() {
         log.debug("Obteniendo solicitudes de asignación pendientes");
         
         try {
-            List<SolicitudAsignacion> solicitudes = medicoService.listarSolicitudesPendientes();
+            List<SolicitudAsignacion> solicitudes = solicitudAsignacionFacade.listarSolicitudesPendientes();
             
             log.info("Solicitudes pendientes obtenidas: {} registros", 
                     solicitudes != null ? solicitudes.size() : 0);
             return solicitudes;
         } catch (Exception e) {
             log.error("Error inesperado al obtener solicitudes pendientes: {}", e.getMessage(), e);
-            throw new RuntimeException("Error interno durante la consulta de solicitudes pendientes", e);
+            throw new MedicoOperacionException("Error interno durante la consulta de solicitudes pendientes", e);
         }
     }
 
@@ -147,18 +156,19 @@ public class MedicoFacadeImpl implements MedicoFacade {
      * @throws RuntimeException Si ocurre un error durante la consulta
      */
     @Override
+    @PreAuthorize("hasRole('MEDICO')")
     public List<SolicitudAsignacion> listarSolicitudesEnviadas() {
         log.debug("Obteniendo solicitudes de asignación enviadas por el médico actual");
         
         try {
-            List<SolicitudAsignacion> solicitudes = medicoService.listarSolicitudesEnviadas();
+            List<SolicitudAsignacion> solicitudes = solicitudAsignacionFacade.listarSolicitudesEnviadas();
             
             log.info("Solicitudes enviadas obtenidas: {} registros", 
                     solicitudes != null ? solicitudes.size() : 0);
             return solicitudes;
         } catch (Exception e) {
             log.error("Error inesperado al obtener solicitudes enviadas: {}", e.getMessage(), e);
-            throw new RuntimeException("Error interno durante la consulta de solicitudes enviadas", e);
+            throw new MedicoOperacionException("Error interno durante la consulta de solicitudes enviadas", e);
         }
     }
 
@@ -175,16 +185,16 @@ public class MedicoFacadeImpl implements MedicoFacade {
      */
     private void validarDatosBusquedaPaciente(String dni, String fechaNacimiento) {
         if (dni == null || dni.trim().isEmpty()) {
-            throw new IllegalArgumentException("El DNI del paciente es obligatorio");
+            throw new MedicoValidationException("El DNI del paciente es obligatorio");
         }
         
         if (fechaNacimiento == null || fechaNacimiento.trim().isEmpty()) {
-            throw new IllegalArgumentException("La fecha de nacimiento es obligatoria");
+            throw new MedicoValidationException("La fecha de nacimiento es obligatoria");
         }
         
         // Validar formato de fecha básico
         if (!fechaNacimiento.matches("\\d{4}-\\d{2}-\\d{2}")) {
-            throw new IllegalArgumentException("La fecha de nacimiento debe tener formato yyyy-MM-dd");
+            throw new MedicoValidationException("La fecha de nacimiento debe tener formato yyyy-MM-dd");
         }
     }
 
@@ -196,7 +206,7 @@ public class MedicoFacadeImpl implements MedicoFacade {
      */
     private void validarNifPaciente(String nifPaciente) {
         if (nifPaciente == null || nifPaciente.trim().isEmpty()) {
-            throw new IllegalArgumentException("El NIF del paciente es obligatorio");
+            throw new MedicoValidationException("El NIF del paciente es obligatorio");
         }
     }
 }

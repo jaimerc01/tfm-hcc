@@ -1,9 +1,10 @@
 package com.hcc.tfm_hcc.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.model.AccessLog;
@@ -58,7 +59,7 @@ public class AccessLogServiceImpl implements AccessLogService {
 
         // Establecer timestamp si no está presente
         if (accessLog.getTimestamp() == null) {
-            accessLog.setTimestamp(java.time.LocalDateTime.now());
+            accessLog.setTimestamp(LocalDateTime.now(ZoneId.of("Europe/Madrid")));
         }
         
         // Establecer estado por defecto si no está presente
@@ -83,7 +84,6 @@ public class AccessLogServiceImpl implements AccessLogService {
     /**
      * Persiste el log de acceso en la base de datos
      */
-    @Transactional
     private void persistirAccessLog(AccessLog accessLog) {
         try {
             if(accessLog == null) {
@@ -115,7 +115,13 @@ public class AccessLogServiceImpl implements AccessLogService {
                 accessLog != null ? accessLog.getRuta() : "null", 
                 accessLog != null ? accessLog.getMetodo() : "null");
         
-        validarAccessLog(accessLog);
+        try {
+            validarAccessLog(accessLog);
+        } catch (IllegalArgumentException e) {
+            log.warn("AccessLog inválido, no se guardará: {}", e.getMessage());
+            return;
+        }
+
         prepararAccessLog(accessLog);
         persistirAccessLog(accessLog);
     }

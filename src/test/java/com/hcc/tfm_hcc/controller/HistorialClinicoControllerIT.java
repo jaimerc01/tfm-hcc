@@ -24,7 +24,7 @@ import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
 
 @ExtendWith(MockitoExtension.class)
-public class HistorialClinicoControllerIT {
+class HistorialClinicoControllerIT {
 
     private MockMvc mvc;
 
@@ -50,6 +50,7 @@ public class HistorialClinicoControllerIT {
             .andExpect(status().isNoContent());
     }
 
+    @SuppressWarnings("null")
     @Test
     void deleteAntecedente_returnsUpdatedDto() throws Exception {
         int index = 0;
@@ -62,6 +63,7 @@ public class HistorialClinicoControllerIT {
             .andExpect(content().json(objectMapper.writeValueAsString(dto)));
     }
 
+    @SuppressWarnings("null")
     @Test
     void editarAntecedente_returnsUpdatedDto() throws Exception {
         int index = 1;

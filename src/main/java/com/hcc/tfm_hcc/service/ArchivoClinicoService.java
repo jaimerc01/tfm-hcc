@@ -62,5 +62,5 @@ public interface ArchivoClinicoService {
      * @throws IOException si ocurre un error durante la eliminación
      * @throws IllegalArgumentException si el archivo no existe o no pertenece al usuario
      */
-    void deleteMine(UUID id) throws IOException;
+    void borrarArchivo(UUID id) throws IOException;
 }

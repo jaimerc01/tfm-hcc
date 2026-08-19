@@ -3,6 +3,8 @@ package com.hcc.tfm_hcc.facade;
 import java.util.List;
 import java.util.Map;
 
+import com.hcc.tfm_hcc.dto.NotificacionDTO;
+
 /**
  * Facade para la gestión de notificaciones en el sistema HCC.
  * Proporciona operaciones completas para el manejo de notificaciones
@@ -28,32 +30,36 @@ public interface NotificacionFacade {
      * 
      * @return Lista de Map con los datos de las notificaciones del usuario actual
      */
-    List<Map<String, Object>> listarNotificacionesUsuarioActual();
+    List<NotificacionDTO> listarNotificacionesUsuarioActual();
     
     /**
      * Marca todas las notificaciones del usuario autenticado como leídas.
      * Esta operación actualiza el estado de todas las notificaciones pendientes
      * de lectura del usuario actual.
+     * 
+     * @return Lista de notificaciones actualizada después de marcar todas como leídas
      */
-    void marcarTodasComoLeidasUsuarioActual();
+    List<NotificacionDTO> marcarTodasComoLeidasUsuarioActual();
     
     /**
      * Marca una notificación específica como leída.
      * 
      * @param id ID único de la notificación a marcar como leída
+     * @return NotificacionDTO de la notificación actualizada después de marcarla como leída
      * @throws IllegalArgumentException si el ID no es válido
      * @throws SecurityException si la notificación no pertenece al usuario actual
      */
-    void marcarNotificacionComoLeida(String id) throws IllegalArgumentException, SecurityException;
+    NotificacionDTO marcarNotificacionComoLeida(String id) throws IllegalArgumentException, SecurityException;
     
     /**
      * Elimina una notificación específica del usuario autenticado.
      * 
      * @param id ID único de la notificación a eliminar
+     * @return NotificacionDTO de la notificación eliminada
      * @throws IllegalArgumentException si el ID no es válido
      * @throws SecurityException si la notificación no pertenece al usuario actual
      */
-    void eliminarNotificacionUsuarioActual(String id) throws IllegalArgumentException, SecurityException;
+    NotificacionDTO eliminarNotificacionUsuarioActual(String id) throws IllegalArgumentException, SecurityException;
     
     /**
      * Lista las notificaciones del usuario autenticado con paginación.
@@ -64,7 +70,7 @@ public interface NotificacionFacade {
      * @param size Tamaño de la página (número de notificaciones por página)
      * @return Map con los datos paginados de las notificaciones
      */
-    Map<String, Object> listarNotificacionesUsuarioActual(int page, int size);
+    Map<String, NotificacionDTO> listarNotificacionesUsuarioActual(int page, int size);
     
     /**
      * Cuenta el número de notificaciones no leídas del usuario autenticado.
@@ -73,4 +79,13 @@ public interface NotificacionFacade {
      * @return Número de notificaciones no leídas del usuario actual
      */
     long contarNoLeidasUsuarioActual();
+
+    /**
+     * Crea una notificación para un usuario identificado por su NIF.
+     *
+     * @param usuarioNif NIF del usuario destinatario
+     * @param mensaje    Mensaje de la notificación
+     * @return NotificacionDTO de la notificación creada
+     */
+    NotificacionDTO crearNotificacionParaUsuario(String usuarioNif, String mensaje);
 }

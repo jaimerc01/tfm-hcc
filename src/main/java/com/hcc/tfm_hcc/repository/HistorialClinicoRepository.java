@@ -4,7 +4,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import com.hcc.tfm_hcc.model.HistorialClinico;
 import com.hcc.tfm_hcc.model.Usuario;
@@ -25,7 +24,6 @@ import com.hcc.tfm_hcc.model.Usuario;
  * @version 1.0
  * @since 1.0
  */
-@Repository
 public interface HistorialClinicoRepository extends JpaRepository<HistorialClinico, UUID> {
     
     /**

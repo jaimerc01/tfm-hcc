@@ -4,15 +4,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
+import com.hcc.tfm_hcc.dto.NotificacionDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
@@ -42,7 +39,6 @@ public interface UsuarioController {
      *
      * @return Nombre del usuario autenticado
      */
-    @GetMapping(RestUrls.USUARIO_NOMBRE)
     String getNombreUsuario();
 
     /**
@@ -51,7 +47,6 @@ public interface UsuarioController {
      *
      * @return ResponseEntity con el UsuarioDTO del usuario actual
      */
-    @GetMapping(RestUrls.USUARIO_ME)
     ResponseEntity<UsuarioDTO> getUsuarioActual();
 
     /**
@@ -61,7 +56,6 @@ public interface UsuarioController {
      * @param body ChangePasswordRequest con contraseña actual y nueva contraseña
      * @return ResponseEntity con mensaje de confirmación o error
      */
-    @PutMapping(RestUrls.USUARIO_PASSWORD)
     ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest body);
 
     /**
@@ -70,19 +64,17 @@ public interface UsuarioController {
      *
      * @return ResponseEntity con lista de SolicitudAsignacion del usuario
      */
-    @GetMapping(RestUrls.USUARIO_SOLICITUDES)
     ResponseEntity<List<SolicitudAsignacion>> listarMisSolicitudes();
 
     /**
      * Actualiza el estado de una solicitud de asignación específica.
      * Solo el usuario receptor puede cambiar el estado de la solicitud.
      *
-     * @param solicitudId ID único de la solicitud a actualizar
+     * @param idSolicitud ID único de la solicitud a actualizar
      * @param body Map con el nuevo estado de la solicitud
      * @return ResponseEntity con la SolicitudAsignacion actualizada
      */
-    @PutMapping(RestUrls.USUARIO_SOLICITUD_ID)
-    ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("solicitudId") String solicitudId, 
+    ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("idSolicitud") String idSolicitud, 
                                                                   @RequestBody Map<String, String> body);
 
     /**
@@ -93,8 +85,7 @@ public interface UsuarioController {
      * @param size Tamaño de la página (número de notificaciones por página)
      * @return ResponseEntity con Map de notificaciones paginadas
      */
-    @GetMapping(RestUrls.USUARIO_NOTIFICACIONES)
-    ResponseEntity<Map<String, Object>> listarMisNotificaciones(@RequestParam("page") int page, 
+    ResponseEntity<Map<String, NotificacionDTO>> listarMisNotificaciones(@RequestParam("page") int page, 
                                                                  @RequestParam("size") int size);
 
     /**
@@ -103,6 +94,5 @@ public interface UsuarioController {
      *
      * @return ResponseEntity con mensaje de confirmación
      */
-    @PostMapping(RestUrls.USUARIO_NOTIFICACIONES_MARCAR_LEIDAS)
     ResponseEntity<String> marcarTodasNotificacionesLeidas();
 }

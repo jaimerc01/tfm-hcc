@@ -2,7 +2,10 @@ package com.hcc.tfm_hcc.facade.impl;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.net.URI;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +13,9 @@ import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.IncorrectCredentials;
+import com.hcc.tfm_hcc.exception.InvalidLoginDataException;
+import com.hcc.tfm_hcc.exception.InvalidRegistrationDataException;
+import com.hcc.tfm_hcc.exception.AutenticacionOperacionException;
 import com.hcc.tfm_hcc.facade.AutenticacionFacade;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.LoginResponse;
@@ -109,10 +115,14 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
             log.warn("Intento de autenticación fallido para usuario: {} - Credenciales incorrectas", 
                     loginUsuarioDTO != null ? loginUsuarioDTO.getNif() : "null");
             throw e;
+        } catch (InvalidLoginDataException e) {
+            log.warn("Error de validación en autenticación para usuario: {} - Error: {}", 
+                    loginUsuarioDTO != null ? loginUsuarioDTO.getNif() : "null", e.getMessage());
+            throw e;
         } catch (Exception e) {
             log.error("Error inesperado durante autenticación para usuario: {} - Error: {}", 
                      loginUsuarioDTO != null ? loginUsuarioDTO.getNif() : "null", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new AutenticacionOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -131,7 +141,7 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
      * @throws IllegalArgumentException si los datos son inválidos
      */
     @Override
-    public ResponseEntity<UsuarioDTO> registrar(UsuarioDTO usuarioDTO) throws IllegalArgumentException {
+    public ResponseEntity<UsuarioDTO> registrar(UsuarioDTO usuarioDTO) throws InvalidRegistrationDataException {
         log.debug("Iniciando proceso de registro para usuario: {}", 
                  usuarioDTO != null ? usuarioDTO.getNif() : "null");
         
@@ -144,15 +154,31 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
             log.info("Usuario registrado exitosamente: {}", 
                     usuarioDTO != null ? usuarioDTO.getNif() : "unknown");
             return ResponseEntity.ok(usuarioResponse);
-        } catch (IllegalArgumentException e) {
+        } catch (InvalidRegistrationDataException e) {
             log.warn("Error de validación en registro de usuario: {} - Error: {}", 
                     usuarioDTO != null ? usuarioDTO.getNif() : "null", e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error inesperado durante registro de usuario: {} - Error: {}", 
                      usuarioDTO != null ? usuarioDTO.getNif() : "null", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new AutenticacionOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResponseEntity<Void> iniciarLoginGoogle() {
+        return iniciarFlujoGoogle("login");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResponseEntity<Void> iniciarRegistroGoogle() {
+        return iniciarFlujoGoogle("registro");
     }
 
     // ===============================
@@ -165,17 +191,17 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
      * @param loginUsuarioDTO Datos de login a validar
      * @throws IllegalArgumentException si los datos son inválidos
      */
-    private void validarDatosAutenticacion(LoginUsuarioDTO loginUsuarioDTO) throws IllegalArgumentException {
+    private void validarDatosAutenticacion(LoginUsuarioDTO loginUsuarioDTO) throws InvalidLoginDataException {
         if (loginUsuarioDTO == null) {
-            throw new IllegalArgumentException(ErrorMessages.ERROR_CAMPO_REQUERIDO);
+            throw new InvalidLoginDataException(ErrorMessages.ERROR_CAMPO_REQUERIDO);
         }
         
         if (loginUsuarioDTO.getNif() == null || loginUsuarioDTO.getNif().trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("NIF"));
+            throw new InvalidLoginDataException(ErrorMessages.campoRequerido("NIF"));
         }
         
         if (loginUsuarioDTO.getPassword() == null || loginUsuarioDTO.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("contraseña"));
+            throw new InvalidLoginDataException(ErrorMessages.campoRequerido("contraseña"));
         }
     }
 
@@ -213,34 +239,58 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
     }
 
     /**
+     * Construye una respuesta HTTP de redirección para el inicio de OAuth.
+     *
+     * @param uriRedireccion URI destino de la redirección
+     * @return Respuesta HTTP 302 con cabecera Location
+     */
+    private ResponseEntity<Void> construirRedireccionOauth(URI uriRedireccion) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(uriRedireccion);
+        return ResponseEntity.status(HttpStatus.FOUND).headers(headers).build();
+    }
+
+    /**
+     * Orquesta el inicio de autenticación federada para una operación concreta.
+     *
+     * @param operacion contexto funcional de la operación (login/registro)
+     * @return Respuesta HTTP con redirección al proveedor OAuth
+     */
+    private ResponseEntity<Void> iniciarFlujoGoogle(String operacion) {
+        log.debug("Iniciando flujo Google OAuth para operación: {}", operacion);
+        URI uriAutorizacionGoogle = autenticacionService.obtenerUriAutorizacionGoogle();
+        return construirRedireccionOauth(uriAutorizacionGoogle);
+    }
+
+    /**
      * Valida los datos de registro de usuario.
      * 
      * @param usuarioDTO Datos del usuario a validar
      * @throws IllegalArgumentException si los datos son inválidos
      */
-    private void validarDatosRegistro(UsuarioDTO usuarioDTO) throws IllegalArgumentException {
+    private void validarDatosRegistro(UsuarioDTO usuarioDTO) throws InvalidRegistrationDataException {
         if (usuarioDTO == null) {
-            throw new IllegalArgumentException(ErrorMessages.ERROR_CAMPO_REQUERIDO);
+            throw new InvalidRegistrationDataException(ErrorMessages.ERROR_CAMPO_REQUERIDO);
         }
         
         if (usuarioDTO.getNif() == null || usuarioDTO.getNif().trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("NIF"));
+            throw new InvalidRegistrationDataException(ErrorMessages.campoRequerido("NIF"));
         }
         
         if (usuarioDTO.getNombre() == null || usuarioDTO.getNombre().trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("nombre"));
+            throw new InvalidRegistrationDataException(ErrorMessages.campoRequerido("nombre"));
         }
         
         if (usuarioDTO.getApellido1() == null || usuarioDTO.getApellido1().trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("primer apellido"));
+            throw new InvalidRegistrationDataException(ErrorMessages.campoRequerido("primer apellido"));
         }
         
         if (usuarioDTO.getEmail() == null || usuarioDTO.getEmail().trim().isEmpty() || !usuarioDTO.getEmail().contains("@")) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("email"));
+            throw new InvalidRegistrationDataException(ErrorMessages.campoRequerido("email"));
         }
         
         if (usuarioDTO.getPassword() == null || usuarioDTO.getPassword().trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("contraseña"));
+            throw new InvalidRegistrationDataException(ErrorMessages.campoRequerido("contraseña"));
         }
     }
 }

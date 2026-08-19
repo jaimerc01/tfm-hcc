@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 import com.hcc.tfm_hcc.facade.PerfilFacade;
 import com.hcc.tfm_hcc.model.Perfil;
 import com.hcc.tfm_hcc.service.PerfilService;
+import com.hcc.tfm_hcc.exception.PerfilValidationException;
+import com.hcc.tfm_hcc.exception.PerfilOperacionException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,14 +70,14 @@ public class PerfilFacadeImpl implements PerfilFacade {
             log.info("Perfil obtenido exitosamente para rol: {} - ID: {}", 
                     rol, perfil != null ? perfil.getId() : "null");
             return perfil;
-        } catch (IllegalArgumentException e) {
+        } catch (PerfilValidationException e) {
             log.warn("Error de validación al obtener perfil por rol: {} - Error: {}", 
                     rol, e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error inesperado al obtener perfil por rol: {} - Error: {}", 
                      rol, e.getMessage(), e);
-            throw new RuntimeException("Error interno durante la consulta del perfil", e);
+            throw new PerfilOperacionException("Error interno durante la consulta del perfil", e);
         }
     }
 
@@ -91,7 +93,7 @@ public class PerfilFacadeImpl implements PerfilFacade {
      */
     private void validarRol(String rol) {
         if (rol == null || rol.trim().isEmpty()) {
-            throw new IllegalArgumentException("El rol no puede ser nulo o vacío");
+            throw new PerfilValidationException("El rol no puede ser nulo o vacío");
         }
     }
 }

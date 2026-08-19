@@ -10,6 +10,9 @@ import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.PerfilController;
 import com.hcc.tfm_hcc.facade.PerfilFacade;
 import com.hcc.tfm_hcc.model.Perfil;
+import com.hcc.tfm_hcc.exception.PerfilNotFoundException;
+import com.hcc.tfm_hcc.exception.PerfilOperacionException;
+import com.hcc.tfm_hcc.exception.PerfilValidationException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,13 +52,11 @@ public class PerfilControllerImpl implements PerfilController {
         log.info("Consultando perfil para rol: {}", rol);
         
         try {
-            // Validar parámetro de entrada
             if (rol == null || rol.trim().isEmpty()) {
                 log.warn("Intento de consulta con rol nulo o vacío");
-                return ResponseEntity.badRequest().build();
+                throw new PerfilValidationException("El rol es obligatorio");
             }
             
-            // Normalizar el rol a mayúsculas para consistencia
             String rolNormalizado = rol.trim().toUpperCase();
             log.debug("Rol normalizado: {}", rolNormalizado);
             
@@ -63,19 +64,22 @@ public class PerfilControllerImpl implements PerfilController {
             
             if (perfil == null) {
                 log.warn("No se encontró perfil para el rol: {}", rolNormalizado);
-                return ResponseEntity.notFound().build();
+                throw new PerfilNotFoundException(rolNormalizado);
             }
             
             log.info("Perfil encontrado exitosamente para rol: {}, ID: {}", rolNormalizado, perfil.getId());
             return ResponseEntity.ok(perfil);
             
-        } catch (IllegalArgumentException e) {
+        } catch (PerfilValidationException e) {
             log.warn("Parámetro inválido para consulta de perfil, rol: {}, error: {}", rol, e.getMessage());
             return ResponseEntity.badRequest().build();
+        } catch (PerfilNotFoundException _) {
+            log.warn("Perfil no encontrado para rol: {}", rol);
+            return ResponseEntity.notFound().build();
             
         } catch (Exception e) {
             log.error("Error interno al consultar perfil para rol: {}, error: {}", rol, e.getMessage(), e);
-            return ResponseEntity.internalServerError().build();
+            throw new PerfilOperacionException("Error interno al consultar perfil", e);
         }
     }
 }

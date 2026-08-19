@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
  * @version 1.0
  * @since 1.0
  */
+
+//TODO hay que moverlo de esta carpeta, no es un servicio, es un DTO de estadísticas de auditoría
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

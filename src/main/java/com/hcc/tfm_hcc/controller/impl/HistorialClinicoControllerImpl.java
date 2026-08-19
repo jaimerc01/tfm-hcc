@@ -11,7 +11,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,6 +30,9 @@ import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
 import com.hcc.tfm_hcc.constants.ErrorMessages;
+import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
+import com.hcc.tfm_hcc.exception.HistorialClinicoException;
+import com.hcc.tfm_hcc.exception.DatosClinicosValidationException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -85,21 +87,18 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * 
      * <p>Implementación que obtiene todos los archivos clínicos asociados
      * al usuario autenticado actualmente en la sesión.</p>
-     * 
-     * @return Lista de DTOs con metadatos de archivos del usuario actual
      */
     @Override
     @GetMapping(RestUrls.HISTORIA_ARCHIVOS)
-    public List<ArchivoClinicoDTO> listMine() {
-        log.debug("Solicitando lista de archivos clínicos para el usuario autenticado");
-        
+    public List<ArchivoClinicoDTO> listarArchivos() throws ArchivoClinicoException {
+        log.debug("Listando archivos clínicos del usuario autenticado");
         try {
-            List<ArchivoClinicoDTO> archivos = historialClinicoFacade.listMine();
+            List<ArchivoClinicoDTO> archivos = historialClinicoFacade.listarArchivos();
             log.info("Se obtuvieron {} archivos clínicos para el usuario", archivos.size());
             return archivos;
         } catch (Exception e) {
             log.error("Error al obtener archivos clínicos del usuario: {}", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new ArchivoClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -116,34 +115,27 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      *   <li>Generación de metadatos del archivo</li>
      *   <li>Almacenamiento en ubicación segura</li>
      * </ul>
-     * 
-     * @param file Archivo multipart con el contenido clínico a subir
-     * @return ResponseEntity con ArchivoClinicoDTO del archivo procesado
-     * @throws IOException si hay error en el procesamiento del archivo
      */
     @Override
     @PostMapping(path = RestUrls.HISTORIA_ARCHIVOS, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ArchivoClinicoDTO> upload(@RequestParam("file") MultipartFile file) throws IOException {
-        log.debug("Iniciando subida de archivo clínico: {}", 
-                 file != null ? file.getOriginalFilename() : "null");
+    public ResponseEntity<ArchivoClinicoDTO> subirArchivo(@RequestParam("file") MultipartFile file) 
+            throws IOException, ArchivoClinicoException, DatosClinicosValidationException {
+        log.debug("Iniciando subida de archivo clínico: {}", file != null ? file.getOriginalFilename() : "null");
         
         try {
             validarArchivoSubida(file);
-            
             ArchivoClinicoDTO dto = historialClinicoFacade.upload(file);
             log.info("Archivo clínico subido exitosamente con ID: {}", dto.getId());
-            
             return ResponseEntity.ok(dto);
-        } catch (IllegalArgumentException e) {
+        } catch (DatosClinicosValidationException e) {
             log.warn("Error de validación en subida de archivo: {}", e.getMessage());
             throw e;
         } catch (IOException e) {
-            log.error("Error de I/O al subir archivo {}: {}", 
-                     file != null ? file.getOriginalFilename() : "null", e.getMessage(), e);
-            throw e;
+            log.error("Error de I/O al subir archivo {}: {}", file != null ? file.getOriginalFilename() : "null", e.getMessage(), e);
+            throw new ArchivoClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         } catch (Exception e) {
             log.error("Error inesperado al subir archivo: {}", e.getMessage(), e);
-            throw new IOException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new ArchivoClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -166,35 +158,34 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @GetMapping(RestUrls.HISTORIA_ARCHIVO_ID)
-    public ResponseEntity<Resource> download(@PathVariable("id") UUID id) {
+    public ResponseEntity<Resource> descargarArchivo(@PathVariable("id") UUID id) throws ArchivoClinicoException, DatosClinicosValidationException {
         log.debug("Solicitando descarga de archivo clínico con ID: {}", id);
         
         try {
-            ArchivoClinicoDTO meta = historialClinicoFacade.getMine(id);
+            ArchivoClinicoDTO archivoClinico = historialClinicoFacade.getArchivoClinico(id);
             Resource resource = historialClinicoFacade.getMineResource(id);
             
-            String nombreArchivo = obtenerNombreArchivoSeguro(meta.getNombreOriginal());
+            String nombreArchivo = obtenerNombreArchivoSeguro(archivoClinico.getNombreOriginal());
             String contentDisposition = construirContentDisposition(nombreArchivo);
-            MediaType mediaType = determinarMediaType(meta.getContentType());
+            MediaType mediaType = determinarMediaType(archivoClinico.getContentType());
             
             log.info("Descargando archivo clínico: {} (ID: {})", nombreArchivo, id);
             
             if (mediaType == null) {
                 log.warn("Tipo de contenido no reconocido para el archivo: {}", nombreArchivo);
-                throw new IllegalArgumentException(ErrorMessages.ERROR_TIPO_CONTENIDO_NO_RECONOCIDO);
+                throw new DatosClinicosValidationException(ErrorMessages.ERROR_TIPO_CONTENIDO_NO_RECONOCIDO);
             }
             return ResponseEntity.ok()
                     .contentType(mediaType)
                     .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
                     .header("Access-Control-Expose-Headers", HttpHeaders.CONTENT_DISPOSITION)
                     .body(resource);
-                    
-        } catch (IllegalArgumentException e) {
+        } catch (DatosClinicosValidationException e) {
             log.warn("Archivo clínico no encontrado para descarga: ID {}", id);
             throw e;
         } catch (Exception e) {
             log.error("Error al descargar archivo clínico con ID {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new ArchivoClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -206,27 +197,27 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * el archivo físico del sistema de almacenamiento.</p>
      * 
      * @param id Identificador único del archivo clínico a eliminar
-     * @return ResponseEntity vacío confirmando la eliminación exitosa
+     * @return ResponseEntity con el ID del archivo eliminado
      * @throws IOException si hay error al eliminar el archivo físico
      */
     @Override
     @DeleteMapping(RestUrls.HISTORIA_ARCHIVO_ID)
-    public ResponseEntity<Void> delete(@PathVariable("id") UUID id) throws IOException {
+    public ResponseEntity<UUID> eliminarArchivo(@PathVariable("id") UUID id) throws IOException, DatosClinicosValidationException, ArchivoClinicoException {
         log.debug("Solicitando eliminación de archivo clínico con ID: {}", id);
         
         try {
-            historialClinicoFacade.delete(id);
+            historialClinicoFacade.borrarArchivoClinico(id);
             log.info("Archivo clínico eliminado exitosamente: ID {}", id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
+            return ResponseEntity.ok(id);
+        } catch (DatosClinicosValidationException e) {
             log.warn("Archivo clínico no encontrado para eliminación: ID {}", id);
             throw e;
         } catch (IOException e) {
             log.error("Error de I/O al eliminar archivo clínico con ID {}: {}", id, e.getMessage(), e);
-            throw e;
+            throw new ArchivoClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         } catch (Exception e) {
             log.error("Error inesperado al eliminar archivo clínico con ID {}: {}", id, e.getMessage(), e);
-            throw new IOException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new ArchivoClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -241,8 +232,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<HistorialClinicoDTO> getMiHistoria() {
+    public ResponseEntity<HistorialClinicoDTO> getMiHistoria() throws HistorialClinicoException {
         log.debug("Solicitando historial clínico del usuario autenticado");
         
         try {
@@ -256,7 +246,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
             log.error("Error al obtener historial clínico del usuario: {}", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -266,22 +256,21 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * <p>Implementación que actualiza la información de identificación
      * del paciente en su historial clínico.</p>
      * 
-     * @param identificacionJson Datos de identificación en formato JSON
+     * @param historialClinicoDTO Datos de identificación 
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
     @PutMapping(RestUrls.HISTORIA_IDENTIFICACION)
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody String identificacionJson) {
+    public ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody HistorialClinicoDTO historialClinicoDTO) throws HistorialClinicoException {
         log.debug("Actualizando información de identificación del usuario");
         
         try {
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarIdentificacion(identificacionJson);
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarIdentificacion(historialClinicoDTO);
             log.info("Información de identificación actualizada exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
             log.error("Error al actualizar información de identificación: {}", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -296,8 +285,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PutMapping(RestUrls.HISTORIA_ANTECEDENTES)
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<HistorialClinicoDTO> actualizarAntecedentes(@RequestBody String antecedentesFamiliares) {
+    public ResponseEntity<HistorialClinicoDTO> actualizarAntecedentes(@RequestBody String antecedentesFamiliares) throws HistorialClinicoException {
         log.debug("Actualizando antecedentes familiares del usuario");
         
         try {
@@ -307,7 +295,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
             log.error("Error al actualizar antecedentes familiares: {}", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -322,8 +310,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PutMapping(RestUrls.HISTORIA_ALERGIAS)
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<HistorialClinicoDTO> actualizarAlergias(@RequestBody String alergiasJson) {
+    public ResponseEntity<HistorialClinicoDTO> actualizarAlergias(@RequestBody String alergiasJson) throws HistorialClinicoException {
         log.debug("Actualizando información de alergias del usuario");
         
         try {
@@ -333,7 +320,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
             log.error("Error al actualizar información de alergias: {}", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -347,18 +334,17 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @PostMapping(RestUrls.HISTORIA_ALERGIAS)
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<HistorialClinicoDTO> añadirAlergias(@RequestBody String alergiasJson) {
+    public ResponseEntity<HistorialClinicoDTO> anadirAlergias(@RequestBody String alergiasJson) throws HistorialClinicoException {
         log.debug("Añadiendo nuevas alergias del usuario");
         
         try {
             String payload = procesarContenidoUrlEncoded(alergiasJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.añadirAlergias(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAlergias(payload);
             log.info("Alergias añadidas exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
             log.error("Error al añadir alergias: {}", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -373,8 +359,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PutMapping(RestUrls.HISTORIA_ANALISIS_SANGRE)
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody String analisisJson) {
+    public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody String analisisJson) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Actualizando análisis de sangre del usuario");
         
         try {
@@ -382,12 +367,12 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
             HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisSangre(payload);
             log.info("Análisis de sangre actualizados exitosamente");
             return ResponseEntity.ok(resultado);
-        } catch (IllegalArgumentException e) {
+        } catch (DatosClinicosValidationException e) {
             log.warn("Error de validación al actualizar análisis de sangre: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error al actualizar análisis de sangre: {}", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -401,21 +386,20 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @PostMapping(RestUrls.HISTORIA_ANALISIS_SANGRE)
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson) {
+    public ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Añadiendo nuevos análisis de sangre del usuario");
         
         try {
             String payload = procesarContenidoUrlEncoded(analisisJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.añadirAnalisisSangre(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAnalisisSangre(payload);
             log.info("Análisis de sangre añadidos exitosamente");
             return ResponseEntity.ok(resultado);
-        } catch (IllegalArgumentException e) {
+        } catch (DatosClinicosValidationException e) {
             log.warn("Error de validación al añadir análisis de sangre: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error al añadir análisis de sangre: {}", e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -426,24 +410,23 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * del usuario autenticado.</p>
      * 
      * @param id Identificador único del dato clínico a eliminar
-     * @return ResponseEntity vacío confirmando la eliminación
+     * @return ResponseEntity con el ID del dato clínico eliminado para confirmación
      */
     @Override
     @DeleteMapping(RestUrls.HISTORIA_DATOS_CLINICOS_ID)
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> borrarDatoClinico(@PathVariable("id") UUID id) {
+    public ResponseEntity<UUID> borrarDatoClinico(@PathVariable("id") UUID id) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Solicitando eliminación de dato clínico con ID: {}", id);
         
         try {
             historialClinicoFacade.borrarDatoClinico(id);
             log.info("Dato clínico eliminado exitosamente: ID {}", id);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
+            return ResponseEntity.ok(id);
+        } catch (DatosClinicosValidationException e) {
             log.warn("Dato clínico no encontrado para eliminación: ID {}", id);
             throw e;
         } catch (Exception e) {
             log.error("Error al eliminar dato clínico con ID {}: {}", id, e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -458,20 +441,19 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @DeleteMapping(RestUrls.HISTORIA_ANTECEDENTE_INDEX)
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("index") int index) {
+    public ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("index") int index) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Solicitando eliminación de antecedente en índice: {}", index);
         
         try {
             HistorialClinicoDTO resultado = historialClinicoFacade.borrarAntecedente(index);
             log.info("Antecedente eliminado exitosamente en índice: {}", index);
             return ResponseEntity.ok(resultado);
-        } catch (IllegalArgumentException e) {
+        } catch (DatosClinicosValidationException e) {
             log.warn("Error de validación al eliminar antecedente en índice {}: {}", index, e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error al eliminar antecedente en índice {}: {}", index, e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -487,8 +469,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PutMapping(RestUrls.HISTORIA_ANTECEDENTE_INDEX)
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("index") int index, @RequestBody String texto) {
+    public ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("index") int index, @RequestBody String texto) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Solicitando edición de antecedente en índice: {}", index);
         
         try {
@@ -496,12 +477,12 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
             HistorialClinicoDTO resultado = historialClinicoFacade.editarAntecedente(index, payload);
             log.info("Antecedente editado exitosamente en índice: {}", index);
             return ResponseEntity.ok(resultado);
-        } catch (IllegalArgumentException e) {
+        } catch (DatosClinicosValidationException e) {
             log.warn("Error de validación al editar antecedente en índice {}: {}", index, e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Error al editar antecedente en índice {}: {}", index, e.getMessage(), e);
-            throw new RuntimeException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
@@ -515,14 +496,14 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      * @param file Archivo a validar
      * @throws IllegalArgumentException si el archivo no es válido
      */
-    private void validarArchivoSubida(MultipartFile file) throws IllegalArgumentException {
+    private void validarArchivoSubida(MultipartFile file) throws DatosClinicosValidationException {
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("archivo"));
+            throw new DatosClinicosValidationException(ErrorMessages.campoRequerido("archivo"));
         }
         
         String nombreArchivo = file.getOriginalFilename();
         if (nombreArchivo == null || nombreArchivo.trim().isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.campoRequerido("nombre de archivo"));
+            throw new DatosClinicosValidationException(ErrorMessages.campoRequerido("nombre de archivo"));
         }
     }
 
@@ -564,7 +545,7 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
         if (contentType != null) {
             try {
                 mediaType = MediaType.parseMediaType(contentType);
-            } catch (Exception e) {
+            } catch (Exception _) {
                 log.warn("No se pudo parsear content-type: {}", contentType);
             }
         }

@@ -9,6 +9,9 @@ public final class RestUrls {
     public static final String AUTH_BASE = "/authentication";
     public static final String AUTH_LOGIN = "/login";
     public static final String AUTH_SIGNUP = "/signup";
+    public static final String AUTH_GOOGLE_LOGIN = "/google/login";
+    public static final String AUTH_GOOGLE_SIGNUP = "/google/signup";
+    public static final String OAUTH2_AUTHORIZATION_GOOGLE = "/oauth2/authorization/google";
 
     public static final String HISTORIA_BASE = "/historia";
     public static final String HISTORIA_ARCHIVOS = "/archivos";
@@ -25,7 +28,7 @@ public final class RestUrls {
     public static final String USUARIO_ME = "/me";
     public static final String USUARIO_PASSWORD = "/password";
     public static final String USUARIO_SOLICITUDES = "/solicitudes";
-    public static final String USUARIO_SOLICITUD_ID = "/solicitudes/{solicitudId}";
+    public static final String USUARIO_SOLICITUD_ID = "/solicitudes/{idSolicitud}";
     public static final String USUARIO_NOTIFICACIONES = "/notificaciones";
     public static final String USUARIO_NOTIFICACIONES_MARCAR_LEIDAS = "/notificaciones/marcar-leidas";
     public static final String USUARIO_NOTIFICACIONES_NO_LEIDAS = "/notificaciones/no-leidas";

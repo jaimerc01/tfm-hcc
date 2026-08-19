@@ -419,7 +419,7 @@ button:focus-visible, .btn:focus-visible {
   box-shadow: 0 0 0 2px var(--success-light);
 }
 
-.hint { color:var(--muted); font-size:.9rem; margin-top:.5rem }
+.hint { color:var(--primary-color); font-size:.9rem; margin-top:.5rem }
 .form-actions { margin-top:.5rem }
 
 /* Medical File List Styling */

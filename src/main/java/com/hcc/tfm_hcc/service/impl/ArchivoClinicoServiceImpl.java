@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,9 +22,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.model.ArchivoClinico;
+import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.ArchivoClinicoRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.AuditoriaCambioService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +61,7 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     private static final String FORWARD_SLASH = "/";
     private static final String BACKSLASH = "\\";
     private static final String ALLOWED_TYPES_SEPARATOR = ",";
+    private static final String ZONE_ID_EUROPA_MADRID = "Europe/Madrid";
 
     // Constantes de logging
     private static final String LOG_LISTANDO_ARCHIVOS = "Listando archivos del usuario: {}";
@@ -69,9 +73,13 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     private static final String LOG_ELIMINANDO_ARCHIVO = "Eliminando archivo ID: {} por usuario: {}";
     private static final String LOG_ARCHIVO_ELIMINADO = "Archivo eliminado exitosamente: {} por usuario: {}";
 
+    private static final String BORRADO_ARCHIVO_CLINICO = "BORRADO_ARCHIVO_CLINICO";
+    private static final String ARCHIVO_CLINICO = "archivo_clinico";
+
     // Dependencias inyectadas por constructor
     private final ArchivoClinicoRepository archivoClinicoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AuditoriaCambioService auditoriaCambioService;
 
     @Value("${app.uploads.base-dir:uploads}")
     private String baseDir;
@@ -79,6 +87,7 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     @Value("${app.uploads.max-size-bytes:10485760}") // 10 MB por defecto
     private long maxSizeBytes;
 
+    // TODO: ESTABLECER CONFIGURACIÓN DE TIPOS PERMITIDOS DESDE PROPERTIES
     @Value("${app.uploads.allowed-types:}") // vacío = sin restricción
     private String allowedTypes;
 
@@ -204,23 +213,17 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
      * Valida el tipo de contenido del archivo
      */
     private void validarTipoArchivo(String contentType) {
-        if (allowedTypes == null || allowedTypes.isBlank()) {
+        if (this.allowedTypes == null || this.allowedTypes.isBlank()) {
             return; // Sin restricciones
         }
 
-        String[] tiposPermitidos = allowedTypes.split(ALLOWED_TYPES_SEPARATOR);
+        String[] tiposPermitidos = this.allowedTypes.split(ALLOWED_TYPES_SEPARATOR);
         boolean tipoPermitido = false;
         
         for (String tipo : tiposPermitidos) {
             String tipoLimpio = tipo.trim();
-            if (tipoLimpio.isEmpty()) continue;
             
-            if (WILDCARD_CONTENT_TYPE.equals(tipoLimpio)) {
-                tipoPermitido = true;
-                break;
-            }
-            
-            if (contentType != null && esContentTypeCompatible(contentType, tipoLimpio)) {
+            if (WILDCARD_CONTENT_TYPE.equals(tipoLimpio) || (contentType != null && contentType.startsWith(tipoLimpio))) {
                 tipoPermitido = true;
                 break;
             }
@@ -229,14 +232,6 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
         if (!tipoPermitido) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_TIPO_NO_PERMITIDO);
         }
-    }
-
-    /**
-     * Verifica si el content type es compatible con el tipo permitido
-     */
-    private boolean esContentTypeCompatible(String contentType, String tipoPermitido) {
-        return contentType.equalsIgnoreCase(tipoPermitido) || 
-               contentType.toLowerCase().startsWith(tipoPermitido.toLowerCase().replace("*", ""));
     }
 
     /**
@@ -286,8 +281,8 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
         archivo.setContentType(file.getContentType());
         archivo.setSizeBytes(file.getSize());
         archivo.setRutaAlmacenada(rutaDestino.toString());
-        archivo.setFechaCreacion(LocalDateTime.now());
-        archivo.setFechaUltimaModificacion(LocalDateTime.now());
+        archivo.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
+        archivo.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
         
         return archivoClinicoRepository.save(archivo);
     }
@@ -358,7 +353,7 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
      */
     @Override
     @Transactional
-    public void deleteMine(UUID id) throws IOException {
+    public void borrarArchivo(UUID id) throws IOException {
         UUID userId = getCurrentUserId();
         log.debug(LOG_ELIMINANDO_ARCHIVO, id, userId);
         
@@ -380,6 +375,19 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
         
         // Luego eliminar el archivo físico si existe
         eliminarArchivoFisico(rutaArchivo);
+        
+        auditoriaCambioService.registrarCambio(
+            archivo.getUsuario().getId().toString(),
+            archivo.getUsuario().getId().toString(),
+            null,
+            BORRADO_ARCHIVO_CLINICO,
+            ARCHIVO_CLINICO,
+            archivo.getId().toString(),
+            null,
+            null,
+            AuditoriaCambio.TipoOperacion.DELETE,
+            "Eliminación de archivo clínico"
+        );
     }
 
     /**

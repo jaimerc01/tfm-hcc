@@ -1,5 +1,7 @@
 package com.hcc.tfm_hcc.service;
 
+import java.net.URI;
+
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.IncorrectCredentials;
@@ -23,4 +25,11 @@ public interface AutenticacionService {
      * @throws IncorrectCredentials si las credenciales son incorrectas o el usuario no existe
      */
     Usuario autenticar(LoginUsuarioDTO loginUsuarioDTO) throws IncorrectCredentials;
+
+    /**
+     * Obtiene la URI de inicio del flujo OAuth2 con Google.
+     *
+     * @return URI de autorización OAuth2 para Google
+     */
+    URI obtenerUriAutorizacionGoogle();
 }

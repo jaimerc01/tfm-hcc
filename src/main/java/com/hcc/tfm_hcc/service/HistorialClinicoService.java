@@ -37,11 +37,11 @@ public interface HistorialClinicoService {
     /**
      * Actualiza los datos de identificación del historial clínico.
      *
-     * @param identificacionJson los datos de identificación en formato JSON
+     * @param historialClinicoDTO los datos de identificación
      * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si el JSON es inválido
+     * @throws IllegalArgumentException si los datos son inválidos
      */
-    HistorialClinicoDTO actualizarIdentificacion(String identificacionJson);
+    HistorialClinicoDTO actualizarIdentificacion(HistorialClinicoDTO historialClinicoDTO);
     
     /**
      * Actualiza los antecedentes familiares del historial clínico.

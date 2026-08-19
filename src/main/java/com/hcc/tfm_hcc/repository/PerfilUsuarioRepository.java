@@ -1,15 +1,16 @@
 package com.hcc.tfm_hcc.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import com.hcc.tfm_hcc.model.Perfil;
 import com.hcc.tfm_hcc.model.PerfilUsuario;
+import com.hcc.tfm_hcc.model.Usuario;
 
 /**
  * Repositorio para la gestión de asociaciones entre usuarios y perfiles en el sistema HCC.
@@ -27,7 +28,6 @@ import com.hcc.tfm_hcc.model.PerfilUsuario;
  * @version 1.0
  * @since 1.0
  */
-@Repository
 public interface PerfilUsuarioRepository extends CrudRepository<PerfilUsuario, UUID> {
 
     /**
@@ -39,4 +39,33 @@ public interface PerfilUsuarioRepository extends CrudRepository<PerfilUsuario, U
      */
     @Query("SELECT p.perfil FROM PerfilUsuario p WHERE p.usuario.nif = :nif")
     List<Perfil> getPerfilesByNif(@Param("nif") String nif);
+
+    /**
+     * Busca la relación usuario-perfil para un usuario y rol concretos.
+     *
+     * @param usuarioId ID del usuario
+     * @param rol rol a consultar
+     * @return relación existente, si la hay
+     */
+    @Query("SELECT p FROM PerfilUsuario p WHERE p.usuario.id = :usuarioId AND UPPER(p.perfil.rol) = UPPER(:rol)")
+    Optional<PerfilUsuario> findByUsuarioIdAndPerfilRol(@Param("usuarioId") UUID usuarioId, @Param("rol") String rol);
+
+    /**
+     * Comprueba si un usuario tiene asignado un rol concreto.
+     *
+     * @param usuarioId ID del usuario
+     * @param rol rol a comprobar
+     * @return true si existe la relación
+     */
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END FROM PerfilUsuario p WHERE p.usuario.id = :usuarioId AND UPPER(p.perfil.rol) = UPPER(:rol)")
+    boolean existsByUsuarioIdAndPerfilRol(@Param("usuarioId") UUID usuarioId, @Param("rol") String rol);
+
+    /**
+     * Devuelve los usuarios que tienen asignado un rol concreto.
+     *
+     * @param rol rol a filtrar
+     * @return usuarios con ese rol
+     */
+    @Query("SELECT DISTINCT p.usuario FROM PerfilUsuario p WHERE UPPER(p.perfil.rol) = UPPER(:rol)")
+    List<Usuario> findUsuariosByPerfilRol(@Param("rol") String rol);
 }
