@@ -82,34 +82,58 @@ export default {
   top: 0.75rem;
   right: 1rem;
   z-index: 1200;
+
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.6rem;
-  border-radius: 999px;
-  background: var(--white-alpha-90);
+  gap: 0.15rem;
+
+  padding: 0.25rem;
+
+  background: var(--bg-light);
   border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
 }
 
 .language-switch__option {
   border: none;
+  border-radius: var(--radius-sm);
+
   background: transparent;
   color: var(--text-secondary);
+
   font-size: 0.85rem;
   font-weight: 600;
+
   cursor: pointer;
-  padding: 0;
+
+  padding: 0.4rem 0.65rem;
+
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.language-switch__option:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
 }
 
 .language-switch__option.is-active {
-  color: var(--primary-color);
-  text-decoration: underline;
+  background-color: var(--primary-color);
+  color: var(--on-primary);
+  box-shadow: var(--button-shadow);
+  text-decoration: none;
+}
+
+.language-switch__option:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .language-switch__separator {
-  color: var(--muted);
-  font-size: 0.8rem;
+  display: none;
 }
 
 @media (max-width: 640px) {

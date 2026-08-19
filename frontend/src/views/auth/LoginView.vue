@@ -48,6 +48,44 @@
           {{ isLoading ? $t('logging_in') : $t('login_button') }}
         </button>
 
+        <div class="google-login">
+          <div class="separator" aria-hidden="true">
+            <span>{{ $t('or') }}</span>
+          </div>
+
+          <button
+            type="button"
+            class="google-btn"
+            @click="handleGoogleLogin"
+            :aria-label="$t('login_with_google')"
+          >
+            <svg
+              class="google-icon"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                fill="currentColor"
+                d="M21.35 12.23c0-.79-.07-1.55-.23-2.27H12v4.3h5.23a4.47 4.47 0 0 1-1.94 2.93v2.39h3.14c1.84-1.69 2.92-4.18 2.92-7.35z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 21.99c2.63 0 4.84-.87 6.45-2.41l-3.14-2.39c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.3v2.46A9.74 9.74 0 0 0 12 21.99z"
+              />
+              <path
+                fill="currentColor"
+                d="M6.54 14.08A5.86 5.86 0 0 1 6.23 12c0-.72.12-1.42.31-2.08V7.46H3.3A9.99 9.99 0 0 0 2.01 12c0 1.63.39 3.17 1.29 4.54l3.24-2.46z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 5.89c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.83 2.92 14.63 2 12 2a9.74 9.74 0 0 0-8.7 5.46l3.24 2.46C6.31 7.61 8.46 5.89 12 5.89z"
+              />
+            </svg>
+
+            <span>{{ $t('login_with_google') }}</span>
+          </button>
+        </div>
+
         <p v-if="isLoading" class="sr-only" role="status" aria-live="polite">
           {{ $t('logging_in') }}
         </p>
@@ -78,6 +116,7 @@
   import { useI18n } from 'vue-i18n'
 
   import { useAuth } from '@/composables/useAuth'
+  import authService from '@/services/authService'
   import { validateNIF } from '@/utils/validateNIF'
 
   export default {
@@ -179,6 +218,25 @@
         }
       }
 
+      const handleGoogleLogin = async () => {
+        error.value = ''
+        isLoading.value = true
+
+        try {
+          const result = await authService.loginWithGoogle()
+          if (result?.redirect) {
+            return
+          }
+
+          router.push('/dashboard')
+        } catch (err) {
+          error.value = err?.message || t('login_error')
+          await focusFirstError()
+        } finally {
+          isLoading.value = false
+        }
+      }
+
       return {
         credentials,
         fieldErrors,
@@ -192,7 +250,8 @@
         validateNifField,
         validatePasswordField,
         buildDescribedBy,
-        handleLogin
+        handleLogin,
+        handleGoogleLogin
       }
     }
   }
@@ -243,7 +302,7 @@
   .input-help {
     margin: 0;
     font-size: 0.875rem;
-    color: var(--text-secondary);
+    color: var(--primary-color);
   }
 
   .field-error {
@@ -309,5 +368,78 @@
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
+  }
+  
+  .google-login {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .separator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    color: var(--primary-color);
+    font-size: 0.875rem;
+  }
+
+  .separator::before,
+  .separator::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: var(--border);
+  }
+
+  .separator span {
+    flex-shrink: 0;
+  }
+
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    padding: 0.75rem;
+
+    background-color: var(--bg-light);
+    color: var(--text-primary);
+
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-sm);
+
+    font-size: 1rem;
+    font-weight: 500;
+
+    cursor: pointer;
+
+    box-shadow: var(--button-shadow);
+
+    transition:
+      background-color var(--transition-fast),
+      box-shadow var(--transition-fast);
+  }
+
+  .google-btn:hover {
+    background-color: var(--neutral-50);
+    box-shadow: var(--button-shadow-hover);
+  }
+
+  .google-btn:active {
+    box-shadow: var(--button-shadow-active);
+  }
+
+  .google-btn:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
+  }
+
+  .google-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--tertiary-color);
   }
 </style>

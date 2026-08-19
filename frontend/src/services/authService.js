@@ -216,6 +216,70 @@ class AuthService {
     }
   }
   // Registro de nuevo usuario
+  async loginWithGoogle() {
+    try {
+      const response = await this.apiClient.post('/authentication/google/login', { provider: 'google' })
+      const token = response?.data?.token || response?.data?.accessToken || response?.data?.jwt
+
+      if (token) {
+        localStorage.setItem('authToken', token)
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1] || ''))
+          const exp = Number(payload.exp || 0)
+          if (exp > 0) {
+            localStorage.setItem('tokenExp', String(exp * 1000))
+          } else {
+            localStorage.setItem('tokenExp', String(Date.now() + 60 * 60 * 1000))
+          }
+        } catch (_) {
+          localStorage.setItem('tokenExp', String(Date.now() + 60 * 60 * 1000))
+        }
+      }
+
+      return response.data
+    } catch (error) {
+      if (error?.response?.status === 404 || error?.response?.status === 405) {
+        const redirectUrl = `${this.apiClient.defaults.baseURL}/oauth2/authorization/google`
+        window.location.assign(redirectUrl)
+        return { redirect: redirectUrl }
+      }
+
+      throw error
+    }
+  }
+
+  async registerWithGoogle() {
+    try {
+      const response = await this.apiClient.post('/authentication/google/signup', { provider: 'google' })
+      const token = response?.data?.token || response?.data?.accessToken || response?.data?.jwt
+
+      if (token) {
+        localStorage.setItem('authToken', token)
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1] || ''))
+          const exp = Number(payload.exp || 0)
+          if (exp > 0) {
+            localStorage.setItem('tokenExp', String(exp * 1000))
+          } else {
+            localStorage.setItem('tokenExp', String(Date.now() + 60 * 60 * 1000))
+          }
+        } catch (_) {
+          localStorage.setItem('tokenExp', String(Date.now() + 60 * 60 * 1000))
+        }
+      }
+
+      return response.data
+    } catch (error) {
+      if (error?.response?.status === 404 || error?.response?.status === 405) {
+        const redirectUrl = `${this.apiClient.defaults.baseURL}/oauth2/authorization/google`
+        window.location.assign(redirectUrl)
+        return { redirect: redirectUrl }
+      }
+
+      throw error
+    }
+  }
+
   async signup(user) {
     // Espera un objeto con los campos necesarios por backend (nombre, apellido1, apellido2?, email, password, fechaNacimiento, nif, telefono, especialidad)
     try {

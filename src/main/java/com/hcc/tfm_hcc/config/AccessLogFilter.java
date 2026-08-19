@@ -2,6 +2,7 @@ package com.hcc.tfm_hcc.config;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -29,6 +30,7 @@ public class AccessLogFilter implements Filter {
 
     private final AccessLogService accessLogService;
     private final UsuarioRepository usuarioRepository;
+    private static final String ZONE_ID = "Europe/Madrid";
 
     public AccessLogFilter(AccessLogService accessLogService, UsuarioRepository usuarioRepository) {
         this.accessLogService = accessLogService;
@@ -62,17 +64,19 @@ public class AccessLogFilter implements Filter {
             chain.doFilter(request, response);
         } finally {
             sw.stop();
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null 
-            && !(auth instanceof AnonymousAuthenticationToken)
-            && auth.getPrincipal() instanceof UserDetails userDetails) {
-        String nif = userDetails.getUsername();
-        usuario = usuarioRepository.findByNif(nif).isPresent() ? usuarioRepository.findByNif(nif).get().getId().toString() : null;
-        }
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null 
+                && !(auth instanceof AnonymousAuthenticationToken)
+                && auth.getPrincipal() instanceof UserDetails userDetails) {
+            String nif = userDetails.getUsername();
+                usuario = usuarioRepository.findByNif(nif)
+                    .map(u -> u.getId().toString())
+                    .orElse(null);
+            }
 
             try {
                 AccessLog log = new AccessLog();
-                log.setTimestamp(LocalDateTime.now());
+                log.setTimestamp(LocalDateTime.now(ZoneId.of(ZONE_ID)));
                 log.setUsuarioId(usuario);
                 log.setMetodo(httpReq.getMethod());
                 log.setRuta(httpReq.getRequestURI());
@@ -81,8 +85,8 @@ public class AccessLogFilter implements Filter {
                 log.setUserAgent(httpReq.getHeader("User-Agent"));
                 log.setDuracionMs(sw.getTotalTimeMillis());
                 accessLogService.log(log);
-            } catch (Exception e) {
-                // No propagar para no romper la petición; podrías usar un logger aquí
+            } catch (Exception _) {
+                // No propagar para no romper la petición
             }
         }
     }

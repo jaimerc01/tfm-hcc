@@ -3,6 +3,7 @@ package com.hcc.tfm_hcc.facade.impl;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 import com.hcc.tfm_hcc.dto.UserExportDTO;
@@ -70,7 +71,6 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * @throws RuntimeException Si ocurre un error durante la creación
      */
     @Override
-    // @PreAuthorize("hasRole('ROLE_ADMIN')")
     public UsuarioDTO altaUsuario(UsuarioDTO usuarioDTO) {
         log.debug("Iniciando alta de usuario: {}", 
                 usuarioDTO != null ? usuarioDTO.getNif() : "null");
@@ -101,6 +101,7 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * @throws RuntimeException Si no se puede obtener el usuario actual
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public String getNombreUsuario() {
         log.debug("Obteniendo nombre del usuario autenticado");
         
@@ -121,6 +122,7 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * @throws RuntimeException Si no se puede obtener el usuario actual
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public UsuarioDTO getUsuarioActual() {
         log.debug("Obteniendo datos del usuario autenticado");
         
@@ -144,6 +146,7 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * @throws RuntimeException Si ocurre un error durante el cambio
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public void changePassword(String currentPassword, String newPassword) {
         log.debug("Iniciando cambio de contraseña para usuario autenticado");
         
@@ -171,6 +174,7 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * @throws RuntimeException Si ocurre un error durante la actualización
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public UsuarioDTO updateUsuarioActual(UsuarioDTO parcial) {
         log.debug("Iniciando actualización de datos del usuario autenticado");
         
@@ -199,6 +203,7 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * @throws RuntimeException Si ocurre un error durante la eliminación
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public void deleteCuentaActual() {
         log.debug("Iniciando eliminación de cuenta del usuario autenticado");
         
@@ -226,6 +231,7 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * @throws RuntimeException Si ocurre un error durante la consulta
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public List<UserExportDTO.AccesoDTO> getMisLogs(LocalDateTime desde, LocalDateTime hasta) {
         log.debug("Obteniendo logs de acceso para usuario autenticado - Desde: {}, Hasta: {}", 
                 desde, hasta);
@@ -254,6 +260,7 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * @throws RuntimeException Si ocurre un error durante la exportación
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public UserExportDTO exportUsuario() {
         log.debug("Iniciando exportación de datos del usuario autenticado");
         
@@ -279,6 +286,7 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * @throws RuntimeException Si ocurre un error durante la consulta
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public List<SolicitudAsignacion> listarMisSolicitudes() {
         log.debug("Obteniendo solicitudes de asignación del usuario autenticado");
         
@@ -304,6 +312,7 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * @throws RuntimeException Si ocurre un error durante la actualización
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public SolicitudAsignacion actualizarEstadoSolicitud(String idSolicitud, String nuevoEstado) {
         log.debug("Actualizando estado de solicitud: {} -> {}", idSolicitud, nuevoEstado);
         

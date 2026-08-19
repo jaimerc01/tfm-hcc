@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,7 +33,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>Características de seguridad:</p>
  * <ul>
  *   <li>Todos los endpoints requieren rol ADMINISTRADOR</li>
- *   <li>Validación de autorización mediante @PreAuthorize</li>
+ *   <li>Validación de autorización delegada a la capa facade</li>
  *   <li>Logging detallado de operaciones administrativas</li>
  *   <li>Gestión centralizada de errores</li>
  * </ul>
@@ -56,7 +55,6 @@ public class AdminControllerImpl implements AdminController {
      * {@inheritDoc}
      */
     @Override
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @GetMapping(RestUrls.ADMIN_MEDICOS)
     public ResponseEntity<List<UsuarioDTO>> listarMedicos() {
         log.info("Listando todos los médicos del sistema");
@@ -74,7 +72,6 @@ public class AdminControllerImpl implements AdminController {
      * {@inheritDoc}
      */
     @Override
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @GetMapping(RestUrls.ADMIN_USUARIOS_BY_NIF)
     public ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(@RequestParam("nif") String nif) {
         log.info("Buscando usuario por NIF: {}", nif);
@@ -105,7 +102,6 @@ public class AdminControllerImpl implements AdminController {
      * {@inheritDoc}
      */
     @Override
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PostMapping(RestUrls.ADMIN_MEDICOS)
     public ResponseEntity<UsuarioDTO> crearMedico(@RequestBody UsuarioDTO medicoDTO) {
         try {
@@ -136,7 +132,6 @@ public class AdminControllerImpl implements AdminController {
      * {@inheritDoc}
      */
     @Override
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PutMapping(RestUrls.ADMIN_MEDICO_ID)
     public ResponseEntity<UsuarioDTO> actualizarMedico(@PathVariable("id") UUID id, @RequestBody UsuarioDTO medicoDTO) {
         try {
@@ -167,7 +162,6 @@ public class AdminControllerImpl implements AdminController {
      * {@inheritDoc}
      */
     @Override
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @DeleteMapping(RestUrls.ADMIN_MEDICO_ID)
     public ResponseEntity<UUID> eliminarMedico(@PathVariable("id") UUID id) {
         try {
@@ -193,7 +187,6 @@ public class AdminControllerImpl implements AdminController {
      * {@inheritDoc}
      */
     @Override
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PutMapping(RestUrls.ADMIN_MEDICO_PERFIL)
     public ResponseEntity<UUID> setPerfilMedico(@PathVariable("id") UUID id, @RequestParam("asignar") boolean asignar) {
         try {

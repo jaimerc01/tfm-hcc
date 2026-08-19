@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>Características de seguridad:</p>
  * <ul>
  *   <li>Todos los endpoints requieren rol MEDICO</li>
- *   <li>Validación de autorización mediante @PreAuthorize</li>
+ *   <li>Validación de autorización delegada a la capa facade</li>
  *   <li>Logging detallado de operaciones médicas</li>
  *   <li>Gestión centralizada de errores específicos</li>
  * </ul>
@@ -54,7 +53,6 @@ public class MedicoControllerImpl implements MedicoController {
      * {@inheritDoc}
      */
     @Override
-    @PreAuthorize("hasRole('MEDICO')")
     @GetMapping(RestUrls.MEDICO_PACIENTES_BUSCAR)
     public ResponseEntity<PacienteDTO> buscarPaciente(@RequestParam("dni") String dni, 
                                                       @RequestParam("fechaNacimiento") String fechaNacimiento) {
@@ -83,7 +81,6 @@ public class MedicoControllerImpl implements MedicoController {
      * {@inheritDoc}
      */
     @Override
-    @PreAuthorize("hasRole('MEDICO')")
     @PostMapping(RestUrls.MEDICO_SOLICITUDES_ASIGNACION)
     public ResponseEntity<SolicitudAsignacion> crearSolicitudAsignacion(@RequestParam("nifPaciente") String nifPaciente) {
         log.info("Creando solicitud de asignación para paciente NIF: {}", nifPaciente);
@@ -115,7 +112,6 @@ public class MedicoControllerImpl implements MedicoController {
      * {@inheritDoc}
      */
     @Override
-    @PreAuthorize("hasRole('MEDICO')")
     @GetMapping(RestUrls.MEDICO_SOLICITUDES_PENDIENTES)
     public ResponseEntity<List<SolicitudAsignacion>> listarSolicitudesPendientes() {
         log.info("Listando solicitudes pendientes para médico autenticado");
@@ -135,7 +131,6 @@ public class MedicoControllerImpl implements MedicoController {
      * {@inheritDoc}
      */
     @Override
-    @PreAuthorize("hasRole('MEDICO')")
     @GetMapping(RestUrls.MEDICO_SOLICITUDES_ENVIADAS)
     public ResponseEntity<List<SolicitudAsignacion>> listarSolicitudesEnviadas() {
         log.info("Listando solicitudes enviadas para médico autenticado");

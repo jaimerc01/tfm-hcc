@@ -1,10 +1,13 @@
 package com.hcc.tfm_hcc.service.impl;
 
+import java.net.URI;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
+import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.converter.UsuarioConverter;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
@@ -124,6 +127,14 @@ public class AutenticacionServiceImpl implements AutenticacionService {
         } catch (Exception _) {
             throw new IncorrectCredentials(ErrorMessages.ERROR_CREDENCIALES_INVALIDAS);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public URI obtenerUriAutorizacionGoogle() {
+        return URI.create(RestUrls.OAUTH2_AUTHORIZATION_GOOGLE);
     }
 
 }

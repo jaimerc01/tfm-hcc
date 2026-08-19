@@ -345,5 +345,8 @@
   "confirm_password_required": "Debes confirmar o contrasinal.",
   "passwords_no_match": "Os contrasinais non coinciden.",
   "antecedentes_counter": "{words} palabras · {chars}/{limit} caracteres",
-  "antecedentes_remaining": "({remaining} restantes)"
+  "antecedentes_remaining": "({remaining} restantes)",
+  "or": "o",
+  "login_with_google": "Iniciar sesión con Google",
+  "register_with_google": "Rexistrarse con Google"
 }

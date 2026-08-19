@@ -52,4 +52,22 @@ public interface AutenticacionController {
      * @throws SecurityException si la autenticación falla
      */
     ResponseEntity<LoginResponse> autenticar(LoginUsuarioDTO loginUsuarioDTO) throws InvalidLoginDataException, SecurityException;
+
+    /**
+     * Inicia el flujo de autenticación con Google para usuarios existentes.
+     * La petición redirige al proveedor OAuth configurado para completar la autenticación
+     * y devolver la respuesta normal del sistema cuando la sesión quede establecida.
+     *
+     * @return ResponseEntity vacío con redirección al flujo OAuth de Google
+     */
+    ResponseEntity<Void> iniciarLoginGoogle();
+
+    /**
+     * Inicia el flujo de registro con Google para nuevos usuarios.
+     * El flujo delega en el proveedor OAuth y, tras la autenticación, se procesará la
+     * creación o asociación del usuario dentro de la aplicación.
+     *
+     * @return ResponseEntity vacío con redirección al flujo OAuth de Google
+     */
+    ResponseEntity<Void> iniciarRegistroGoogle();
 }

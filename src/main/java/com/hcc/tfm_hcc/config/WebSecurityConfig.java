@@ -3,10 +3,13 @@ package com.hcc.tfm_hcc.config;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.model.PerfilUsuario;
+import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
 import com.hcc.tfm_hcc.service.JwtService;
 import com.hcc.tfm_hcc.service.AccessLogService;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -19,7 +22,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -30,24 +32,30 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
+import lombok.RequiredArgsConstructor;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class WebSecurityConfig {
 
     
-    private UsuarioRepository usuarioRepository;
-    private PerfilUsuarioRepository perfilUsuarioRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final PerfilUsuarioRepository perfilUsuarioRepository;
 
     @Value("${security.enforce-https:false}")
     private boolean enforceHttps;
 
+    @Value("${spring.security.oauth2.client.registration.google.client-id:}")
+    private String googleClientId;
+
     @Bean
     public UserDetailsService userDetailsService() {
         return nif -> {
-            Usuario usuario = usuarioRepository.findByNif(nif)
+            Usuario usuario = findUsuarioByNifLegacyAware(nif)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-            var perfiles = perfilUsuarioRepository.getPerfilesByNif(nif);
+            var perfiles = findPerfilesByUsuarioLegacyAware(usuario);
             var authorities = perfiles.stream()
                 .map(p -> new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + p.getRol()))
                 .toList();
@@ -56,9 +64,47 @@ public class WebSecurityConfig {
         };
     }
 
+    private Optional<Usuario> findUsuarioByNifLegacyAware(String nif) {
+        Optional<Usuario> usuarioDirecto = usuarioRepository.findByNif(nif);
+        if (usuarioDirecto.isPresent()) {
+            return usuarioDirecto;
+        }
+
+        for (Usuario usuario : usuarioRepository.findAll()) {
+            if (usuario != null && nif != null && nif.equals(usuario.getNif())) {
+                return Optional.of(usuario);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private List<com.hcc.tfm_hcc.model.Perfil> findPerfilesByUsuarioLegacyAware(Usuario usuario) {
+        if (usuario == null || usuario.getId() == null) {
+            return List.of();
+        }
+
+        List<com.hcc.tfm_hcc.model.Perfil> perfiles = perfilUsuarioRepository.getPerfilesByNif(usuario.getNif());
+        if (!perfiles.isEmpty()) {
+            return perfiles;
+        }
+
+        List<com.hcc.tfm_hcc.model.Perfil> perfilesRespaldo = new java.util.ArrayList<>();
+        for (PerfilUsuario perfilUsuario : perfilUsuarioRepository.findAll()) {
+            if (perfilUsuario != null
+                && perfilUsuario.getUsuario() != null
+                && usuario.getId().equals(perfilUsuario.getUsuario().getId())
+                && perfilUsuario.getPerfil() != null) {
+                perfilesRespaldo.add(perfilUsuario.getPerfil());
+            }
+        }
+
+        return perfilesRespaldo;
+    }
+
     @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+    public PasswordEncoder passwordEncoder(AESEncryptionConverter encryptionConverter) {
+        return new LegacyAwarePasswordEncoder(encryptionConverter);
     }
 
     @Bean
@@ -82,10 +128,19 @@ public class WebSecurityConfig {
             .authorizeHttpRequests(requests -> requests
                 .requestMatchers("/authentication/login").permitAll()
                 .requestMatchers("/authentication/signup").permitAll()
+                .requestMatchers("/authentication/google/login").permitAll()
+                .requestMatchers("/authentication/google/signup").permitAll()
+                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/medico/**").hasRole("MEDICO")
                 .anyRequest().authenticated()
-            )
+            );
+
+        if (googleClientId != null && !googleClientId.isBlank()) {
+            http.oauth2Login(oauth2 -> oauth2.defaultSuccessUrl("/", true));
+        }
+
+        http
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             // Registrar el filtro de logging después de que la autenticación JWT se haya procesado
             .addFilterAfter(accessLogFilter, UsernamePasswordAuthenticationFilter.class)

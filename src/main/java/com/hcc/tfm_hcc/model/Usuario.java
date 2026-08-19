@@ -78,11 +78,9 @@ public class Usuario extends BaseEntity implements UserDetails {
     private String email;
 
     /**
-     * Contraseña encriptada del usuario.
-     * Se almacena con hash y encriptación adicional.
+     * Contraseña del usuario almacenada únicamente como hash BCrypt.
      */
     @Column(name = "password", nullable = false)
-    @Convert(converter = AESEncryptionConverter.class)
     private String password;
 
     /**

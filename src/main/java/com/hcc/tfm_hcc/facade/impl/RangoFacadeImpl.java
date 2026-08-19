@@ -8,6 +8,7 @@ import com.hcc.tfm_hcc.converter.RangoConverter;
 import com.hcc.tfm_hcc.service.RangoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class RangoFacadeImpl implements RangoFacade {
     private final RangoConverter rangoConverter;
 
     @Override
+    @PreAuthorize("isAuthenticated()")
     public List<RangoDTO> obtenerTodosLosRangos() {
         log.info("Solicitando todos los rangos de referencia");
         try {

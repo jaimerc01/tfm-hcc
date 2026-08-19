@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>Características de seguridad:</p>
  * <ul>
  *   <li>Todos los endpoints requieren autenticación</li>
- *   <li>Validación de autorización mediante @PreAuthorize</li>
+ *   <li>Validación de autorización delegada a la capa facade</li>
  *   <li>Logging detallado de operaciones de usuario</li>
  *   <li>Gestión centralizada de errores</li>
  * </ul>
@@ -68,7 +67,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      */
     @Override
     @GetMapping(RestUrls.USUARIO_NOMBRE)
-    @PreAuthorize("isAuthenticated()")
     public String getNombreUsuario() {
         log.debug("Consultando nombre de usuario autenticado");
         return usuarioFacade.getNombreUsuario();
@@ -79,7 +77,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      */
     @Override
     @GetMapping(RestUrls.USUARIO_ME)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioDTO> getUsuarioActual() {
         log.info("Consultando datos del usuario autenticado");
         
@@ -109,7 +106,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      */
     @Override
     @PutMapping(RestUrls.USUARIO_PASSWORD)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest changePassworRequest) {
         log.info("Solicitud de cambio de contraseña para usuario autenticado");
         
@@ -142,7 +138,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      */
     @Override
     @GetMapping(RestUrls.USUARIO_SOLICITUDES)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<SolicitudAsignacion>> listarMisSolicitudes() {
         log.info("Listando solicitudes para usuario autenticado");
         
@@ -168,7 +163,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      */
     @Override
     @PutMapping(RestUrls.USUARIO_SOLICITUD_ID)
-    @PreAuthorize("isAuthenticated()")
     // TODO: CORREGIR ESE REQUESTBODY Y HACER UN DTO
     public ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("idSolicitud") String idSolicitud, 
                                                                           @RequestBody Map<String, String> body) {
@@ -211,7 +205,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      */
     @Override
     @GetMapping(RestUrls.USUARIO_NOTIFICACIONES)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, NotificacionDTO>> listarMisNotificaciones(@RequestParam("page") int page,
                                                                         @RequestParam("size") int size) {
         log.info("Listando notificaciones para usuario autenticado - página: {}, tamaño: {}", page, size);
@@ -238,7 +231,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      */
     @Override
     @PostMapping(RestUrls.USUARIO_NOTIFICACIONES_MARCAR_LEIDAS)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<String> marcarTodasNotificacionesLeidas() {
         log.info("Marcando todas las notificaciones como leídas");
         
@@ -269,7 +261,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @return ResponseEntity con el UsuarioDTO actualizado
      */
     @PutMapping(RestUrls.USUARIO_ME)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioDTO> updateUsuarioActual(@Valid @RequestBody UpdateUsuarioRequest req) {
         log.info("Actualizando datos del usuario autenticado");
         
@@ -318,7 +309,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @return ResponseEntity vacío confirmando la eliminación
      */
     @DeleteMapping(RestUrls.USUARIO_ME)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteCuenta() {
         log.info("Eliminando cuenta del usuario autenticado");
         
@@ -348,7 +338,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @return ResponseEntity con la lista de logs de acceso
      */
     @GetMapping(RestUrls.USUARIO_LOGS)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Object> misLogs(@RequestParam(required = false) String desde, 
                                           @RequestParam(required = false) String hasta) {
         log.info("Consultando logs de acceso para usuario autenticado");
@@ -385,7 +374,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @return ResponseEntity con el conteo de notificaciones no leídas
      */
     @GetMapping(RestUrls.USUARIO_NOTIFICACIONES_NO_LEIDAS)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Object>> contarNotificacionesNoLeidas() {
         log.debug("Contando notificaciones no leídas");
         
@@ -411,7 +399,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @return ResponseEntity confirmando la operación
      */
     @PutMapping(RestUrls.USUARIO_NOTIFICACION_LEIDA)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> marcarNotificacionLeida(@PathVariable("id") String id) {
         log.info("Marcando notificación como leída: {}", id);
         
@@ -438,7 +425,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @return ResponseEntity confirmando la eliminación
      */
     @DeleteMapping(RestUrls.USUARIO_NOTIFICACION_ID)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> eliminarNotificacion(@PathVariable("id") String id) {
         log.info("Eliminando notificación: {}", id);
         
@@ -465,7 +451,6 @@ public class UsuarioControllerImpl implements UsuarioController {
      * @return ResponseEntity con los datos exportados del usuario
      */
     @GetMapping(RestUrls.USUARIO_EXPORT)
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Object> exportUsuario() {
         log.info("Exportando datos del usuario autenticado");
         

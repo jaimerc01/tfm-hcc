@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
@@ -66,6 +67,7 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      * {@inheritDoc}
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public List<NotificacionDTO> listarNotificacionesUsuarioActual() {
         log.debug("Obteniendo todas las notificaciones del usuario autenticado");
         
@@ -111,6 +113,7 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      * {@inheritDoc}
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public Map<String, NotificacionDTO> listarNotificacionesUsuarioActual(int page, int size) {
         log.debug("Obteniendo notificaciones paginadas del usuario autenticado - Página: {}, Tamaño: {}", 
                 page, size);
@@ -144,6 +147,7 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      * {@inheritDoc}
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public List<NotificacionDTO> marcarTodasComoLeidasUsuarioActual() {
         log.debug("Marcando todas las notificaciones como leídas para usuario autenticado");
         
@@ -163,6 +167,7 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      * {@inheritDoc}
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public NotificacionDTO marcarNotificacionComoLeida(String id) {
         log.debug("Marcando notificación como leída: {}", id);
         
@@ -196,6 +201,7 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      * {@inheritDoc}
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public NotificacionDTO eliminarNotificacionUsuarioActual(String id) {
         log.debug("Eliminando notificación del usuario autenticado: {}", id);
         
@@ -229,6 +235,7 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      * {@inheritDoc}
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public long contarNoLeidasUsuarioActual() {
         log.debug("Contando notificaciones no leídas del usuario autenticado");
         

@@ -9,6 +9,9 @@ public final class RestUrls {
     public static final String AUTH_BASE = "/authentication";
     public static final String AUTH_LOGIN = "/login";
     public static final String AUTH_SIGNUP = "/signup";
+    public static final String AUTH_GOOGLE_LOGIN = "/google/login";
+    public static final String AUTH_GOOGLE_SIGNUP = "/google/signup";
+    public static final String OAUTH2_AUTHORIZATION_GOOGLE = "/oauth2/authorization/google";
 
     public static final String HISTORIA_BASE = "/historia";
     public static final String HISTORIA_ARCHIVOS = "/archivos";

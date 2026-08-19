@@ -3,6 +3,7 @@ package com.hcc.tfm_hcc.service.impl;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.lang.NonNull;
@@ -78,8 +79,118 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (nif == null) {
             throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
         }
-        return usuarioRepository.findByNif(nif)
+        return findUsuarioByNifLegacyAware(nif)
                 .orElseThrow(() -> new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
+    }
+
+    /**
+     * Busca un usuario por NIF sin depender de una única representación en la base.
+     */
+    private Optional<Usuario> findUsuarioByNifLegacyAware(String nif) {
+        if (nif == null || nif.isBlank()) {
+            return Optional.empty();
+        }
+
+        Optional<Usuario> usuarioDirecto = usuarioRepository.findByNif(nif);
+        if (usuarioDirecto.isPresent()) {
+            return usuarioDirecto;
+        }
+
+        for (Usuario usuario : usuarioRepository.findAll()) {
+            if (usuario != null && nif.equals(usuario.getNif())) {
+                return Optional.of(usuario);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Busca un usuario por email sin depender de una única representación en la base.
+     */
+    private Optional<Usuario> findUsuarioByEmailLegacyAware(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+
+        Optional<Usuario> usuarioDirecto = usuarioRepository.findByEmail(email);
+        if (usuarioDirecto.isPresent()) {
+            return usuarioDirecto;
+        }
+
+        for (Usuario usuario : usuarioRepository.findAll()) {
+            if (usuario != null && email.equals(usuario.getEmail())) {
+                return Optional.of(usuario);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Comprueba si existe un usuario con el mismo NIF.
+     */
+    private boolean existsUsuarioWithNif(String nif, UUID excludeId) {
+        if (nif == null || nif.isBlank()) {
+            return false;
+        }
+
+        if (excludeId == null) {
+            return findUsuarioByNifLegacyAware(nif).isPresent();
+        }
+
+        if (usuarioRepository.existsByNifAndIdNot(nif, excludeId)) {
+            return true;
+        }
+
+        for (Usuario usuario : usuarioRepository.findAll()) {
+            if (usuario == null) {
+                continue;
+            }
+
+            if (excludeId != null && excludeId.equals(usuario.getId())) {
+                continue;
+            }
+
+            if (nif.equals(usuario.getNif())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Comprueba si existe un usuario con el mismo email.
+     */
+    private boolean existsUsuarioWithEmail(String email, UUID excludeId) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+
+        if (excludeId == null) {
+            return findUsuarioByEmailLegacyAware(email).isPresent();
+        }
+
+        if (usuarioRepository.existsByEmailAndIdNot(email, excludeId)) {
+            return true;
+        }
+
+        for (Usuario usuario : usuarioRepository.findAll()) {
+            if (usuario == null) {
+                continue;
+            }
+
+            if (excludeId != null && excludeId.equals(usuario.getId())) {
+                continue;
+            }
+
+            if (email.equals(usuario.getEmail())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -148,6 +259,14 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional
     public Usuario altaUsuario(UsuarioDTO usuarioDTO) {
         validarUsuarioDTO(usuarioDTO);
+
+        if (findUsuarioByNifLegacyAware(usuarioDTO.getNif()).isPresent()) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_DNI_YA_EXISTE);
+        }
+
+        if (findUsuarioByEmailLegacyAware(usuarioDTO.getEmail()).isPresent()) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_EMAIL_YA_EXISTE);
+        }
         
         // Codificar password
         usuarioDTO.setPassword(passwordEncoder.encode(usuarioDTO.getPassword()));
@@ -246,7 +365,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * Valida que el email no esté en uso por otro usuario
      */
     private void validarEmailUnico(String email, UUID usuarioId) {
-        if (usuarioRepository.existsByEmailAndIdNot(email, usuarioId)) {
+        if (existsUsuarioWithEmail(email, usuarioId)) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_EMAIL_YA_EXISTE);
         }
     }
@@ -255,7 +374,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * Valida que el NIF no esté en uso por otro usuario
      */
     private void validarNifUnico(String nif, UUID usuarioId) {
-        if (usuarioRepository.existsByNifAndIdNot(nif, usuarioId)) {
+        if (existsUsuarioWithNif(nif, usuarioId)) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_DNI_YA_EXISTE);
         }
     }

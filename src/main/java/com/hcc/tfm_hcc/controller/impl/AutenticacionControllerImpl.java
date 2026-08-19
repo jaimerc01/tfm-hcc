@@ -99,6 +99,26 @@ public class AutenticacionControllerImpl implements AutenticacionController {
     }
 
     /**
+     * {@inheritDoc}
+     */
+    @Override
+    @PostMapping(RestUrls.AUTH_GOOGLE_LOGIN)
+    public ResponseEntity<Void> iniciarLoginGoogle() {
+        log.info("Iniciando flujo OAuth de Google para login");
+        return autenticacionFacade.iniciarLoginGoogle();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @PostMapping(RestUrls.AUTH_GOOGLE_SIGNUP)
+    public ResponseEntity<Void> iniciarRegistroGoogle() {
+        log.info("Iniciando flujo OAuth de Google para registro");
+        return autenticacionFacade.iniciarRegistroGoogle();
+    }
+
+    /**
      * Valida los datos de login proporcionados.
      * Verifica que los campos obligatorios estén presentes y no sean vacíos.
      * 

@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
@@ -84,6 +85,7 @@ public class AdminFacadeImpl implements AdminFacade {
      * @return ResponseEntity con lista de UsuarioDTO de todos los médicos del sistema
      */
     @Override
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<UsuarioDTO>> listarMedicos() {
         log.debug("Solicitando lista completa de médicos del sistema");
         
@@ -107,6 +109,7 @@ public class AdminFacadeImpl implements AdminFacade {
      * @return ResponseEntity con el UsuarioDTO del médico creado exitosamente
      */
     @Override
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioDTO> crearMedico(UsuarioDTO medicoDTO) {
         log.debug("Creando nuevo médico en el sistema");
         
@@ -136,6 +139,7 @@ public class AdminFacadeImpl implements AdminFacade {
      * @return ResponseEntity con el UsuarioDTO actualizado del médico
      */
     @Override
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioDTO> actualizarMedico(UUID id, UsuarioDTO medicoDTO) {
         log.debug("Actualizando datos de médico con ID: {}", id);
         
@@ -165,6 +169,7 @@ public class AdminFacadeImpl implements AdminFacade {
      * @return ResponseEntity con el ID del médico eliminado para confirmación
      */
     @Override
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UUID> eliminarMedico(UUID id) {
         log.debug("Solicitando eliminación de médico con ID: {}", id);
         
@@ -194,6 +199,7 @@ public class AdminFacadeImpl implements AdminFacade {
      * @return ResponseEntity con el ID del usuario afectado para confirmación
      */
     @Override
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UUID> setPerfilMedico(UUID id, boolean asignar) {
         log.debug("Modificando perfil médico para usuario ID: {} - Asignar: {}", id, asignar);
         
@@ -223,6 +229,7 @@ public class AdminFacadeImpl implements AdminFacade {
      * @return ResponseEntity con el UsuarioDTO del usuario encontrado
      */
     @Override
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(String nif) {
         log.debug("Buscando usuario por NIF: {}", nif);
         

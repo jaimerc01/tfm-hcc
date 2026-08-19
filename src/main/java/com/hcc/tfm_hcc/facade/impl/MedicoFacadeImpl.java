@@ -2,6 +2,7 @@ package com.hcc.tfm_hcc.facade.impl;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.dto.PacienteDTO;
@@ -67,6 +68,7 @@ public class MedicoFacadeImpl implements MedicoFacade {
      * @throws RuntimeException Si ocurre un error durante la búsqueda
      */
     @Override
+    @PreAuthorize("hasRole('MEDICO')")
     public PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento) {
         log.debug("Buscando paciente por DNI: {} y fecha de nacimiento: {}", dni, fechaNacimiento);
         
@@ -101,6 +103,7 @@ public class MedicoFacadeImpl implements MedicoFacade {
      * @throws RuntimeException Si ocurre un error durante la creación
      */
     @Override
+    @PreAuthorize("hasRole('MEDICO')")
     public SolicitudAsignacion crearSolicitudAsignacion(String nifPaciente) {
         log.debug("Creando solicitud de asignación para paciente: {}", nifPaciente);
         
@@ -130,6 +133,7 @@ public class MedicoFacadeImpl implements MedicoFacade {
      * @throws RuntimeException Si ocurre un error durante la consulta
      */
     @Override
+    @PreAuthorize("hasRole('MEDICO')")
     public List<SolicitudAsignacion> listarSolicitudesPendientes() {
         log.debug("Obteniendo solicitudes de asignación pendientes");
         
@@ -152,6 +156,7 @@ public class MedicoFacadeImpl implements MedicoFacade {
      * @throws RuntimeException Si ocurre un error durante la consulta
      */
     @Override
+    @PreAuthorize("hasRole('MEDICO')")
     public List<SolicitudAsignacion> listarSolicitudesEnviadas() {
         log.debug("Obteniendo solicitudes de asignación enviadas por el médico actual");
         
