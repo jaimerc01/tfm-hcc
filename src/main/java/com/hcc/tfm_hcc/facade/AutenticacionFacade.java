@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.exception.GoogleAuthenticationException;
 import com.hcc.tfm_hcc.exception.IncorrectCredentials;
 import com.hcc.tfm_hcc.model.LoginResponse;
 
@@ -54,9 +55,23 @@ public interface AutenticacionFacade {
     ResponseEntity<Void> iniciarLoginGoogle();
 
     /**
-     * Inicia el flujo OAuth2 para registro con Google.
+     * Completa el login con Google una vez Spring Security ha validado la identidad del usuario
+     * ante Google: busca la cuenta existente asociada al email y emite un código de un solo uso
+     * que envuelve su token JWT.
      *
-     * @return ResponseEntity de redirección al proveedor Google
+     * @param email email verificado por Google
+     * @param emailVerificado indica si Google ha verificado ese email
+     * @return código de un solo uso a entregar al frontend
+     * @throws GoogleAuthenticationException si no existe una cuenta asociada o el email no está verificado
      */
-    ResponseEntity<Void> iniciarRegistroGoogle();
+    String procesarLoginGoogle(String email, boolean emailVerificado) throws GoogleAuthenticationException;
+
+    /**
+     * Canjea el código de un solo uso emitido tras un login con Google por el token JWT real.
+     *
+     * @param code código recibido del frontend
+     * @return ResponseEntity con el LoginResponse (token JWT y expiración)
+     * @throws GoogleAuthenticationException si el código no es válido, ya se usó o ha caducado
+     */
+    ResponseEntity<LoginResponse> canjearCodigoGoogle(String code) throws GoogleAuthenticationException;
 }

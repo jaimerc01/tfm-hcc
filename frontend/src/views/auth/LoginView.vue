@@ -111,18 +111,26 @@
 </template>
 
 <script>
-  import { ref, nextTick } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { ref, nextTick, onMounted } from 'vue'
+  import { useRouter, useRoute } from 'vue-router'
   import { useI18n } from 'vue-i18n'
 
   import { useAuth } from '@/composables/useAuth'
   import authService from '@/services/authService'
   import { validateNIF } from '@/utils/validateNIF'
 
+  const GOOGLE_ERROR_KEYS = {
+    google_account_not_found: 'google_account_not_found_error',
+    google_email_not_verified: 'google_login_error',
+    google_code_invalid: 'google_login_error',
+    google_auth_failed: 'google_login_error'
+  }
+
   export default {
     name: 'LoginView',
     setup() {
       const router = useRouter()
+      const route = useRoute()
       const { t } = useI18n()
       const { login } = useAuth()
 
@@ -218,24 +226,21 @@
         }
       }
 
-      const handleGoogleLogin = async () => {
+      const handleGoogleLogin = () => {
         error.value = ''
-        isLoading.value = true
-
-        try {
-          const result = await authService.loginWithGoogle()
-          if (result?.redirect) {
-            return
-          }
-
-          router.push('/dashboard')
-        } catch (err) {
-          error.value = err?.message || t('login_error')
-          await focusFirstError()
-        } finally {
-          isLoading.value = false
-        }
+        // Navegación completa: el navegador sale de la SPA hacia el backend y, desde ahí,
+        // hacia Google. La vuelta la gestiona GoogleCallbackView.
+        authService.redirectToGoogleLogin()
       }
+
+      onMounted(async () => {
+        const googleError = route.query.error
+        if (googleError) {
+          error.value = t(GOOGLE_ERROR_KEYS[googleError] || 'google_login_error')
+          router.replace({ name: 'Login' })
+          await focusFirstError()
+        }
+      })
 
       return {
         credentials,

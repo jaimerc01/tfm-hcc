@@ -27,6 +27,21 @@ public final class ErrorMessages {
     public static final String ERROR_PERMISOS_INSUFICIENTES = "Permisos insuficientes";
 
     // =====================================================
+    // MENSAJES DE ERROR - LOGIN CON GOOGLE
+    // =====================================================
+
+    public static final String ERROR_GOOGLE_CUENTA_NO_ENCONTRADA = "No existe ninguna cuenta asociada a este email de Google. Regístrate primero.";
+    public static final String ERROR_GOOGLE_EMAIL_NO_VERIFICADO = "El email de la cuenta de Google no está verificado.";
+    public static final String ERROR_GOOGLE_CODIGO_INVALIDO = "El código de autenticación de Google no es válido o ha caducado.";
+    public static final String ERROR_GOOGLE_AUTENTICACION_FALLIDA = "No se pudo completar la autenticación con Google.";
+
+    // Códigos cortos aptos para URL, usados en la redirección de vuelta al frontend (?error=...)
+    public static final String GOOGLE_ERROR_CODE_ACCOUNT_NOT_FOUND = "google_account_not_found";
+    public static final String GOOGLE_ERROR_CODE_EMAIL_NOT_VERIFIED = "google_email_not_verified";
+    public static final String GOOGLE_ERROR_CODE_INVALID_CODE = "google_code_invalid";
+    public static final String GOOGLE_ERROR_CODE_AUTH_FAILED = "google_auth_failed";
+
+    // =====================================================
     // MENSAJES DE ERROR - GESTIÓN DE ARCHIVOS
     // =====================================================
     

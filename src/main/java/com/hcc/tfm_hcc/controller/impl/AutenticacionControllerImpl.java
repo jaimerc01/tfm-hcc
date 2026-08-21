@@ -3,6 +3,7 @@ package com.hcc.tfm_hcc.controller.impl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,10 +12,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.AutenticacionController;
+import com.hcc.tfm_hcc.dto.GoogleCodeRequestDTO;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.facade.AutenticacionFacade;
 import com.hcc.tfm_hcc.model.LoginResponse;
+import com.hcc.tfm_hcc.exception.GoogleAuthenticationException;
 import com.hcc.tfm_hcc.exception.InvalidLoginDataException;
 import com.hcc.tfm_hcc.exception.InvalidRegistrationDataException;
 
@@ -102,7 +105,7 @@ public class AutenticacionControllerImpl implements AutenticacionController {
      * {@inheritDoc}
      */
     @Override
-    @PostMapping(RestUrls.AUTH_GOOGLE_LOGIN)
+    @GetMapping(RestUrls.AUTH_GOOGLE_LOGIN)
     public ResponseEntity<Void> iniciarLoginGoogle() {
         log.info("Iniciando flujo OAuth de Google para login");
         return autenticacionFacade.iniciarLoginGoogle();
@@ -112,10 +115,20 @@ public class AutenticacionControllerImpl implements AutenticacionController {
      * {@inheritDoc}
      */
     @Override
-    @PostMapping(RestUrls.AUTH_GOOGLE_SIGNUP)
-    public ResponseEntity<Void> iniciarRegistroGoogle() {
-        log.info("Iniciando flujo OAuth de Google para registro");
-        return autenticacionFacade.iniciarRegistroGoogle();
+    @PostMapping(RestUrls.AUTH_GOOGLE_TOKEN)
+    public ResponseEntity<LoginResponse> intercambiarCodigoGoogle(@RequestBody GoogleCodeRequestDTO request) {
+        String code = request != null ? request.getCode() : null;
+
+        if (code == null || code.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            return autenticacionFacade.canjearCodigoGoogle(code);
+        } catch (GoogleAuthenticationException e) {
+            log.warn("Canje de código de login con Google rechazado: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 
     /**

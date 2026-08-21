@@ -2,8 +2,10 @@ package com.hcc.tfm_hcc.controller;
 
 import org.springframework.http.ResponseEntity;
 
+import com.hcc.tfm_hcc.dto.GoogleCodeRequestDTO;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.exception.GoogleAuthenticationException;
 import com.hcc.tfm_hcc.exception.InvalidLoginDataException;
 import com.hcc.tfm_hcc.exception.InvalidRegistrationDataException;
 import com.hcc.tfm_hcc.model.LoginResponse;
@@ -55,19 +57,21 @@ public interface AutenticacionController {
 
     /**
      * Inicia el flujo de autenticación con Google para usuarios existentes.
-     * La petición redirige al proveedor OAuth configurado para completar la autenticación
-     * y devolver la respuesta normal del sistema cuando la sesión quede establecida.
+     * Pensado para navegación completa del navegador (no XHR/fetch): redirige al proveedor
+     * OAuth configurado para completar la autenticación. Google solo permite iniciar sesión
+     * en cuentas ya registradas por el formulario tradicional; no crea cuentas nuevas.
      *
      * @return ResponseEntity vacío con redirección al flujo OAuth de Google
      */
     ResponseEntity<Void> iniciarLoginGoogle();
 
     /**
-     * Inicia el flujo de registro con Google para nuevos usuarios.
-     * El flujo delega en el proveedor OAuth y, tras la autenticación, se procesará la
-     * creación o asociación del usuario dentro de la aplicación.
+     * Canjea el código de un solo uso recibido tras completar el login con Google
+     * por el token JWT real de la aplicación.
      *
-     * @return ResponseEntity vacío con redirección al flujo OAuth de Google
+     * @param request cuerpo con el código de un solo uso
+     * @return ResponseEntity con el LoginResponse (token JWT y expiración)
+     * @throws GoogleAuthenticationException si el código no es válido, ya se usó o ha caducado
      */
-    ResponseEntity<Void> iniciarRegistroGoogle();
+    ResponseEntity<LoginResponse> intercambiarCodigoGoogle(GoogleCodeRequestDTO request) throws GoogleAuthenticationException;
 }

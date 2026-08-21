@@ -91,3 +91,5 @@ scripts/*
 .github/copilot-instructions.md
 .github/agents
 .claude/skills/tfm-hcc-conventions/SKILL.md
+.claude/skills/tfm-hcc-frontend/SKILL.md
+.claude/skills/tfm-hcc-backend/SKILL.md

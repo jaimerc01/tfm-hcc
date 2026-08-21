@@ -31,12 +31,16 @@ server:
 security:
   jwt:
     secret-key: ${JWT_SECRET}
-    expiration-time: 3600000 # 1 hour in milliseconds 
+    expiration-time: 3600000 # 1 hour in milliseconds
   enforce-https: false # Cambiar a true en producción para redirigir HTTP->HTTPS
   tfm:
     hcc:
       encryption:
         key: ${TFM_HCC_ENCRYPTION_KEY} # Clave para cifrado de datos sensibles (NIF, teléfono)
+
+app:
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:8080} # Origen del SPA, usado para las redirecciones del login con Google
 
 ---
 spring:

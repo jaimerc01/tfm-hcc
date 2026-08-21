@@ -264,47 +264,6 @@
           </div>
         </form>
 
-        <div class="google-register">
-          <div class="separator" aria-hidden="true">
-            <span>{{ $t('or') }}</span>
-          </div>
-
-          <button
-            type="button"
-            class="btn-google"
-            @click="handleGoogleSignup"
-            :disabled="loading"
-            :aria-disabled="loading ? 'true' : 'false'"
-            :aria-label="$t('register_with_google')"
-          >
-            <svg
-              class="google-icon"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                fill="currentColor"
-                d="M21.35 12.23c0-.79-.07-1.55-.23-2.27H12v4.3h5.23a4.47 4.47 0 0 1-1.94 2.93v2.39h3.14c1.84-1.69 2.92-4.18 2.92-7.35z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 21.99c2.63 0 4.84-.87 6.45-2.41l-3.14-2.39c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.3v2.46A9.74 9.74 0 0 0 12 21.99z"
-              />
-              <path
-                fill="currentColor"
-                d="M6.54 14.08A5.86 5.86 0 0 1 6.23 12c0-.72.12-1.42.31-2.08V7.46H3.3A9.99 9.99 0 0 0 2.01 12c0 1.63.39 3.17 1.29 4.54l3.24-2.46z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.89c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.83 2.92 14.63 2 12 2a9.74 9.74 0 0 0-8.7 5.46l3.24 2.46C6.31 7.61 8.46 5.89 12 5.89z"
-              />
-            </svg>
-
-            <span>{{ $t('register_with_google') }}</span>
-          </button>
-        </div>
-
         <footer class="register-footer">
           <p>
             <svg class="info-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
@@ -522,28 +481,6 @@ export default {
       }
     }
 
-    const handleGoogleSignup = async () => {
-      error.value = ''
-      success.value = false
-      loading.value = true
-
-      try {
-        const result = await authService.registerWithGoogle()
-
-        if (result?.redirect) {
-          return
-        }
-
-        success.value = true
-        setTimeout(() => router.push({ name: 'Login' }), 1200)
-      } catch (e) {
-        error.value = e.message || t('register_error')
-        await focusFirstError()
-      } finally {
-        loading.value = false
-      }
-    }
-
     const goLogin = () => router.push({ name: 'Login' })
 
     return {
@@ -571,8 +508,7 @@ export default {
       validateEmailField,
       validatePasswordField,
       validatePassword2Field,
-      buildDescribedBy,
-      handleGoogleSignup
+      buildDescribedBy
     }
   }
 }
@@ -909,92 +845,4 @@ export default {
   }
 }
 
-  .google-register {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-md);
-  }
-
-  .separator {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-  }
-
-  .separator::before,
-  .separator::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background-color: var(--border);
-  }
-
-  .separator span {
-    flex-shrink: 0;
-  }
-
-  .btn-google {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-sm);
-
-    width: auto;
-    min-width: 240px;
-    padding: 0.875rem 1.5rem;
-
-    margin: 0 auto var(--spacing-lg);
-
-    background: var(--bg-light);
-    color: var(--text-primary);
-
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-lg);
-
-    font-size: 0.875rem;
-    font-weight: 600;
-
-    cursor: pointer;
-
-    box-shadow: var(--button-shadow);
-
-    transition:
-      background-color var(--transition-fast),
-      border-color var(--transition-fast),
-      box-shadow var(--transition-fast),
-      transform var(--transition-fast);
-  }
-
-  .btn-google:hover:not(:disabled) {
-    background: var(--neutral-50);
-    border-color: var(--primary-color);
-    box-shadow: var(--button-shadow-hover);
-    transform: translateY(-1px);
-  }
-
-  .btn-google:active:not(:disabled) {
-    box-shadow: var(--button-shadow-active);
-    transform: translateY(0);
-  }
-
-  .btn-google:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .btn-google:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--focus-outline-offset);
-  }
-
-  .google-icon {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    color: var(--tertiary-color);
-  }
 </style>

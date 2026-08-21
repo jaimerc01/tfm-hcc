@@ -348,5 +348,7 @@
   "antecedentes_remaining": "({remaining} restantes)",
   "or": "o",
   "login_with_google": "Iniciar sesión con Google",
-  "register_with_google": "Registrarse con Google"
+  "completing_google_login": "Completando el inicio de sesión con Google...",
+  "google_login_error": "No se pudo completar el inicio de sesión con Google. Inténtalo de nuevo.",
+  "google_account_not_found_error": "No existe ninguna cuenta asociada a este email de Google. Regístrate primero."
 }

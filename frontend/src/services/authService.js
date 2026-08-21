@@ -215,68 +215,43 @@ class AuthService {
       try { localStorage.removeItem('roles') } catch (_) { /* ignore */ }
     }
   }
-  // Registro de nuevo usuario
-  async loginWithGoogle() {
-    try {
-      const response = await this.apiClient.post('/authentication/google/login', { provider: 'google' })
-      const token = response?.data?.token || response?.data?.accessToken || response?.data?.jwt
-
-      if (token) {
-        localStorage.setItem('authToken', token)
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1] || ''))
-          const exp = Number(payload.exp || 0)
-          if (exp > 0) {
-            localStorage.setItem('tokenExp', String(exp * 1000))
-          } else {
-            localStorage.setItem('tokenExp', String(Date.now() + 60 * 60 * 1000))
-          }
-        } catch (_) {
-          localStorage.setItem('tokenExp', String(Date.now() + 60 * 60 * 1000))
-        }
-      }
-
-      return response.data
-    } catch (error) {
-      if (error?.response?.status === 404 || error?.response?.status === 405) {
-        const redirectUrl = `${this.apiClient.defaults.baseURL}/oauth2/authorization/google`
-        window.location.assign(redirectUrl)
-        return { redirect: redirectUrl }
-      }
-
-      throw error
-    }
+  // Login con Google: solo para cuentas ya registradas por el formulario tradicional.
+  redirectToGoogleLogin() {
+    window.location.assign(`${API_BASE_URL}/authentication/google/login`)
   }
 
-  async registerWithGoogle() {
+  async exchangeGoogleCode(code) {
     try {
-      const response = await this.apiClient.post('/authentication/google/signup', { provider: 'google' })
-      const token = response?.data?.token || response?.data?.accessToken || response?.data?.jwt
+      const response = await this.apiClient.post('/authentication/google/token', { code })
+      const { token, expirationTime } = (response && response.data) ? response.data : {}
+      if (!token) {
+        throw new Error(tService('auth_generic_retry'))
+      }
 
-      if (token) {
-        localStorage.setItem('authToken', token)
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1] || ''))
-          const exp = Number(payload.exp || 0)
-          if (exp > 0) {
-            localStorage.setItem('tokenExp', String(exp * 1000))
-          } else {
-            localStorage.setItem('tokenExp', String(Date.now() + 60 * 60 * 1000))
-          }
-        } catch (_) {
-          localStorage.setItem('tokenExp', String(Date.now() + 60 * 60 * 1000))
+      localStorage.setItem('authToken', token)
+      try { this._storeRolesFromToken(token) } catch (_) { /* ignore */ }
+
+      try {
+        const payload = token.split('.')[1]
+        const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+        const jwtExpSec = decoded?.exp
+        if (jwtExpSec && Number.isFinite(jwtExpSec)) {
+          localStorage.setItem('tokenExp', String(jwtExpSec * 1000))
+        } else if (typeof expirationTime === 'number' && Number.isFinite(expirationTime)) {
+          localStorage.setItem('tokenExp', String(Date.now() + Number(expirationTime)))
+        }
+      } catch (_) {
+        if (typeof expirationTime === 'number' && Number.isFinite(expirationTime)) {
+          localStorage.setItem('tokenExp', String(Date.now() + Number(expirationTime)))
         }
       }
 
-      return response.data
+      return { token, expirationTime }
     } catch (error) {
-      if (error?.response?.status === 404 || error?.response?.status === 405) {
-        const redirectUrl = `${this.apiClient.defaults.baseURL}/oauth2/authorization/google`
-        window.location.assign(redirectUrl)
-        return { redirect: redirectUrl }
+      if (error?.response?.status === 401) {
+        throw new Error(tService('google_login_error'))
       }
-
-      throw error
+      throw new Error(error.response?.data?.message || tService('auth_generic_retry'))
     }
   }
 

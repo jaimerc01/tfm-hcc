@@ -170,15 +170,29 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
      */
     @Override
     public ResponseEntity<Void> iniciarLoginGoogle() {
-        return iniciarFlujoGoogle("login");
+        log.debug("Iniciando flujo Google OAuth para login");
+        URI uriAutorizacionGoogle = autenticacionService.obtenerUriAutorizacionGoogle();
+        return construirRedireccionOauth(uriAutorizacionGoogle);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public ResponseEntity<Void> iniciarRegistroGoogle() {
-        return iniciarFlujoGoogle("registro");
+    public String procesarLoginGoogle(String email, boolean emailVerificado) {
+        Usuario usuario = autenticacionService.autenticarConGoogle(email, emailVerificado);
+        String jwtToken = generarTokenConAuthorities(usuario);
+        log.info("Login con Google completado para NIF: {}", usuario.getNif());
+        return autenticacionService.generarCodigoLoginGoogle(jwtToken, jwtService.getExpirationTime());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResponseEntity<LoginResponse> canjearCodigoGoogle(String code) {
+        LoginResponse loginResponse = autenticacionService.canjearCodigoLoginGoogle(code);
+        return ResponseEntity.ok(loginResponse);
     }
 
     // ===============================
@@ -248,18 +262,6 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
         HttpHeaders headers = new HttpHeaders();
         headers.setLocation(uriRedireccion);
         return ResponseEntity.status(HttpStatus.FOUND).headers(headers).build();
-    }
-
-    /**
-     * Orquesta el inicio de autenticación federada para una operación concreta.
-     *
-     * @param operacion contexto funcional de la operación (login/registro)
-     * @return Respuesta HTTP con redirección al proveedor OAuth
-     */
-    private ResponseEntity<Void> iniciarFlujoGoogle(String operacion) {
-        log.debug("Iniciando flujo Google OAuth para operación: {}", operacion);
-        URI uriAutorizacionGoogle = autenticacionService.obtenerUriAutorizacionGoogle();
-        return construirRedireccionOauth(uriAutorizacionGoogle);
     }
 
     /**
