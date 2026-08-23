@@ -99,7 +99,7 @@ public final class ErrorMessages {
     public static final String ERROR_JSON_MAL_FORMADO = "JSON mal formado";
     public static final String ERROR_CAMPO_JSON_FALTANTE = "Campo requerido faltante en JSON";
     public static final String ERROR_TIPO_JSON_INCORRECTO = "Tipo de dato incorrecto en JSON";
-    public static final String ERROR_ANALISIS_JSON_ARRAY_ESPERADO = "Se esperaba un array JSON para análisis de sangre";
+    public static final String ERROR_ANALISIS_JSON_ARRAY_ESPERADO = "Se esperaba un array JSON para los datos clínicos";
     public static final String ERROR_ANALISIS_VALUE_REQUERIDO = "Cada entrada debe incluir 'value'";
     public static final String ERROR_VALOR_NUMERICO_INVALIDO = "Valor numérico inválido";
 

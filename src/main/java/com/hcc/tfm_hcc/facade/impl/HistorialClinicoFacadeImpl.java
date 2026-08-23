@@ -424,6 +424,122 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
         }
     }
 
+    /**
+     * Actualiza los signos vitales en el historial clínico.
+     *
+     * @param signosVitalesJson JSON con los datos de signos vitales
+     * @return HistorialClinicoDTO El historial clínico actualizado
+     * @throws DatosClinicosValidationException Si el JSON de signos vitales es inválido
+     * @throws HistorialClinicoException Si ocurre un error durante la actualización
+     */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public HistorialClinicoDTO actualizarSignosVitales(String signosVitalesJson) {
+        log.debug("Actualizando signos vitales en historial clínico");
+
+        try {
+            validarJson(signosVitalesJson, "signos vitales");
+
+            HistorialClinicoDTO resultado = historiaClinicaService.actualizarSignosVitales(signosVitalesJson);
+
+            log.info("Signos vitales actualizados exitosamente en historial clínico");
+            return resultado;
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al actualizar signos vitales: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al actualizar signos vitales: {}", e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la actualización de signos vitales", e);
+        }
+    }
+
+    /**
+     * Añade nuevos signos vitales sin eliminar los existentes.
+     *
+     * @param signosVitalesJson JSON con los nuevos datos de signos vitales
+     * @return HistorialClinicoDTO El historial clínico actualizado
+     * @throws DatosClinicosValidationException Si los datos de signos vitales son inválidos
+     * @throws HistorialClinicoException Si ocurre un error durante la operación
+     */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public HistorialClinicoDTO anadirSignosVitales(String signosVitalesJson) {
+        log.debug("Añadiendo nuevos signos vitales en historial clínico");
+
+        try {
+            validarJson(signosVitalesJson, "signos vitales");
+
+            HistorialClinicoDTO resultado = historiaClinicaService.añadirSignosVitales(signosVitalesJson);
+
+            log.info("Signos vitales añadidos exitosamente en historial clínico");
+            return resultado;
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al añadir signos vitales: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al añadir signos vitales: {}", e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la adición de signos vitales", e);
+        }
+    }
+
+    /**
+     * Actualiza el análisis de orina en el historial clínico.
+     *
+     * @param analisisOrinaJson JSON con los datos de análisis de orina
+     * @return HistorialClinicoDTO El historial clínico actualizado
+     * @throws DatosClinicosValidationException Si el JSON de análisis de orina es inválido
+     * @throws HistorialClinicoException Si ocurre un error durante la actualización
+     */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public HistorialClinicoDTO actualizarAnalisisOrina(String analisisOrinaJson) {
+        log.debug("Actualizando análisis de orina en historial clínico");
+
+        try {
+            validarJson(analisisOrinaJson, "análisis de orina");
+
+            HistorialClinicoDTO resultado = historiaClinicaService.actualizarAnalisisOrina(analisisOrinaJson);
+
+            log.info("Análisis de orina actualizado exitosamente en historial clínico");
+            return resultado;
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al actualizar análisis de orina: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al actualizar análisis de orina: {}", e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la actualización de análisis de orina", e);
+        }
+    }
+
+    /**
+     * Añade nuevos datos de análisis de orina sin eliminar los existentes.
+     *
+     * @param analisisOrinaJson JSON con los nuevos datos de análisis de orina
+     * @return HistorialClinicoDTO El historial clínico actualizado
+     * @throws DatosClinicosValidationException Si los datos de análisis de orina son inválidos
+     * @throws HistorialClinicoException Si ocurre un error durante la operación
+     */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public HistorialClinicoDTO anadirAnalisisOrina(String analisisOrinaJson) {
+        log.debug("Añadiendo nuevos datos de análisis de orina en historial clínico");
+
+        try {
+            validarJson(analisisOrinaJson, "análisis de orina");
+
+            HistorialClinicoDTO resultado = historiaClinicaService.añadirAnalisisOrina(analisisOrinaJson);
+
+            log.info("Análisis de orina añadido exitosamente en historial clínico");
+            return resultado;
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al añadir análisis de orina: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al añadir análisis de orina: {}", e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la adición de análisis de orina", e);
+        }
+    }
+
     // ===============================
     // MÉTODOS DE GESTIÓN DE DATOS
     // ===============================

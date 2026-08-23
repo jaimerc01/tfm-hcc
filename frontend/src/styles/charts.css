@@ -140,3 +140,36 @@
   gap: 1.5rem;
   margin-top: 1.5rem;
 }
+
+/* Leyendas de gráficos combinados (circular, dos líneas) */
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 1.5rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.chart-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chart-legend-label {
+  font-weight: 600;
+}
+
+.chart-legend-value {
+  color: var(--text-secondary);
+}

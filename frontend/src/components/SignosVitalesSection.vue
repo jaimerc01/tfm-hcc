@@ -1,6 +1,6 @@
 <template>
-  <section class="analisis-section" :aria-busy="saving ? 'true' : 'false'" aria-labelledby="analisis-heading">
-    <h2 id="analisis-heading" class="sr-only">{{ $t('analysis') }}</h2>
+  <section class="analisis-section" :aria-busy="saving ? 'true' : 'false'" aria-labelledby="signos-vitales-heading">
+    <h2 id="signos-vitales-heading" class="sr-only">{{ $t('vital_signs') }}</h2>
     <div class="info-box">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <circle cx="12" cy="12" r="10"></circle>
@@ -8,20 +8,20 @@
         <path d="M12 8h.01"></path>
       </svg>
       <span>
-        <strong>{{ $t('register_blood_analysis') }}</strong> {{ $t('track_health') }}
+        <strong>{{ $t('register_vital_signs') }}</strong> {{ $t('track_health') }}
         {{ $t('select_param_value_date') }}
       </span>
     </div>
 
     <DatoClinicoChart :entries="entries" :analytes="analytes" :combos="chartCombos" />
 
-    <DatoClinicoForm ref="addForm" :analytes="analytes" :saving="saving" :domain-label="$t('domain_blood_analysis')" @submit="handleFormSubmit" />
+    <DatoClinicoForm ref="addForm" :analytes="analytes" :saving="saving" :domain-label="$t('domain_vital_signs')" @submit="handleFormSubmit" />
 
     <DatoClinicoResultsTable
       :entries="entries"
       :analytes="analytes"
       :saving="saving"
-      :domain-label="$t('domain_blood_analysis')"
+      :domain-label="$t('domain_vital_signs')"
       @delete-entry="removeEntry"
       @clear-all="clearAll"
     />
@@ -113,18 +113,18 @@ import AppModal from './Modal.vue'
 import DatoClinicoChart from './DatoClinicoChart.vue'
 import DatoClinicoForm from './DatoClinicoForm.vue'
 import DatoClinicoResultsTable from './DatoClinicoResultsTable.vue'
-import { useAnalisisSangre } from '@/composables/useAnalisisSangre'
+import { useSignosVitales } from '@/composables/useSignosVitales'
 
-const ANALYSIS_UI = Object.freeze({
+const SIGNOS_VITALES_UI = Object.freeze({
   MESSAGE_CLEAR_MS: 3000,
   TOAST_MS: 2000
 })
 
 export default {
-  name: 'AnalisisSangreSection',
+  name: 'SignosVitalesSection',
   components: { AppModal, DatoClinicoChart, DatoClinicoForm, DatoClinicoResultsTable },
   setup() {
-    const { analytes, entries, saving, load, loadRangos, addEntry, deleteEntryById, clearAllEntries } = useAnalisisSangre()
+    const { analytes, entries, saving, load, loadRangos, addEntry, deleteEntryById, clearAllEntries } = useSignosVitales()
     return { analytes, entries, saving, load, loadRangos, addEntry, deleteEntryById, clearAllEntries }
   },
   data() {
@@ -141,7 +141,7 @@ export default {
   computed: {
     chartCombos() {
       return [
-        { id: 'combo-colesterol-ldl-hdl', labelKey: 'combo_cholesterol_ldl_hdl', type: 'pie', analyteKeys: ['Colesterol LDL', 'Colesterol HDL'] }
+        { id: 'combo-presion-arterial', labelKey: 'combo_blood_pressure', type: 'dual-line', analyteKeys: ['Presion Arterial Sistolica', 'Presion Arterial Diastolica'] }
       ]
     }
   },
@@ -167,7 +167,7 @@ export default {
         this.$refs.addForm.resetFields()
         this.msg = this.$t('analysis_result_added')
         this.showTemporaryToast(this.$t('analysis_toast_saved'))
-        setTimeout(() => this.msg = '', ANALYSIS_UI.MESSAGE_CLEAR_MS)
+        setTimeout(() => this.msg = '', SIGNOS_VITALES_UI.MESSAGE_CLEAR_MS)
       } catch (e) {
         console.error(this.$t('analysis_error_saving'), e)
         this.error = this.$t('analysis_error_saving')
@@ -193,7 +193,7 @@ export default {
         this.closeDeleteModal()
         this.msg = this.$t('analysis_result_deleted')
         this.showTemporaryToast(this.$t('analysis_toast_deleted'))
-        setTimeout(() => this.msg = '', ANALYSIS_UI.MESSAGE_CLEAR_MS)
+        setTimeout(() => this.msg = '', SIGNOS_VITALES_UI.MESSAGE_CLEAR_MS)
       } catch (err) {
         console.error(this.$t('analysis_error_deleting'), err)
         this.error = this.$t('analysis_error_deleting')
@@ -215,7 +215,7 @@ export default {
         this.showClearAllModal = false
         this.msg = this.$t('analysis_results_deleted')
         this.showTemporaryToast(this.$t('analysis_toast_deleted'))
-        setTimeout(() => this.msg = '', ANALYSIS_UI.MESSAGE_CLEAR_MS)
+        setTimeout(() => this.msg = '', SIGNOS_VITALES_UI.MESSAGE_CLEAR_MS)
       } catch (e) {
         console.error(this.$t('analysis_error_clear_all'), e)
         this.error = `${this.$t('analysis_error_clear_all')}: ${e.message || this.$t('error')}`
@@ -226,7 +226,7 @@ export default {
     showTemporaryToast(message) {
       this.showToastMessage = message || this.$t('analysis_toast_saved')
       this.showToast = true
-      setTimeout(() => this.showToast = false, ANALYSIS_UI.TOAST_MS)
+      setTimeout(() => this.showToast = false, SIGNOS_VITALES_UI.TOAST_MS)
     }
   }
 }

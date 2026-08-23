@@ -405,7 +405,117 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
 
     /**
      * {@inheritDoc}
-     * 
+     *
+     * <p>Implementación que actualiza los signos vitales del paciente
+     * con procesamiento de datos JSON y validación de entrada.</p>
+     *
+     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @Override
+    @PutMapping(RestUrls.HISTORIA_SIGNOS_VITALES)
+    public ResponseEntity<HistorialClinicoDTO> actualizarSignosVitales(@RequestBody String signosVitalesJson) throws HistorialClinicoException, DatosClinicosValidationException {
+        log.debug("Actualizando signos vitales del usuario");
+
+        try {
+            String payload = procesarContenidoUrlEncoded(signosVitalesJson);
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarSignosVitales(payload);
+            log.info("Signos vitales actualizados exitosamente");
+            return ResponseEntity.ok(resultado);
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al actualizar signos vitales: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al actualizar signos vitales: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Implementación que añade nuevos signos vitales sin eliminar los existentes.</p>
+     *
+     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @Override
+    @PostMapping(RestUrls.HISTORIA_SIGNOS_VITALES)
+    public ResponseEntity<HistorialClinicoDTO> crearSignosVitales(@RequestBody String signosVitalesJson) throws HistorialClinicoException, DatosClinicosValidationException {
+        log.debug("Añadiendo nuevos signos vitales del usuario");
+
+        try {
+            String payload = procesarContenidoUrlEncoded(signosVitalesJson);
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirSignosVitales(payload);
+            log.info("Signos vitales añadidos exitosamente");
+            return ResponseEntity.ok(resultado);
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al añadir signos vitales: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al añadir signos vitales: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Implementación que actualiza el análisis de orina del paciente
+     * con procesamiento de datos JSON y validación de entrada.</p>
+     *
+     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @Override
+    @PutMapping(RestUrls.HISTORIA_ANALISIS_ORINA)
+    public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisOrina(@RequestBody String analisisOrinaJson) throws HistorialClinicoException, DatosClinicosValidationException {
+        log.debug("Actualizando análisis de orina del usuario");
+
+        try {
+            String payload = procesarContenidoUrlEncoded(analisisOrinaJson);
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisOrina(payload);
+            log.info("Análisis de orina actualizado exitosamente");
+            return ResponseEntity.ok(resultado);
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al actualizar análisis de orina: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al actualizar análisis de orina: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Implementación que añade nuevos datos de análisis de orina sin eliminar los existentes.</p>
+     *
+     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @Override
+    @PostMapping(RestUrls.HISTORIA_ANALISIS_ORINA)
+    public ResponseEntity<HistorialClinicoDTO> crearAnalisisOrina(@RequestBody String analisisOrinaJson) throws HistorialClinicoException, DatosClinicosValidationException {
+        log.debug("Añadiendo nuevos datos de análisis de orina del usuario");
+
+        try {
+            String payload = procesarContenidoUrlEncoded(analisisOrinaJson);
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAnalisisOrina(payload);
+            log.info("Análisis de orina añadido exitosamente");
+            return ResponseEntity.ok(resultado);
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al añadir análisis de orina: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al añadir análisis de orina: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * <p>Implementación que elimina un dato clínico específico del historial
      * del usuario autenticado.</p>
      * 

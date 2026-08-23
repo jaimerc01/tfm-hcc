@@ -20,6 +20,8 @@ public final class RestUrls {
     public static final String HISTORIA_ANTECEDENTES = "/antecedentes";
     public static final String HISTORIA_ALERGIAS = "/alergias";
     public static final String HISTORIA_ANALISIS_SANGRE = "/analisis-sangre";
+    public static final String HISTORIA_SIGNOS_VITALES = "/signos-vitales";
+    public static final String HISTORIA_ANALISIS_ORINA = "/analisis-orina";
     public static final String HISTORIA_DATOS_CLINICOS_ID = "/datos-clinicos/{id}";
     public static final String HISTORIA_ANTECEDENTE_INDEX = "/antecedentes/{index}";
 

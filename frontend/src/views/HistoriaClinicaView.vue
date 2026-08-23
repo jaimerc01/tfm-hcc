@@ -102,6 +102,45 @@
 
         <button
           type="button"
+          id="signos-vitales-tab"
+          ref="tabSignosVitales"
+          :class="['tab-btn', { active: activeSection === 'signos-vitales' }]"
+          @click="activeSection = 'signos-vitales'"
+          @keydown="onTabKeydown($event, 'signos-vitales')"
+          role="tab"
+          :aria-selected="activeSection === 'signos-vitales'"
+          aria-controls="signos-vitales-panel"
+          :tabindex="activeSection === 'signos-vitales' ? 0 : -1"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+          {{$t('vital_signs')}}
+        </button>
+
+        <button
+          type="button"
+          id="analisis-orina-tab"
+          ref="tabAnalisisOrina"
+          :class="['tab-btn', { active: activeSection === 'analisis-orina' }]"
+          @click="activeSection = 'analisis-orina'"
+          @keydown="onTabKeydown($event, 'analisis-orina')"
+          role="tab"
+          :aria-selected="activeSection === 'analisis-orina'"
+          aria-controls="analisis-orina-panel"
+          :tabindex="activeSection === 'analisis-orina' ? 0 : -1"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+            <path d="M9 2v7.31"></path>
+            <path d="M14.69 2v7.31"></path>
+            <path d="M9 9.31h5.69l4.36 10.15a2 2 0 0 1-1.84 2.79H6.48a2 2 0 0 1-1.84-2.79z"></path>
+            <path d="M7 16h10"></path>
+          </svg>
+          {{$t('urine_analysis')}}
+        </button>
+
+        <button
+          type="button"
           id="archivos-tab"
           ref="tabArchivos"
           :class="['tab-btn', { active: activeSection === 'archivos' }]"
@@ -227,6 +266,30 @@
           tabindex="-1"
         >
           <AnalisisSangreSection />
+        </div>
+
+        <div
+          v-else-if="activeSection === 'signos-vitales'"
+          key="signos-vitales"
+          id="signos-vitales-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="signos-vitales-tab"
+          tabindex="-1"
+        >
+          <SignosVitalesSection />
+        </div>
+
+        <div
+          v-else-if="activeSection === 'analisis-orina'"
+          key="analisis-orina"
+          id="analisis-orina-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="analisis-orina-tab"
+          tabindex="-1"
+        >
+          <AnalisisOrinaSection />
         </div>
 
         <div
@@ -358,10 +421,12 @@ import svc from '@/services/archivoClinicoService'
 import AntecedentesSection from '@/components/AntecedentesSection.vue'
 import AlergiasSection from '@/components/AlergiasSection.vue'
 import AnalisisSangreSection from '@/components/AnalisisSangreSection.vue'
+import SignosVitalesSection from '@/components/SignosVitalesSection.vue'
+import AnalisisOrinaSection from '@/components/AnalisisOrinaSection.vue'
 
 export default {
   name: 'HistoriaClinicaView',
-  components: { AntecedentesSection, AlergiasSection, AnalisisSangreSection },
+  components: { AntecedentesSection, AlergiasSection, AnalisisSangreSection, SignosVitalesSection, AnalisisOrinaSection },
   watch: {
     activeSection() {
       this.$nextTick(() => {
@@ -372,7 +437,7 @@ export default {
   },
   data() {
     return {
-      tabOrder: ['identificacion', 'antecedentes', 'alergias', 'analisis', 'archivos'],
+      tabOrder: ['identificacion', 'antecedentes', 'alergias', 'analisis', 'signos-vitales', 'analisis-orina', 'archivos'],
       items: [],
       file: null,
       uploading: false,
@@ -400,6 +465,8 @@ export default {
         antecedentes: 'tabAntecedentes',
         alergias: 'tabAlergias',
         analisis: 'tabAnalisis',
+        'signos-vitales': 'tabSignosVitales',
+        'analisis-orina': 'tabAnalisisOrina',
         archivos: 'tabArchivos'
       }
       return map[section]

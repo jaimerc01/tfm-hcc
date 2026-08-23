@@ -123,7 +123,39 @@ public interface HistorialClinicoFacade {
      * @return HistorialClinicoDTO actualizado
      */
     HistorialClinicoDTO anadirAnalisisSangre(String analisisJson);
-    
+
+    /**
+     * Actualiza los signos vitales en el historial clínico.
+     *
+     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO actualizarSignosVitales(String signosVitalesJson);
+
+    /**
+     * Añade nuevos signos vitales sin eliminar los existentes.
+     *
+     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO anadirSignosVitales(String signosVitalesJson);
+
+    /**
+     * Actualiza el análisis de orina en el historial clínico.
+     *
+     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO actualizarAnalisisOrina(String analisisOrinaJson);
+
+    /**
+     * Añade nuevos datos de análisis de orina sin eliminar los existentes.
+     *
+     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO anadirAnalisisOrina(String analisisOrinaJson);
+
     /**
      * Elimina un dato clínico específico del historial.
      * 

@@ -119,7 +119,39 @@ public interface HistorialClinicoController {
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson);
-    
+
+    /**
+     * Actualiza los signos vitales en el historial clínico.
+     *
+     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> actualizarSignosVitales(@RequestBody String signosVitalesJson);
+
+    /**
+     * Crea nuevos signos vitales en el historial clínico sin eliminar los existentes.
+     *
+     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> crearSignosVitales(@RequestBody String signosVitalesJson);
+
+    /**
+     * Actualiza el análisis de orina en el historial clínico.
+     *
+     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> actualizarAnalisisOrina(@RequestBody String analisisOrinaJson);
+
+    /**
+     * Crea nuevos datos de análisis de orina en el historial clínico sin eliminar los existentes.
+     *
+     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> crearAnalisisOrina(@RequestBody String analisisOrinaJson);
+
     /**
      * Elimina un dato clínico específico del historial.
      * 

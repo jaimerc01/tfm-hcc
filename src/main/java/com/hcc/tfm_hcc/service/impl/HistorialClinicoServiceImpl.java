@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcc.tfm_hcc.constants.ErrorMessages;
+import com.hcc.tfm_hcc.constants.TiposDatoClinico;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.converter.HistorialClinicoConverter;
@@ -45,6 +46,9 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     private static final String TIPO_ALERGIA_INTOLERANCIA = "ALERGIA/INTOLERANCIA";
     private static final String UNIDAD_TEXTO = "text";
     private static final String TIPO_ANALISIS_DEFAULT = "ANALISIS";
+    private static final String TIPO_CAMBIO_ANALISIS_SANGRE = "ANALISIS_SANGRE";
+    private static final String TIPO_CAMBIO_SIGNOS_VITALES = "SIGNOS_VITALES";
+    private static final String TIPO_CAMBIO_ANALISIS_ORINA = "ANALISIS_ORINA";
     private static final String SEPARADOR_ANTECEDENTES = "\n\n";
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final String ZONE_ID_EUROPA_MADRID = "Europe/Madrid";
@@ -331,14 +335,14 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         }
         
         procesarAnalisisSangre(analisisJson, historial, true);
-        
+
         historiaRepo.save(historial);
-        
+
         auditoriaCambioService.registrarCambio(
             usuario.getId().toString(),
             usuario.getId().toString(),
             null,
-            "ANALISIS_SANGRE",
+            TIPO_CAMBIO_ANALISIS_SANGRE,
             DATO_CLINICO,
             historial.getId().toString(),
             "",
@@ -346,29 +350,29 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             AuditoriaCambio.TipoOperacion.UPDATE,
             "Reemplazo completo de análisis de sangre"
         );
-        
+
         return historialClinicoConverter.toDto(historial);
     }
-    
+
     @Override
     @Transactional
     public HistorialClinicoDTO añadirAnalisisSangre(String analisisJson) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
-        
+
         if (historial == null) {
             throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
         }
-        
+
         procesarAnalisisSangre(analisisJson, historial, false);
-        
+
         historiaRepo.save(historial);
-        
+
         auditoriaCambioService.registrarCambio(
             usuario.getId().toString(),
             usuario.getId().toString(),
             null,
-            "ANALISIS_SANGRE",
+            TIPO_CAMBIO_ANALISIS_SANGRE,
             DATO_CLINICO,
             historial.getId().toString(),
             "",
@@ -376,13 +380,133 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             AuditoriaCambio.TipoOperacion.CREATE,
             "Adición de nuevos análisis de sangre"
         );
-        
+
+        return historialClinicoConverter.toDto(historial);
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO actualizarSignosVitales(String signosVitalesJson) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = ensureForUsuario(usuario);
+
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
+
+        procesarSignosVitales(signosVitalesJson, historial, true);
+
+        historiaRepo.save(historial);
+
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            TIPO_CAMBIO_SIGNOS_VITALES,
+            DATO_CLINICO,
+            historial.getId().toString(),
+            "",
+            signosVitalesJson,
+            AuditoriaCambio.TipoOperacion.UPDATE,
+            "Reemplazo completo de signos vitales"
+        );
+
+        return historialClinicoConverter.toDto(historial);
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO añadirSignosVitales(String signosVitalesJson) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = ensureForUsuario(usuario);
+
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
+
+        procesarSignosVitales(signosVitalesJson, historial, false);
+
+        historiaRepo.save(historial);
+
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            TIPO_CAMBIO_SIGNOS_VITALES,
+            DATO_CLINICO,
+            historial.getId().toString(),
+            "",
+            signosVitalesJson,
+            AuditoriaCambio.TipoOperacion.CREATE,
+            "Adición de nuevos signos vitales"
+        );
+
+        return historialClinicoConverter.toDto(historial);
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO actualizarAnalisisOrina(String analisisOrinaJson) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = ensureForUsuario(usuario);
+
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
+
+        procesarAnalisisOrina(analisisOrinaJson, historial, true);
+
+        historiaRepo.save(historial);
+
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            TIPO_CAMBIO_ANALISIS_ORINA,
+            DATO_CLINICO,
+            historial.getId().toString(),
+            "",
+            analisisOrinaJson,
+            AuditoriaCambio.TipoOperacion.UPDATE,
+            "Reemplazo completo de análisis de orina"
+        );
+
+        return historialClinicoConverter.toDto(historial);
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO añadirAnalisisOrina(String analisisOrinaJson) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = ensureForUsuario(usuario);
+
+        if (historial == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
+        }
+
+        procesarAnalisisOrina(analisisOrinaJson, historial, false);
+
+        historiaRepo.save(historial);
+
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            TIPO_CAMBIO_ANALISIS_ORINA,
+            DATO_CLINICO,
+            historial.getId().toString(),
+            "",
+            analisisOrinaJson,
+            AuditoriaCambio.TipoOperacion.CREATE,
+            "Adición de nuevos datos de análisis de orina"
+        );
+
         return historialClinicoConverter.toDto(historial);
     }
 
     /**
      * Procesa los análisis de sangre del JSON y los almacena como datos clínicos.
-     * 
+     *
      * @param analisisJson JSON con los análisis de sangre
      * @param historial Historial clínico al que pertenecen
      * @param eliminarExistentes Si true, elimina todos los análisis existentes antes de guardar los nuevos (reemplazo completo).
@@ -390,40 +514,68 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
      */
     // TODO Revisar esto, no tiene mucho sentido lo de eliminar todo para guardar una nueva
     private void procesarAnalisisSangre(String analisisJson, HistorialClinico historial, boolean eliminarExistentes) {
+        procesarDatosClinicos(analisisJson, historial, eliminarExistentes, TiposDatoClinico.ANALISIS_SANGRE);
+    }
+
+    /**
+     * Procesa los signos vitales del JSON y los almacena como datos clínicos.
+     *
+     * @param signosVitalesJson JSON con los signos vitales
+     * @param historial Historial clínico al que pertenecen
+     * @param eliminarExistentes Si true, elimina todos los signos vitales existentes antes de guardar los nuevos.
+     *                           Si false, solo añade los nuevos sin eliminar los existentes.
+     */
+    private void procesarSignosVitales(String signosVitalesJson, HistorialClinico historial, boolean eliminarExistentes) {
+        procesarDatosClinicos(signosVitalesJson, historial, eliminarExistentes, TiposDatoClinico.SIGNOS_VITALES);
+    }
+
+    /**
+     * Procesa el análisis de orina del JSON y lo almacena como datos clínicos.
+     *
+     * @param analisisOrinaJson JSON con los datos de análisis de orina
+     * @param historial Historial clínico al que pertenecen
+     * @param eliminarExistentes Si true, elimina todos los datos de orina existentes antes de guardar los nuevos.
+     *                           Si false, solo añade los nuevos sin eliminar los existentes.
+     */
+    private void procesarAnalisisOrina(String analisisOrinaJson, HistorialClinico historial, boolean eliminarExistentes) {
+        procesarDatosClinicos(analisisOrinaJson, historial, eliminarExistentes, TiposDatoClinico.ANALISIS_ORINA);
+    }
+
+    /**
+     * Procesa un JSON de datos clínicos cuantitativos (análisis de sangre, signos vitales
+     * o análisis de orina) y los almacena, opcionalmente reemplazando los existentes del
+     * mismo dominio.
+     *
+     * @param datosJson JSON con los datos clínicos a añadir
+     * @param historial Historial clínico al que pertenecen
+     * @param eliminarExistentes Si true, elimina los datos existentes cuyo tipo esté en {@code tiposConocidos}
+     *                           antes de guardar los nuevos (reemplazo completo).
+     *                           Si false, solo añade los nuevos sin eliminar los existentes.
+     * @param tiposConocidos Tipos de dato clínico que delimitan el dominio (p. ej. {@link TiposDatoClinico#ANALISIS_SANGRE})
+     */
+    // TODO Revisar esto, no tiene mucho sentido lo de eliminar todo para guardar una nueva
+    private void procesarDatosClinicos(String datosJson, HistorialClinico historial, boolean eliminarExistentes, List<String> tiposConocidos) {
         if (eliminarExistentes) {
-            // Eliminar todos los análisis de sangre existentes
-            // Buscar por nombres de análisis sin las unidades (el frontend envía labels como "Glucosa", "Hemoglobina", etc.)
-            List<DatoClinico> analisisExistentes = datoClinicoRepository.findByHistorialClinicoAndTipoIn(
-                historial,
-                List.of("Hemoglobina", "Glucosa", "Colesterol", "Colesterol Total",
-                        "Triglicéridos", "Creatinina", "Hematocrito", 
-                        "Leucocitos", "Plaquetas", "Transaminasas ALT", 
-                        "Transaminasas AST", "Bilirrubina Total", "Urea",
-                        // También incluir versiones con unidades por compatibilidad con datos antiguos
-                        "Hemoglobina (g/dL)", "Glucosa (mg/dL)", "Colesterol Total (mg/dL)", 
-                        "Triglicéridos (mg/dL)", "Creatinina (mg/dL)", "Hematocrito (%)", 
-                        "Leucocitos (10³/µL)", "Plaquetas (10³/µL)", "Transaminasas ALT (U/L)", 
-                        "Transaminasas AST (U/L)", "Bilirrubina Total (mg/dL)", "Urea (mg/dL)")
-            );
-            
-            if (!analisisExistentes.isEmpty()) {
-                datoClinicoRepository.deleteAll(analisisExistentes);
+            List<DatoClinico> datosExistentes = datoClinicoRepository.findByHistorialClinicoAndTipoIn(historial, tiposConocidos);
+
+            if (!datosExistentes.isEmpty()) {
+                datoClinicoRepository.deleteAll(datosExistentes);
             }
         }
-        
-        // Procesar y guardar los nuevos análisis si existen
-        if (analisisJson == null || analisisJson.trim().isEmpty()) {
+
+        // Procesar y guardar los nuevos datos si existen
+        if (datosJson == null || datosJson.trim().isEmpty()) {
             return;
         }
 
         try {
-            JsonNode nodoJson = objectMapper.readTree(analisisJson);
+            JsonNode nodoJson = objectMapper.readTree(datosJson);
             validarJsonAnalisis(nodoJson);
-            
-            List<DatoClinico> nuevosAnalisis = procesarElementosAnalisis(nodoJson, historial);
-            
-            if (!nuevosAnalisis.isEmpty()) {
-                datoClinicoRepository.saveAll(nuevosAnalisis);
+
+            List<DatoClinico> nuevosDatos = procesarElementosAnalisis(nodoJson, historial);
+
+            if (!nuevosDatos.isEmpty()) {
+                datoClinicoRepository.saveAll(nuevosDatos);
             }
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_JSON_INVALIDO, e);

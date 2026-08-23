@@ -88,7 +88,45 @@ public interface HistorialClinicoService {
      * @throws IllegalArgumentException si el JSON es inválido
      */
     HistorialClinicoDTO añadirAnalisisSangre(String analisisJson);
-    
+
+    /**
+     * Actualiza los signos vitales del historial clínico.
+     * Reemplaza todos los signos vitales existentes con los nuevos.
+     *
+     * @param signosVitalesJson los signos vitales en formato JSON
+     * @return el DTO del historial clínico actualizado
+     * @throws IllegalArgumentException si el JSON es inválido
+     */
+    HistorialClinicoDTO actualizarSignosVitales(String signosVitalesJson);
+
+    /**
+     * Añade nuevos signos vitales al historial clínico sin eliminar los existentes.
+     *
+     * @param signosVitalesJson los nuevos signos vitales en formato JSON
+     * @return el DTO del historial clínico actualizado
+     * @throws IllegalArgumentException si el JSON es inválido
+     */
+    HistorialClinicoDTO añadirSignosVitales(String signosVitalesJson);
+
+    /**
+     * Actualiza el análisis de orina del historial clínico.
+     * Reemplaza todos los datos de orina existentes con los nuevos.
+     *
+     * @param analisisOrinaJson los datos de análisis de orina en formato JSON
+     * @return el DTO del historial clínico actualizado
+     * @throws IllegalArgumentException si el JSON es inválido
+     */
+    HistorialClinicoDTO actualizarAnalisisOrina(String analisisOrinaJson);
+
+    /**
+     * Añade nuevos datos de análisis de orina al historial clínico sin eliminar los existentes.
+     *
+     * @param analisisOrinaJson los nuevos datos de análisis de orina en formato JSON
+     * @return el DTO del historial clínico actualizado
+     * @throws IllegalArgumentException si el JSON es inválido
+     */
+    HistorialClinicoDTO añadirAnalisisOrina(String analisisOrinaJson);
+
     /**
      * Borra un dato clínico específico del historial.
      *
