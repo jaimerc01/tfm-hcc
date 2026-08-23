@@ -22,12 +22,6 @@ class AuthService {
       }
       return config
     })
-    try {
-      const existing = localStorage.getItem('authToken')
-      if (existing) {
-        this._storeRolesFromToken(existing)
-      }
-    } catch (_) { /* ignore */ }
   }
 
   async login(credentials) {
@@ -48,7 +42,6 @@ class AuthService {
       // Guardar token y expiración en localStorage
       if (token) {
         localStorage.setItem('authToken', token)
-  try { this._storeRolesFromToken(token) } catch (_) { /* ignore */ }
       }
       // Calcular expiración absoluta: preferir 'exp' del JWT; si no, usar ahora + duration recibido
       try {
@@ -86,7 +79,6 @@ class AuthService {
     // No hay necesidad de llamar al backend ya que el token expirará naturalmente
     localStorage.removeItem('authToken')
     localStorage.removeItem('tokenExp')
-    try { localStorage.removeItem('roles') } catch (_) { void 0 }
   }
 
   async refreshToken() {
@@ -186,35 +178,8 @@ class AuthService {
   _clearAuth() {
   try { localStorage.removeItem('authToken') } catch (_) { void 0 }
   try { localStorage.removeItem('tokenExp') } catch (_) { void 0 }
-    try { localStorage.removeItem('roles') } catch (_) { void 0 }
   }
 
-  _storeRolesFromToken(token) {
-    try {
-      if (!token) return
-      const payload = token.split('.')[1]
-      if (!payload) return
-      const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
-      let roles = decoded?.authorities || decoded?.roles || decoded?.scope || []
-      if (!roles) roles = []
-      if (typeof roles === 'string') {
-        roles = roles.split(/[;,\s]+/)
-      } else if (Array.isArray(roles)) {
-        roles = roles.map(r => {
-          if (!r) return ''
-          if (typeof r === 'string') return r
-          if (typeof r === 'object') return r.authority || r.role || r.name || JSON.stringify(r)
-          return String(r)
-        })
-      } else {
-        roles = []
-      }
-      roles = roles.map(r => String(r).toUpperCase()).filter(Boolean)
-      try { localStorage.setItem('roles', roles.join(',')) } catch (_) { /* ignore */ }
-    } catch (e) {
-      try { localStorage.removeItem('roles') } catch (_) { /* ignore */ }
-    }
-  }
   // Login con Google: solo para cuentas ya registradas por el formulario tradicional.
   redirectToGoogleLogin() {
     window.location.assign(`${API_BASE_URL}/authentication/google/login`)
@@ -229,7 +194,6 @@ class AuthService {
       }
 
       localStorage.setItem('authToken', token)
-      try { this._storeRolesFromToken(token) } catch (_) { /* ignore */ }
 
       try {
         const payload = token.split('.')[1]

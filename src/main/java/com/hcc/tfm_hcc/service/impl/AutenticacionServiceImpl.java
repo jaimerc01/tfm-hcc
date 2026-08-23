@@ -18,7 +18,6 @@ import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.GoogleAuthenticationException;
 import com.hcc.tfm_hcc.exception.IncorrectCredentials;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
-import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.LoginResponse;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
@@ -39,7 +38,6 @@ public class AutenticacionServiceImpl implements AutenticacionService {
 
     private static final long GOOGLE_CODE_TTL_MILLIS = 60_000L;
 
-    private final UsuarioMapper usuarioMapper;
     private final UsuarioFacade usuarioFacade;
     private final UsuarioRepository userRepository;
     private final UsuarioConverter usuarioConverter;
@@ -92,19 +90,21 @@ public class AutenticacionServiceImpl implements AutenticacionService {
     }
 
     /**
-     * Extrae el usuario del principal de autenticación
+     * Extrae el usuario autenticado del principal, preservando las authorities
+     * cargadas por el {@link UserDetailsService} (necesarias para el JWT).
      */
-    private UsuarioDTO extraerUsuarioDelPrincipal(Object principal, String nif) {
-        UsuarioDTO usuarioDTO = null;
+    private Usuario extraerUsuarioDelPrincipal(Object principal, String nif) {
         if (principal instanceof Usuario usuario) {
-            usuarioDTO = usuarioMapper.toDto(usuario);
-            return usuarioDTO; // Usuario ya viene con authorities desde UserDetailsService
+            return usuario;
         }
-        
-        // Fallback a repositorio (no debería ocurrir normalmente)
-        return userRepository.findByNif(nif)
-                .map(usuarioMapper::toDto)
-                .orElseThrow(() -> new IncorrectCredentials(ErrorMessages.ERROR_CREDENCIALES_INVALIDAS));
+
+        // Fallback (no debería ocurrir normalmente): recargar vía UserDetailsService
+        // para no perder las authorities, que findByNif no rellena.
+        if (userDetailsService.loadUserByUsername(nif) instanceof Usuario usuario) {
+            return usuario;
+        }
+
+        throw new IncorrectCredentials(ErrorMessages.ERROR_CREDENCIALES_INVALIDAS);
     }
 
     /**
@@ -138,10 +138,9 @@ public class AutenticacionServiceImpl implements AutenticacionService {
         try {
             var token = crearTokenAutenticacion(loginUsuarioDTO);
             var authentication = authenticationManager.authenticate(token);
-            UsuarioDTO usuarioDTO = extraerUsuarioDelPrincipal(authentication.getPrincipal(), loginUsuarioDTO.getNif());
-            
-            return usuarioConverter.toEntity(usuarioDTO);
-            
+
+            return extraerUsuarioDelPrincipal(authentication.getPrincipal(), loginUsuarioDTO.getNif());
+
         } catch (Exception _) {
             throw new IncorrectCredentials(ErrorMessages.ERROR_CREDENCIALES_INVALIDAS);
         }

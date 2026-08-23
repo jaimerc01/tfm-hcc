@@ -68,6 +68,7 @@ public final class ErrorMessages {
     public static final String ERROR_DATO_NO_ENCONTRADO = "Dato clínico no encontrado";
     public static final String ERROR_NO_PERMITIDO = "Operación no permitida";
     public static final String ERROR_ANTECEDENTE_NO_ENCONTRADO = "Antecedente no encontrado";
+    public static final String ERROR_ALERGIA_NO_ENCONTRADA = "Alergia no encontrada";
     public static final String ERROR_INDICE_FUERA_RANGO = "Índice fuera de rango";
     public static final String ERROR_NO_HAY_ANTECEDENTES = "No hay antecedentes registrados";
     public static final String ERROR_FORMATO_FECHA_INVALIDO = "Formato de fecha inválido";

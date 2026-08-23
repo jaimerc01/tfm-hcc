@@ -636,7 +636,7 @@ export default {
           nif: user.value.nif || '',
           email: user.value.email || '',
           telefono: user.value.telefono || '',
-          fechaNacimiento: user.value.fechaNacimiento ? new Date(user.value.fechaNacimiento).toISOString().slice(0,10) : ''
+          fechaNacimiento: user.value.fechaNacimiento ? user.value.fechaNacimiento.slice(0, 10) : ''
         }
       }
       const cancelEdit = () => {
@@ -658,7 +658,8 @@ export default {
           if (!/^([^@\n]+)@([^@\n]+)\.[^@\n]+$/.test(form.value.email)) throw new Error(t('invalid_email_format'))
           if (form.value.telefono && !/^[0-9+\-() ]{0,20}$/.test(form.value.telefono)) throw new Error(t('invalid_phone_format'))
           const payload = { ...form.value }
-          if (!payload.fechaNacimiento) payload.fechaNacimiento = null
+          // El backend espera un LocalDateTime; el <input type="date"> solo da la parte de fecha (YYYY-MM-DD)
+          payload.fechaNacimiento = payload.fechaNacimiento ? `${payload.fechaNacimiento}T00:00:00` : null
           const updated = await authService.updateMyData(payload)
           user.value = updated
           editSuccess.value = true
@@ -722,7 +723,7 @@ export default {
 }
 
 .password-visibility-btn:focus-visible {
-  outline: 2px solid var(--focus-color, #005fcc);
+  outline: 2px solid var(--focus-color);
   outline-offset: 1px;
 }
 

@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.hcc.tfm_hcc.dto.AlergiaDTO;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 
@@ -76,29 +78,46 @@ public interface HistorialClinicoController {
     ResponseEntity<HistorialClinicoDTO> getMiHistoria();
     
     /**
-     * Actualiza la información de identificación en el historial clínico.
-     * 
-     * @param historialClinicoDTO Datos de identificación
+     * Crea un nuevo antecedente clínico (personal o familiar) en el historial.
+     *
+     * @param antecedenteDTO Categoría y descripción del antecedente
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody HistorialClinicoDTO historialClinicoDTO);
-    
+    ResponseEntity<HistorialClinicoDTO> crearAntecedente(@RequestBody AntecedenteClinicoDTO antecedenteDTO);
+
     /**
-     * Actualiza los antecedentes familiares en el historial clínico.
-     * 
-     * @param antecedentesFamiliares Texto con los antecedentes familiares
+     * Edita un antecedente clínico existente.
+     *
+     * @param id ID del antecedente a editar
+     * @param antecedenteDTO Categoría y descripción actualizadas
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarAntecedentes(@RequestBody String antecedentesFamiliares);
-    
+    ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("id") UUID id, @RequestBody AntecedenteClinicoDTO antecedenteDTO);
+
     /**
-     * Actualiza la información de alergias en el historial clínico.
-     * 
-     * @param alergiasJson Datos de alergias en formato JSON
+     * Elimina un antecedente clínico específico.
+     *
+     * @param id ID del antecedente a eliminar
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarAlergias(@RequestBody String alergiasJson);
-    
+    ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("id") UUID id);
+
+    /**
+     * Crea una nueva alergia o intolerancia en el historial clínico.
+     *
+     * @param alergiaDTO Descripción de la alergia
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> crearAlergia(@RequestBody AlergiaDTO alergiaDTO);
+
+    /**
+     * Elimina una alergia específica.
+     *
+     * @param id ID de la alergia a eliminar
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> borrarAlergia(@PathVariable("id") UUID id);
+
     /**
      * Actualiza los análisis de sangre en el historial clínico.
      * 
@@ -159,23 +178,4 @@ public interface HistorialClinicoController {
      * @return ResponseEntity con el ID del dato clínico eliminado para confirmación
      */
     ResponseEntity<UUID> borrarDatoClinico(@PathVariable("id") UUID id);
-    
-
-    //TODO: revisar por qué se utiliza el índice para editar y eliminar antecedentes, en lugar de un ID único como el resto de datos clínicos. Posible refactorización a futuro para unificar criterios de identificación.
-    /**
-     * Elimina un antecedente específico por su índice.
-     * 
-     * @param index Índice del antecedente a eliminar
-     * @return ResponseEntity con el HistorialClinicoDTO actualizado
-     */
-    ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("index") int index);
-    
-    /**
-     * Edita un antecedente específico por su índice.
-     * 
-     * @param index Índice del antecedente a editar
-     * @param texto Nuevo texto para el antecedente
-     * @return ResponseEntity con el HistorialClinicoDTO actualizado
-     */
-    ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("index") int index, @RequestBody String texto);
 }

@@ -65,7 +65,7 @@
 
 .app-footer__link:focus-visible,
 .app-footer__button:focus-visible {
-  outline: 3px solid var(--focus-color, #005fcc);
+  outline: 3px solid var(--focus-color);
   outline-offset: 2px;
 }
 

@@ -26,6 +26,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.hcc.tfm_hcc.controller.HistorialClinicoController;
 import com.hcc.tfm_hcc.constants.RestUrls;
+import com.hcc.tfm_hcc.dto.AlergiaDTO;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
@@ -252,98 +254,117 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
 
     /**
      * {@inheritDoc}
-     * 
-     * <p>Implementación que actualiza la información de identificación
-     * del paciente en su historial clínico.</p>
-     * 
-     * @param historialClinicoDTO Datos de identificación 
+     *
+     * <p>Implementación que crea un nuevo antecedente clínico (personal o familiar)
+     * del paciente.</p>
+     *
+     * @param antecedenteDTO Categoría y descripción del antecedente
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping(RestUrls.HISTORIA_IDENTIFICACION)
-    public ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody HistorialClinicoDTO historialClinicoDTO) throws HistorialClinicoException {
-        log.debug("Actualizando información de identificación del usuario");
-        
+    @PostMapping(RestUrls.HISTORIA_ANTECEDENTES)
+    public ResponseEntity<HistorialClinicoDTO> crearAntecedente(@RequestBody AntecedenteClinicoDTO antecedenteDTO) throws HistorialClinicoException {
+        log.debug("Creando antecedente clínico del usuario");
+
         try {
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarIdentificacion(historialClinicoDTO);
-            log.info("Información de identificación actualizada exitosamente");
+            HistorialClinicoDTO resultado = historialClinicoFacade.crearAntecedente(antecedenteDTO);
+            log.info("Antecedente clínico creado exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            log.error("Error al actualizar información de identificación: {}", e.getMessage(), e);
+            log.error("Error al crear antecedente clínico: {}", e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
     /**
      * {@inheritDoc}
-     * 
-     * <p>Implementación que actualiza los antecedentes familiares del paciente
-     * con soporte para contenido URL-encoded y validación de entrada.</p>
-     * 
-     * @param antecedentesFamiliares Texto con los antecedentes familiares
+     *
+     * <p>Implementación que edita un antecedente clínico existente del paciente.</p>
+     *
+     * @param id ID del antecedente a editar
+     * @param antecedenteDTO Categoría y descripción actualizadas
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping(RestUrls.HISTORIA_ANTECEDENTES)
-    public ResponseEntity<HistorialClinicoDTO> actualizarAntecedentes(@RequestBody String antecedentesFamiliares) throws HistorialClinicoException {
-        log.debug("Actualizando antecedentes familiares del usuario");
-        
+    @PutMapping(RestUrls.HISTORIA_ANTECEDENTE_ID)
+    public ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("id") UUID id, @RequestBody AntecedenteClinicoDTO antecedenteDTO) throws HistorialClinicoException {
+        log.debug("Editando antecedente clínico: {}", id);
+
         try {
-            String payload = procesarContenidoUrlEncoded(antecedentesFamiliares);
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAntecedentes(payload);
-            log.info("Antecedentes familiares actualizados exitosamente");
+            HistorialClinicoDTO resultado = historialClinicoFacade.editarAntecedente(id, antecedenteDTO);
+            log.info("Antecedente clínico editado exitosamente: {}", id);
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            log.error("Error al actualizar antecedentes familiares: {}", e.getMessage(), e);
+            log.error("Error al editar antecedente clínico {}: {}", id, e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
     /**
      * {@inheritDoc}
-     * 
-     * <p>Implementación que actualiza la información de alergias del paciente
-     * con procesamiento de datos JSON y validación de entrada.</p>
-     * 
-     * @param alergiasJson Datos de alergias en formato JSON
+     *
+     * <p>Implementación que elimina un antecedente clínico específico del paciente.</p>
+     *
+     * @param id ID del antecedente a eliminar
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping(RestUrls.HISTORIA_ALERGIAS)
-    public ResponseEntity<HistorialClinicoDTO> actualizarAlergias(@RequestBody String alergiasJson) throws HistorialClinicoException {
-        log.debug("Actualizando información de alergias del usuario");
-        
+    @DeleteMapping(RestUrls.HISTORIA_ANTECEDENTE_ID)
+    public ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("id") UUID id) throws HistorialClinicoException {
+        log.debug("Eliminando antecedente clínico: {}", id);
+
         try {
-            String payload = procesarContenidoUrlEncoded(alergiasJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAlergias(payload);
-            log.info("Información de alergias actualizada exitosamente");
+            HistorialClinicoDTO resultado = historialClinicoFacade.borrarAntecedente(id);
+            log.info("Antecedente clínico eliminado exitosamente: {}", id);
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            log.error("Error al actualizar información de alergias: {}", e.getMessage(), e);
+            log.error("Error al eliminar antecedente clínico {}: {}", id, e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
     /**
-     * Añade nuevas alergias sin eliminar las existentes.
-     * 
-     * <p>Este endpoint permite añadir nuevas alergias
-     * sin eliminar las alergias previas del historial clínico.</p>
-     * 
-     * @param alergiasJson Datos de alergias en formato texto plano (una por línea)
+     * {@inheritDoc}
+     *
+     * <p>Implementación que crea una nueva alergia o intolerancia del paciente.</p>
+     *
+     * @param alergiaDTO Descripción de la alergia
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
+    @Override
     @PostMapping(RestUrls.HISTORIA_ALERGIAS)
-    public ResponseEntity<HistorialClinicoDTO> anadirAlergias(@RequestBody String alergiasJson) throws HistorialClinicoException {
-        log.debug("Añadiendo nuevas alergias del usuario");
-        
+    public ResponseEntity<HistorialClinicoDTO> crearAlergia(@RequestBody AlergiaDTO alergiaDTO) throws HistorialClinicoException {
+        log.debug("Creando alergia del usuario");
+
         try {
-            String payload = procesarContenidoUrlEncoded(alergiasJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAlergias(payload);
-            log.info("Alergias añadidas exitosamente");
+            HistorialClinicoDTO resultado = historialClinicoFacade.crearAlergia(alergiaDTO);
+            log.info("Alergia creada exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            log.error("Error al añadir alergias: {}", e.getMessage(), e);
+            log.error("Error al crear alergia: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Implementación que elimina una alergia específica del paciente.</p>
+     *
+     * @param id ID de la alergia a eliminar
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @Override
+    @DeleteMapping(RestUrls.HISTORIA_ALERGIA_ID)
+    public ResponseEntity<HistorialClinicoDTO> borrarAlergia(@PathVariable("id") UUID id) throws HistorialClinicoException {
+        log.debug("Eliminando alergia: {}", id);
+
+        try {
+            HistorialClinicoDTO resultado = historialClinicoFacade.borrarAlergia(id);
+            log.info("Alergia eliminada exitosamente: {}", id);
+            return ResponseEntity.ok(resultado);
+        } catch (Exception e) {
+            log.error("Error al eliminar alergia {}: {}", id, e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
@@ -536,62 +557,6 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
             throw e;
         } catch (Exception e) {
             log.error("Error al eliminar dato clínico con ID {}: {}", id, e.getMessage(), e);
-            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * <p>Implementación que elimina un antecedente específico por su índice
-     * y retorna el historial actualizado.</p>
-     * 
-     * @param index Índice del antecedente a eliminar
-     * @return ResponseEntity con el HistorialClinicoDTO actualizado
-     */
-    @Override
-    @DeleteMapping(RestUrls.HISTORIA_ANTECEDENTE_INDEX)
-    public ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("index") int index) throws HistorialClinicoException, DatosClinicosValidationException {
-        log.debug("Solicitando eliminación de antecedente en índice: {}", index);
-        
-        try {
-            HistorialClinicoDTO resultado = historialClinicoFacade.borrarAntecedente(index);
-            log.info("Antecedente eliminado exitosamente en índice: {}", index);
-            return ResponseEntity.ok(resultado);
-        } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al eliminar antecedente en índice {}: {}", index, e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Error al eliminar antecedente en índice {}: {}", index, e.getMessage(), e);
-            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * <p>Implementación que edita un antecedente específico por su índice
-     * con procesamiento de contenido URL-encoded.</p>
-     * 
-     * @param index Índice del antecedente a editar
-     * @param texto Nuevo texto para el antecedente
-     * @return ResponseEntity con el HistorialClinicoDTO actualizado
-     */
-    @Override
-    @PutMapping(RestUrls.HISTORIA_ANTECEDENTE_INDEX)
-    public ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("index") int index, @RequestBody String texto) throws HistorialClinicoException, DatosClinicosValidationException {
-        log.debug("Solicitando edición de antecedente en índice: {}", index);
-        
-        try {
-            String payload = procesarContenidoUrlEncoded(texto);
-            HistorialClinicoDTO resultado = historialClinicoFacade.editarAntecedente(index, payload);
-            log.info("Antecedente editado exitosamente en índice: {}", index);
-            return ResponseEntity.ok(resultado);
-        } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al editar antecedente en índice {}: {}", index, e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Error al editar antecedente en índice {}: {}", index, e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }

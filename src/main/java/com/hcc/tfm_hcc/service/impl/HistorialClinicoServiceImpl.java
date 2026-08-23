@@ -3,14 +3,11 @@ package com.hcc.tfm_hcc.service.impl;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,14 +17,22 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.constants.TiposDatoClinico;
+import com.hcc.tfm_hcc.dto.AlergiaDTO;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.converter.AlergiaConverter;
+import com.hcc.tfm_hcc.converter.AntecedenteClinicoConverter;
 import com.hcc.tfm_hcc.converter.HistorialClinicoConverter;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
+import com.hcc.tfm_hcc.model.Alergia;
+import com.hcc.tfm_hcc.model.AntecedenteClinico;
 import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.DatoClinico;
 import com.hcc.tfm_hcc.model.HistorialClinico;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.repository.AlergiaRepository;
+import com.hcc.tfm_hcc.repository.AntecedenteClinicoRepository;
 import com.hcc.tfm_hcc.repository.DatoClinicoRepository;
 import com.hcc.tfm_hcc.repository.HistorialClinicoRepository;
 import com.hcc.tfm_hcc.repository.RangoRepository;
@@ -39,27 +44,28 @@ import com.hcc.tfm_hcc.service.HistorialClinicoService;
 public class HistorialClinicoServiceImpl implements HistorialClinicoService {
 
     private static final String CREATED_AT = "createdAt";
-    private static final String ALERGIA_INTOLERANCIA = "ALERGIA_INTOLERANCIA";
     private static final String DATO_CLINICO = "dato_clinico";
-    private static final String HISTORIAL_CLINICO = "historial_clinico";
-    private static final String ANTECEDENTES_FAMILIARES = "ANTECEDENTES_FAMILIARES";
-    private static final String TIPO_ALERGIA_INTOLERANCIA = "ALERGIA/INTOLERANCIA";
-    private static final String UNIDAD_TEXTO = "text";
+    private static final String ALERGIA = "ALERGIA";
+    private static final String ALERGIA_TABLA = "alergia";
+    private static final String ANTECEDENTE_CLINICO = "ANTECEDENTE_CLINICO";
+    private static final String ANTECEDENTE_CLINICO_TABLA = "antecedente_clinico";
     private static final String TIPO_ANALISIS_DEFAULT = "ANALISIS";
     private static final String TIPO_CAMBIO_ANALISIS_SANGRE = "ANALISIS_SANGRE";
     private static final String TIPO_CAMBIO_SIGNOS_VITALES = "SIGNOS_VITALES";
     private static final String TIPO_CAMBIO_ANALISIS_ORINA = "ANALISIS_ORINA";
-    private static final String SEPARADOR_ANTECEDENTES = "\n\n";
-    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final String ZONE_ID_EUROPA_MADRID = "Europe/Madrid";
 
     private final HistorialClinicoRepository historiaRepo;
     private final UsuarioFacade usuarioFacade;
     private final UsuarioRepository usuarioRepository;
     private final DatoClinicoRepository datoClinicoRepository;
+    private final AlergiaRepository alergiaRepository;
+    private final AntecedenteClinicoRepository antecedenteClinicoRepository;
     private final RangoRepository rangoRepository;
     private final AuditoriaCambioService auditoriaCambioService;
     private final HistorialClinicoConverter historialClinicoConverter;
+    private final AlergiaConverter alergiaConverter;
+    private final AntecedenteClinicoConverter antecedenteClinicoConverter;
     private final ObjectMapper objectMapper;
 
     public HistorialClinicoServiceImpl(
@@ -67,17 +73,36 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             UsuarioFacade usuarioFacade,
             UsuarioRepository usuarioRepository,
             DatoClinicoRepository datoClinicoRepository,
+            AlergiaRepository alergiaRepository,
+            AntecedenteClinicoRepository antecedenteClinicoRepository,
             RangoRepository rangoRepository,
             AuditoriaCambioService auditoriaCambioService,
-            HistorialClinicoConverter historialClinicoConverter) {
+            HistorialClinicoConverter historialClinicoConverter,
+            AlergiaConverter alergiaConverter,
+            AntecedenteClinicoConverter antecedenteClinicoConverter) {
         this.historiaRepo = historiaRepo;
         this.usuarioFacade = usuarioFacade;
         this.usuarioRepository = usuarioRepository;
         this.datoClinicoRepository = datoClinicoRepository;
+        this.alergiaRepository = alergiaRepository;
+        this.antecedenteClinicoRepository = antecedenteClinicoRepository;
         this.rangoRepository = rangoRepository;
         this.auditoriaCambioService = auditoriaCambioService;
         this.historialClinicoConverter = historialClinicoConverter;
+        this.alergiaConverter = alergiaConverter;
+        this.antecedenteClinicoConverter = antecedenteClinicoConverter;
         this.objectMapper = new ObjectMapper();
+    }
+
+    /**
+     * Construye el DTO completo del historial clínico, incluyendo antecedentes,
+     * alergias y datos clínicos cuantitativos (análisis, signos vitales...).
+     */
+    private HistorialClinicoDTO construirHistorialClinicoDTO(HistorialClinico historial) {
+        List<DatoClinico> datosClinicos = datoClinicoRepository.findByHistorialClinico(historial);
+        List<Alergia> alergias = alergiaRepository.findByHistorialClinico(historial);
+        List<AntecedenteClinico> antecedentes = antecedenteClinicoRepository.findByHistorialClinico(historial);
+        return historialClinicoConverter.toDto(historial, datosClinicos, alergias, antecedentes);
     }
 
     /**
@@ -131,197 +156,188 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         }
         
         return historiaRepo.findByUsuario(usuario.get())
-            .map(historial -> historialClinicoConverter.toDto(
-                historial,
-                datoClinicoRepository.findByHistorialClinico(historial)))
-                .orElse(null);
+            .map(this::construirHistorialClinicoDTO)
+            .orElse(null);
     }
 
     @Override
     @Transactional
-    public HistorialClinicoDTO actualizarIdentificacion(HistorialClinicoDTO historialClinicoDTO) {
+    public HistorialClinicoDTO crearAntecedente(AntecedenteClinicoDTO antecedenteDTO) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
-        
-        if(historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-        HistorialClinico historialActualizado = historialClinicoConverter.toEntity(historialClinicoDTO);
-        if(historialActualizado != null) {
-            historiaRepo.save(historialActualizado);
-        }
-        return historialClinicoDTO;
-    }
 
-    @Override
-    @Transactional
-    public HistorialClinicoDTO actualizarAntecedentes(String antecedentesFamiliares) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-        
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-        
-        String valorAnterior = historial.getAntecedentesFamiliares();
-        actualizarAntecedentesFamiliares(historial, antecedentesFamiliares);
-        
-        historiaRepo.save(historial);
-        
+        AntecedenteClinico antecedente = antecedenteClinicoConverter.toEntity(antecedenteDTO, historial);
+        antecedente.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
+        AntecedenteClinico guardado = antecedenteClinicoRepository.save(antecedente);
+
         auditoriaCambioService.registrarCambio(
             usuario.getId().toString(),
             usuario.getId().toString(),
             null,
-            ANTECEDENTES_FAMILIARES,
-            HISTORIAL_CLINICO,
-            historial.getId().toString(),
-            valorAnterior,
-            antecedentesFamiliares,
-            AuditoriaCambio.TipoOperacion.UPDATE,
-            "Actualización de antecedentes familiares"
-        );
-        
-        return historialClinicoConverter.toDto(historial, datoClinicoRepository.findByHistorialClinico(historial));
-    }
-
-    /**
-     * Actualiza los antecedentes familiares del historial
-     */
-    private void actualizarAntecedentesFamiliares(HistorialClinico historial, String antecedentes) {
-        if (antecedentes == null || antecedentes.trim().isEmpty()) {
-            historial.setAntecedentesFamiliares(null);
-        } else {
-            historial.setAntecedentesFamiliares(antecedentes);
-        }
-    }
-
-    @Override
-    @Transactional
-    public HistorialClinicoDTO actualizarAlergias(String alergiasJson) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-        
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-        
-        List<DatoClinico> alergiasAnteriores = datoClinicoRepository
-            .findByHistorialClinicoAndTipo(historial, TIPO_ALERGIA_INTOLERANCIA);
-        String valorAnterior = alergiasAnteriores.isEmpty() ? ""
-            : alergiasAnteriores.stream()
-                .map(DatoClinico::getObservacion)
-                .filter(obs -> obs != null && !obs.isEmpty())
-                .collect(Collectors.joining(", "));
-        
-        procesarAlergias(alergiasJson, historial, true);
-        
-        historiaRepo.save(historial);
-        
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            ALERGIA_INTOLERANCIA,
-            DATO_CLINICO,
-            historial.getId().toString(),
-            valorAnterior,
-            alergiasJson,
-            AuditoriaCambio.TipoOperacion.UPDATE,
-            "Reemplazo completo de alergias e intolerancias"
-        );
-        
-        return historialClinicoConverter.toDto(historial, datoClinicoRepository.findByHistorialClinico(historial));
-    }
-
-    @Override
-    @Transactional
-    public HistorialClinicoDTO añadirAlergias(String alergiasJson) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-        
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-        
-        String soloAlergias = alergiasJson;
-        if (alergiasJson != null && alergiasJson.trim().startsWith("{")) {
-            try {
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode node = mapper.readTree(alergiasJson);
-                if (node.has("alergias")) {
-                    soloAlergias = node.get("alergias").asText();
-                }
-            } catch (JsonProcessingException jsonError) {
-                throw new IllegalArgumentException(ErrorMessages.ERROR_JSON_INVALIDO, jsonError);
-            }
-        }
-        procesarAlergias(soloAlergias, historial, false);
-        
-        historiaRepo.save(historial);
-        
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            ALERGIA_INTOLERANCIA,
-            DATO_CLINICO,
-            historial.getId().toString(),
+            ANTECEDENTE_CLINICO,
+            ANTECEDENTE_CLINICO_TABLA,
+            guardado.getId().toString(),
             "",
-            soloAlergias,
+            guardado.getDescripcion(),
             AuditoriaCambio.TipoOperacion.CREATE,
-            "Adición de nuevas alergias e intolerancias"
+            "Creación de antecedente clínico"
         );
-        
-        return historialClinicoConverter.toDto(historial, datoClinicoRepository.findByHistorialClinico(historial));
+
+        return construirHistorialClinicoDTO(historial);
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO editarAntecedente(UUID id, AntecedenteClinicoDTO antecedenteDTO) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = obtenerHistorialUsuario(usuario);
+
+        AntecedenteClinico antecedente = obtenerAntecedente(id);
+        validarPropiedadAntecedente(antecedente, historial);
+
+        String valorAnterior = antecedente.getDescripcion();
+        antecedente.setCategoria(antecedenteClinicoConverter.parseCategoria(antecedenteDTO.getCategoria()));
+        antecedente.setDescripcion(antecedenteDTO.getDescripcion());
+        antecedenteClinicoRepository.save(antecedente);
+
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            ANTECEDENTE_CLINICO,
+            ANTECEDENTE_CLINICO_TABLA,
+            id.toString(),
+            valorAnterior,
+            antecedente.getDescripcion(),
+            AuditoriaCambio.TipoOperacion.UPDATE,
+            "Edición de antecedente clínico"
+        );
+
+        return construirHistorialClinicoDTO(historial);
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO borrarAntecedente(UUID id) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = obtenerHistorialUsuario(usuario);
+
+        AntecedenteClinico antecedente = obtenerAntecedente(id);
+        validarPropiedadAntecedente(antecedente, historial);
+
+        String valorAnterior = antecedente.getDescripcion();
+        antecedenteClinicoRepository.delete(antecedente);
+
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            ANTECEDENTE_CLINICO,
+            ANTECEDENTE_CLINICO_TABLA,
+            id.toString(),
+            valorAnterior,
+            "",
+            AuditoriaCambio.TipoOperacion.DELETE,
+            "Eliminación de antecedente clínico"
+        );
+
+        return construirHistorialClinicoDTO(historial);
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO crearAlergia(AlergiaDTO alergiaDTO) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = ensureForUsuario(usuario);
+
+        Alergia alergia = alergiaConverter.toEntity(alergiaDTO, historial);
+        alergia.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
+        Alergia guardada = alergiaRepository.save(alergia);
+
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            ALERGIA,
+            ALERGIA_TABLA,
+            guardada.getId().toString(),
+            "",
+            guardada.getDescripcion(),
+            AuditoriaCambio.TipoOperacion.CREATE,
+            "Creación de alergia"
+        );
+
+        return construirHistorialClinicoDTO(historial);
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO borrarAlergia(UUID id) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = obtenerHistorialUsuario(usuario);
+
+        Alergia alergia = obtenerAlergia(id);
+        validarPropiedadAlergia(alergia, historial);
+
+        String valorAnterior = alergia.getDescripcion();
+        alergiaRepository.delete(alergia);
+
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            ALERGIA,
+            ALERGIA_TABLA,
+            id.toString(),
+            valorAnterior,
+            "",
+            AuditoriaCambio.TipoOperacion.DELETE,
+            "Eliminación de alergia"
+        );
+
+        return construirHistorialClinicoDTO(historial);
     }
 
     /**
-     * Procesa las alergias del texto y las almacena como datos clínicos.
-     * 
-     * @param alergiasJson Texto con las alergias (una por línea)
-     * @param historial Historial clínico al que pertenecen
-     * @param eliminarExistentes Si true, elimina todas las alergias existentes antes de guardar las nuevas.
-     *                           Si false, solo añade las nuevas alergias sin eliminar las existentes.
+     * Obtiene un antecedente clínico por ID o lanza excepción si no existe
      */
-    // TODO Revisar esto, no tiene mucho sentido lo de eliminar todo para guardar una nueva
-    @SuppressWarnings("null")
-    private void procesarAlergias(String alergiasJson, HistorialClinico historial, boolean eliminarExistentes) {
-        if (eliminarExistentes) {
-            // Eliminar todas las alergias existentes
-            List<DatoClinico> alergiasExistentes = datoClinicoRepository.findByHistorialClinicoAndTipo(
-                historial, TIPO_ALERGIA_INTOLERANCIA
-            );
-            
-            if (!alergiasExistentes.isEmpty()) {
-                datoClinicoRepository.deleteAll(alergiasExistentes);
-            }
+    private AntecedenteClinico obtenerAntecedente(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_ID_DATO_INVALIDO);
         }
-        
-        // Procesar y guardar las nuevas alergias si existen
-        if (alergiasJson == null || alergiasJson.trim().isEmpty()) {
-            return;
-        }
+        return antecedenteClinicoRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ERROR_ANTECEDENTE_NO_ENCONTRADO));
+    }
 
-        // Guardar el texto como una sola alergia
-        String textoAlergia = alergiasJson.trim();
-        if (!textoAlergia.isEmpty()) {
-            DatoClinico nuevaAlergia = crearDatoClinicoAlergia(textoAlergia, historial);
-            datoClinicoRepository.save(nuevaAlergia);
+    /**
+     * Valida que el antecedente pertenezca al historial del usuario
+     */
+    private void validarPropiedadAntecedente(AntecedenteClinico antecedente, HistorialClinico historial) {
+        if (antecedente.getHistorialClinico() == null
+                || !antecedente.getHistorialClinico().getId().equals(historial.getId())) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_NO_PERMITIDO);
         }
     }
 
     /**
-     * Crea un dato clínico para una alergia
+     * Obtiene una alergia por ID o lanza excepción si no existe
      */
-    private DatoClinico crearDatoClinicoAlergia(String textoAlergia, HistorialClinico historial) {
-        DatoClinico datoClinico = new DatoClinico();
-        datoClinico.setTipo(TIPO_ALERGIA_INTOLERANCIA);
-        datoClinico.setValor(0.0f);
-        datoClinico.setUnidad(UNIDAD_TEXTO);
-        datoClinico.setObservacion(textoAlergia);
-        datoClinico.setHistorialClinico(historial);
-        datoClinico.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
-        return datoClinico;
+    private Alergia obtenerAlergia(UUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_ID_DATO_INVALIDO);
+        }
+        return alergiaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ERROR_ALERGIA_NO_ENCONTRADA));
+    }
+
+    /**
+     * Valida que la alergia pertenezca al historial del usuario
+     */
+    private void validarPropiedadAlergia(Alergia alergia, HistorialClinico historial) {
+        if (alergia.getHistorialClinico() == null
+                || !alergia.getHistorialClinico().getId().equals(historial.getId())) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_NO_PERMITIDO);
+        }
     }
 
     @Override
@@ -773,112 +789,4 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         }
     }
 
-    @Override
-    @Transactional
-    public HistorialClinicoDTO borrarAntecedente(int index) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-        
-        List<String> antecedentes = obtenerListaAntecedentes(historial);
-        validarIndiceAntecedente(index, antecedentes);
-        
-        String antecedenteBorrado = antecedentes.get(index);
-        
-        antecedentes.remove(index);
-        actualizarAntecedentesFamiliares(historial, String.join(SEPARADOR_ANTECEDENTES, antecedentes));
-        
-        historiaRepo.save(historial);
-        
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            ANTECEDENTES_FAMILIARES,
-            HISTORIAL_CLINICO,
-            historial.getId().toString(),
-            antecedenteBorrado,
-            "",
-            AuditoriaCambio.TipoOperacion.DELETE,
-            "Eliminación de antecedente familiar"
-        );
-        
-        return historialClinicoConverter.toDto(historial);
-    }
-
-    @Override
-    @Transactional
-    public HistorialClinicoDTO editarAntecedente(int index, String texto) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-        
-        List<String> antecedentes = obtenerListaAntecedentes(historial);
-        validarIndiceAntecedente(index, antecedentes);
-        
-        String valorAnterior = antecedentes.get(index);
-        
-        String entradaConTimestamp = crearEntradaConTimestamp(texto);
-        antecedentes.set(index, entradaConTimestamp);
-        actualizarAntecedentesFamiliares(historial, String.join(SEPARADOR_ANTECEDENTES, antecedentes));
-        
-        historiaRepo.save(historial);
-        
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            ANTECEDENTES_FAMILIARES,
-            HISTORIAL_CLINICO,
-            historial.getId().toString(),
-            valorAnterior,
-            entradaConTimestamp,
-            AuditoriaCambio.TipoOperacion.UPDATE,
-            "Edición de antecedente familiar"
-        );
-        
-        return historialClinicoConverter.toDto(historial);
-    }
-
-    /**
-     * Obtiene la lista de antecedentes familiares como lista de strings
-     */
-    private List<String> obtenerListaAntecedentes(HistorialClinico historial) {
-        String antecedentesTexto = historial.getAntecedentesFamiliares();
-        if (antecedentesTexto == null || antecedentesTexto.trim().isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        return Arrays.stream(antecedentesTexto.split("\r?\n\s*\r?\n"))
-                .filter(parte -> parte != null && !parte.trim().isEmpty())
-                .map(String::trim)
-                .toList();
-    }
-
-    /**
-     * Valida que el índice esté dentro del rango válido
-     */
-    private void validarIndiceAntecedente(int index, List<String> antecedentes) {
-        if (antecedentes.isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.ERROR_NO_HAY_ANTECEDENTES);
-        }
-        if (index < 0 || index >= antecedentes.size()) {
-            throw new IllegalArgumentException(ErrorMessages.ERROR_INDICE_FUERA_RANGO);
-        }
-    }
-
-    /**
-     * Crea una entrada con timestamp
-     */
-    private String crearEntradaConTimestamp(String texto) {
-        String timestamp = LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)).format(TIMESTAMP_FORMATTER);
-        String textoLimpio = texto != null ? texto.trim() : "";
-        return "[" + timestamp + "] " + textoLimpio;
-    }
 }

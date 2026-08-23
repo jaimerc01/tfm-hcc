@@ -101,8 +101,8 @@
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
+import { useRole } from '@/composables/useRole'
 import { useI18n } from 'vue-i18n'
-import authService from '@/services/authService'
 import NotificationsDropdown from '@/components/NotificationsDropdown.vue'
 
 export default {
@@ -116,25 +116,8 @@ export default {
 
     const router = useRouter()
     const { logout } = useAuth()
+    const { isMedico, isAdmin, isPaciente } = useRole()
     const { locale } = useI18n()
-
-    const isMedico = computed(() => {
-      const claims = authService.getCurrentUser() || {}
-      const roles = claims.authorities || claims.roles || []
-      return Array.isArray(roles) && roles.some(r => String(r).toUpperCase().includes('MEDICO'))
-    })
-
-    const isAdmin = computed(() => {
-      const claims = authService.getCurrentUser() || {}
-      const roles = claims.authorities || claims.roles || []
-      return Array.isArray(roles) && roles.some(r => String(r).toUpperCase().includes('ADMINISTRADOR'))
-    })
-
-    const isPaciente = computed(() => {
-      const claims = authService.getCurrentUser() || {}
-      const roles = claims.authorities || claims.roles || []
-      return Array.isArray(roles) && roles.some(r => String(r).toUpperCase().includes('PACIENTE'))
-    })
 
     const close = () => {
       open.value = false
@@ -386,7 +369,7 @@ export default {
 .nav__dropdown-toggle:focus-visible,
 .btn-confirm:focus-visible,
 .btn-cancel:focus-visible {
-  outline: 3px solid var(--focus-color, #005fcc);
+  outline: 3px solid var(--focus-color);
   outline-offset: 2px;
 }
 

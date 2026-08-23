@@ -167,6 +167,7 @@
 <script>
 import axios from 'axios'
 import authService from '../services/authService'
+import { ROLES, hasRole } from '../utils/roles'
 
 export default {
   name: 'MisSolicitudesView',
@@ -199,11 +200,7 @@ export default {
         this.solicitudes = Array.isArray(resp.data) ? resp.data : []
         // if user is a medico, also load solicitudes they have sent
         const claims = authService.getCurrentUser()
-        const roles = (claims && (claims.authorities || claims.roles || claims.scope)) || []
-        const isMedico = Array.isArray(roles)
-          ? roles.some(r => String(r).toUpperCase().includes('MEDICO'))
-          : (typeof roles === 'string' && String(roles).toUpperCase().includes('MEDICO'))
-        if (isMedico) {
+        if (hasRole(claims, ROLES.MEDICO)) {
           try {
             const r2 = await axios.get(`${base}/medico/solicitudes-asignacion/enviadas`, { headers: { Authorization: `Bearer ${token}` } })
             this.solicitudesEnviadas = Array.isArray(r2.data) ? r2.data : []

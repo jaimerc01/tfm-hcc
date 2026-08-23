@@ -20,25 +20,6 @@
       <div class="tabs-nav" role="tablist" :aria-label="$t('clinical_history')">
         <button
           type="button"
-          id="identificacion-tab"
-          ref="tabIdentificacion"
-          :class="['tab-btn', { active: activeSection === 'identificacion' }]"
-          @click="activeSection = 'identificacion'"
-          @keydown="onTabKeydown($event, 'identificacion')"
-          role="tab"
-          :aria-selected="activeSection === 'identificacion'"
-          aria-controls="identificacion-panel"
-          :tabindex="activeSection === 'identificacion' ? 0 : -1"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          {{$t('identification')}}
-        </button>
-
-        <button
-          type="button"
           id="antecedentes-tab"
           ref="tabAntecedentes"
           :class="['tab-btn', { active: activeSection === 'antecedentes' }]"
@@ -161,79 +142,7 @@
 
       <transition name="fade-slide" mode="out-in">
         <div
-          v-if="activeSection === 'identificacion'"
-          key="identificacion"
-          id="identificacion-panel"
-          class="tab-panel"
-          role="tabpanel"
-          aria-labelledby="identificacion-tab"
-          tabindex="-1"
-        >
-          <div class="panel-card">
-            <div class="panel-header">
-              <h2>{{$t('basic_identification')}}</h2>
-              <p class="panel-subtitle">{{$t('personal_info')}}</p>
-            </div>
-
-            <div class="form-grid">
-              <div class="form-group full-width">
-                <label for="ident-nombre" class="form-label">{{$t('full_name')}} <span class="required">*</span></label>
-                <input id="ident-nombre" type="text" v-model="identNombre" :placeholder="$t('full_name')" class="form-input" required aria-required="true" autocomplete="name" />
-              </div>
-
-              <div class="form-group">
-                <label for="ident-nif" class="form-label">{{$t('nif_nie')}} <span class="required">*</span></label>
-                <input id="ident-nif" type="text" v-model="identNif" :placeholder="$t('nif_nie')" class="form-input" required aria-required="true" autocomplete="off" />
-              </div>
-
-              <div class="form-group">
-                <label for="ident-fecha" class="form-label">{{$t('birth_date')}}</label>
-                <input id="ident-fecha" type="date" v-model="identFechaNacimiento" :placeholder="$t('birth_date')" class="form-input" autocomplete="bday" />
-              </div>
-
-              <div class="form-group">
-                <label for="ident-telefono" class="form-label">{{$t('phone')}}</label>
-                <input id="ident-telefono" type="tel" v-model="identTelefono" :placeholder="$t('phone')" class="form-input" autocomplete="tel" />
-              </div>
-
-              <div class="form-group">
-                <label for="ident-email" class="form-label">{{$t('email_optional')}}</label>
-                <input id="ident-email" type="email" v-model="identEmail" :placeholder="$t('email_optional')" class="form-input" autocomplete="email" />
-              </div>
-            </div>
-
-            <div class="info-box">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-              </svg>
-              <span>{{$t('data_secure')}}</span>
-            </div>
-
-            <div class="form-actions">
-              <button type="button" @click="saveIdentificacion" :disabled="savingIdent" class="btn-primary">
-                <svg v-if="!savingIdent" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                  <polyline points="7 3 7 8 15 8"></polyline>
-                </svg>
-                <div v-else class="spinner-small"></div>
-                {{ savingIdent ? $t('saving') : $t('save_identification') }}
-              </button>
-            </div>
-
-            <div v-if="msgIdent" class="alert alert-success" role="status" aria-live="polite">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              {{$t('saved')}}
-            </div>
-          </div>
-        </div>
-
-        <div
-          v-else-if="activeSection === 'antecedentes'"
+          v-if="activeSection === 'antecedentes'"
           key="antecedentes"
           id="antecedentes-panel"
           class="tab-panel"
@@ -437,31 +346,22 @@ export default {
   },
   data() {
     return {
-      tabOrder: ['identificacion', 'antecedentes', 'alergias', 'analisis', 'signos-vitales', 'analisis-orina', 'archivos'],
+      tabOrder: ['antecedentes', 'alergias', 'analisis', 'signos-vitales', 'analisis-orina', 'archivos'],
       items: [],
       file: null,
       uploading: false,
       removingId: null,
       error: null,
       isDragging: false,
-      identNombre: '',
-      identNif: '',
-      identFechaNacimiento: '',
-      identTelefono: '',
-      identEmail: '',
-      savingIdent: false,
-      msgIdent: '',
-      activeSection: 'identificacion'
+      activeSection: 'antecedentes'
     }
   },
   created() {
     this.load()
-    this.loadHistoria()
   },
   methods: {
     getTabRefName(section) {
       const map = {
-        identificacion: 'tabIdentificacion',
         antecedentes: 'tabAntecedentes',
         alergias: 'tabAlergias',
         analisis: 'tabAnalisis',
@@ -498,52 +398,6 @@ export default {
     openFilePicker() {
       const input = this.$refs.fileInputRef
       if (input && typeof input.click === 'function') input.click()
-    },
-
-    async loadHistoria() {
-      try {
-        const historiaSvc = await import('@/services/historiaClinicaService').then(m => m.default)
-        const res = await historiaSvc.getMine()
-        const dto = res.data || {}
-        try {
-          const id = dto.identificacionJson
-            ? (typeof dto.identificacionJson === 'string' ? JSON.parse(dto.identificacionJson) : dto.identificacionJson)
-            : {}
-          this.identNombre = id.nombre || ''
-          this.identNif = id.nif || ''
-          this.identFechaNacimiento = id.fechaNacimiento || ''
-          this.identTelefono = id.contacto || ''
-          this.identEmail = id.email || ''
-        } catch (e) {
-          // Ignore malformed JSON from backend identification payload.
-        }
-      } catch (e) {
-        console.error(this.$t('error_loading_history'), e)
-      }
-    },
-
-    async saveIdentificacion() {
-      this.savingIdent = true
-      try {
-        const historiaSvc = await import('@/services/historiaClinicaService').then(m => m.default)
-        const payload = {
-          nombre: this.identNombre,
-          nif: this.identNif,
-          fechaNacimiento: this.identFechaNacimiento,
-          contacto: this.identTelefono,
-          email: this.identEmail
-        }
-        await historiaSvc.updateIdentificacion(JSON.stringify(payload))
-        await this.loadHistoria()
-        this.msgIdent = this.$t('saved')
-        setTimeout(() => {
-          this.msgIdent = ''
-        }, 3000)
-      } catch (e) {
-        this.error = this.$t('error_saving_identification')
-      } finally {
-        this.savingIdent = false
-      }
     },
 
     async load() {
@@ -712,7 +566,7 @@ export default {
 }
 
 .tab-btn:focus-visible {
-  outline: 3px solid var(--focus-color, #005fcc);
+  outline: 3px solid var(--focus-color);
   outline-offset: 2px;
 }
 
@@ -817,7 +671,7 @@ export default {
 }
 
 .form-input:focus-visible {
-  outline: 3px solid var(--focus-color, #005fcc);
+  outline: 3px solid var(--focus-color);
   outline-offset: 2px;
   border-color: var(--primary-color);
   box-shadow: var(--focus-ring-info);
@@ -877,7 +731,7 @@ export default {
 .btn-primary:focus-visible,
 .btn-icon:focus-visible,
 .file-drop-zone:focus-visible {
-  outline: 3px solid var(--focus-color, #005fcc);
+  outline: 3px solid var(--focus-color);
   outline-offset: 2px;
 }
 

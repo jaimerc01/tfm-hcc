@@ -27,7 +27,7 @@
           <li><b>{{$t('name')}}:</b> {{ paciente.nombre }}</li>
           <li><b>{{$t('surnames')}}:</b> {{ paciente.apellido1 }} {{ paciente.apellido2 }}</li>
           <li><b>{{$t('dni')}}:</b> {{ paciente.nif }}</li>
-          <li><b>{{$t('birth_date')}}:</b> {{ paciente.fechaNacimiento }}</li>
+          <li><b>{{$t('birth_date')}}:</b> {{ formatDate(paciente.fechaNacimiento) }}</li>
         </ul>
         <button @click="solicitarAsignacion" class="asignar-btn">{{$t('assign_request')}}</button>
         <p v-if="asignacionMsg" :class="{ error: asignacionError, success: !asignacionError }">{{ asignacionMsg }}</p>
@@ -37,7 +37,7 @@
         <h3>{{$t('pending_requests')}}</h3>
         <ul>
           <li v-for="s in solicitudesPendientes" :key="s.id">
-            {{$t('patient')}}: {{ s.paciente?.nif || (s.paciente && s.paciente.nif) }} — {{$t('state')}}: {{ s.estado }} — {{$t('date')}}: {{ s.fechaCreacion }}
+            {{$t('patient')}}: {{ s.paciente?.nif || (s.paciente && s.paciente.nif) }} — {{$t('state')}}: {{ s.estado }} — {{$t('date')}}: {{ formatDate(s.fechaCreacion) }}
           </li>
         </ul>
       </div>
@@ -47,11 +47,15 @@
 
 <script>
 import axios from 'axios'
-import authService from '@/services/authService'
 import { validateNIF } from '@/utils/validateNIF'
+import { useRole } from '@/composables/useRole'
 
 export default {
   name: 'MedicoView',
+  setup() {
+    const { isMedico } = useRole()
+    return { isMedico }
+  },
   data() {
     return {
       error: '',
@@ -63,13 +67,6 @@ export default {
       asignacionError: false,
       searchError: '',
       alive: true
-    }
-  },
-  computed: {
-    isMedico() {
-      const claims = authService.getCurrentUser() || {}
-      const roles = claims.authorities || claims.roles || []
-      return Array.isArray(roles) && roles.some(r => String(r).toUpperCase().includes('MEDICO'))
     }
   },
   async created() {
@@ -118,6 +115,13 @@ export default {
         this.solicitudesPendientes = []
       }
     },
+    formatDate(v) {
+      if (!v) return ''
+      const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(v)
+      if (!match) return v
+      const [, year, month, day] = match
+      return `${day}/${month}/${year}`
+    },
     async solicitarAsignacion() {
       this.asignacionMsg = ''
       this.asignacionError = false
@@ -149,12 +153,16 @@ export default {
 
 <style scoped>
 
+.page {
+  padding: 2rem 1.5rem 2rem 3rem;
+}
+
 .search-form {
   margin: 2rem 0;
   padding: 1rem;
   background: var(--bg-light);
   border-radius: 8px;
-  max-width: 400px;
+  width: fit-content;
 }
 .form-group {
   margin-bottom: 1rem;
@@ -164,7 +172,7 @@ export default {
   margin-bottom: 0.3rem;
 }
 .form-group input {
-  width: 100%;
+  width: 240px;
   padding: 0.5rem;
   border: 1px solid var(--border-medium);
   border-radius: 4px;

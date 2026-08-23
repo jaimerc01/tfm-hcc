@@ -1,8 +1,12 @@
 package com.hcc.tfm_hcc.converter;
 
 import com.hcc.tfm_hcc.constants.TiposDatoClinico;
+import com.hcc.tfm_hcc.dto.AlergiaDTO;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.DatoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.model.Alergia;
+import com.hcc.tfm_hcc.model.AntecedenteClinico;
 import com.hcc.tfm_hcc.model.DatoClinico;
 import com.hcc.tfm_hcc.model.HistorialClinico;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +22,30 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HistorialClinicoConverter {
 
-    private static final String TIPO_ALERGIA_INTOLERANCIA = "alergia/intolerancia";
-
     private final RangoConverter rangoConverter;
+    private final AlergiaConverter alergiaConverter;
+    private final AntecedenteClinicoConverter antecedenteClinicoConverter;
 
     /**
-     * Convierte un historial clínico y sus datos asociados a DTO.
+     * Convierte un historial clínico y todos sus datos asociados a DTO.
+     *
+     * @param historial historial clínico
+     * @param datosClinicos lista de datos clínicos cuantitativos asociados (análisis, signos vitales...)
+     * @param alergias lista de alergias del paciente
+     * @param antecedentes lista de antecedentes clínicos del paciente
+     * @return DTO del historial clínico
+     */
+    public HistorialClinicoDTO toDto(HistorialClinico historial, List<DatoClinico> datosClinicos,
+            List<Alergia> alergias, List<AntecedenteClinico> antecedentes) {
+        HistorialClinicoDTO dto = toDto(historial, datosClinicos);
+        dto.setAlergias(mapAlergias(alergias));
+        dto.setAntecedentes(mapAntecedentes(antecedentes));
+        return dto;
+    }
+
+    /**
+     * Convierte un historial clínico y sus datos clínicos cuantitativos a DTO.
+     * No incluye alergias ni antecedentes; usar el método de cuatro parámetros para el DTO completo.
      *
      * @param historial historial clínico
      * @param datosClinicos lista de datos clínicos asociados
@@ -31,17 +53,14 @@ public class HistorialClinicoConverter {
      */
     public HistorialClinicoDTO toDto(HistorialClinico historial, List<DatoClinico> datosClinicos) {
         HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        dto.setAntecedentesFamiliares(historial != null ? historial.getAntecedentesFamiliares() : null);
 
         if (datosClinicos == null || datosClinicos.isEmpty()) {
-            dto.setDatosClinicos(new ArrayList<>());
             dto.setAnalisisSangre(new ArrayList<>());
             dto.setSignosVitales(new ArrayList<>());
             dto.setAnalisisOrina(new ArrayList<>());
             return dto;
         }
 
-        List<DatoClinicoDTO> alergias = new ArrayList<>();
         List<DatoClinicoDTO> analisisSangre = new ArrayList<>();
         List<DatoClinicoDTO> signosVitales = new ArrayList<>();
         List<DatoClinicoDTO> analisisOrina = new ArrayList<>();
@@ -50,9 +69,7 @@ public class HistorialClinicoConverter {
             DatoClinicoDTO datoDto = toDatoClinicoDto(datoClinico);
             String tipo = datoClinico.getTipo();
 
-            if (TIPO_ALERGIA_INTOLERANCIA.equals(tipo)) {
-                alergias.add(datoDto);
-            } else if (perteneceATipo(tipo, TiposDatoClinico.SIGNOS_VITALES)) {
+            if (perteneceATipo(tipo, TiposDatoClinico.SIGNOS_VITALES)) {
                 signosVitales.add(datoDto);
             } else if (perteneceATipo(tipo, TiposDatoClinico.ANALISIS_ORINA)) {
                 analisisOrina.add(datoDto);
@@ -61,7 +78,6 @@ public class HistorialClinicoConverter {
             }
         }
 
-        dto.setDatosClinicos(alergias);
         dto.setAnalisisSangre(analisisSangre);
         dto.setSignosVitales(signosVitales);
         dto.setAnalisisOrina(analisisOrina);
@@ -79,21 +95,13 @@ public class HistorialClinicoConverter {
     }
 
     /**
-     * Convierte un historial clínico a DTO.
+     * Convierte un historial clínico a DTO sin datos clínicos, alergias ni antecedentes.
      *
      * @param historial historial clínico
      * @return DTO del historial clínico
      */
     public HistorialClinicoDTO toDto(HistorialClinico historial) {
-        HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        dto.setAntecedentesFamiliares(historial != null ? historial.getAntecedentesFamiliares() : null);
-        return dto;
-    }
-
-    public HistorialClinico toEntity(HistorialClinicoDTO dto) {
-        HistorialClinico entity = new HistorialClinico();
-        entity.setAntecedentesFamiliares(dto.getAntecedentesFamiliares());
-        return entity;
+        return new HistorialClinicoDTO();
     }
 
     /**
@@ -116,5 +124,19 @@ public class HistorialClinicoConverter {
         }
 
         return dto;
+    }
+
+    private List<AlergiaDTO> mapAlergias(List<Alergia> alergias) {
+        if (alergias == null) {
+            return new ArrayList<>();
+        }
+        return alergias.stream().map(alergiaConverter::toDto).toList();
+    }
+
+    private List<AntecedenteClinicoDTO> mapAntecedentes(List<AntecedenteClinico> antecedentes) {
+        if (antecedentes == null) {
+            return new ArrayList<>();
+        }
+        return antecedentes.stream().map(antecedenteClinicoConverter::toDto).toList();
     }
 }

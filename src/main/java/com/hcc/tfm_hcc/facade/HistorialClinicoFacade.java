@@ -7,6 +7,8 @@ import java.util.UUID;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.hcc.tfm_hcc.dto.AlergiaDTO;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 
@@ -77,37 +79,46 @@ public interface HistorialClinicoFacade {
     HistorialClinicoDTO obtenerMiHistoria();
     
     /**
-     * Actualiza la información de identificación en el historial clínico.
-     * 
-     * @param historialClinicoDTO Datos de identificación
+     * Crea un nuevo antecedente clínico (personal o familiar) en el historial.
+     *
+     * @param antecedenteDTO categoría y descripción del antecedente
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarIdentificacion(HistorialClinicoDTO historialClinicoDTO);
-    
+    HistorialClinicoDTO crearAntecedente(AntecedenteClinicoDTO antecedenteDTO);
+
     /**
-     * Actualiza los antecedentes familiares en el historial clínico.
-     * 
-     * @param antecedentesFamiliares Texto con los antecedentes familiares del paciente
+     * Edita un antecedente clínico existente.
+     *
+     * @param id ID del antecedente a editar
+     * @param antecedenteDTO categoría y descripción actualizadas
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarAntecedentes(String antecedentesFamiliares);
-    
+    HistorialClinicoDTO editarAntecedente(UUID id, AntecedenteClinicoDTO antecedenteDTO);
+
     /**
-     * Actualiza la información de alergias en el historial clínico.
-     * 
-     * @param alergiasJson Datos de alergias en formato JSON
+     * Elimina un antecedente clínico específico.
+     *
+     * @param id ID del antecedente a eliminar
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarAlergias(String alergiasJson);
-    
+    HistorialClinicoDTO borrarAntecedente(UUID id);
+
     /**
-     * Añade nuevas alergias sin eliminar las existentes.
-     * 
-     * @param alergiasJson Datos de alergias en formato texto (una por línea)
+     * Crea una nueva alergia o intolerancia en el historial clínico.
+     *
+     * @param alergiaDTO descripción de la alergia
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO anadirAlergias(String alergiasJson);
-    
+    HistorialClinicoDTO crearAlergia(AlergiaDTO alergiaDTO);
+
+    /**
+     * Elimina una alergia específica.
+     *
+     * @param id ID de la alergia a eliminar
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO borrarAlergia(UUID id);
+
     /**
      * Actualiza los análisis de sangre en el historial clínico.
      * 
@@ -162,21 +173,4 @@ public interface HistorialClinicoFacade {
      * @param id ID único del dato clínico a eliminar
      */
     void borrarDatoClinico(UUID id);
-    
-    /**
-     * Elimina un antecedente específico por su índice en la lista.
-     * 
-     * @param index Índice del antecedente a eliminar (basado en cero)
-     * @return HistorialClinicoDTO actualizado
-     */
-    HistorialClinicoDTO borrarAntecedente(int index);
-    
-    /**
-     * Edita un antecedente específico por su índice en la lista.
-     * 
-     * @param index Índice del antecedente a editar (basado en cero)
-     * @param texto Nuevo texto para el antecedente
-     * @return HistorialClinicoDTO actualizado
-     */
-    HistorialClinicoDTO editarAntecedente(int index, String texto);
 }

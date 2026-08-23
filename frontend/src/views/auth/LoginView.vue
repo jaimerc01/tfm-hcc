@@ -359,7 +359,7 @@
   .login-btn:focus-visible,
   .alt-actions a:focus-visible,
   .error-message:focus-visible {
-    outline: 3px solid var(--focus-color, #005fcc);
+    outline: 3px solid var(--focus-color);
     outline-offset: 2px;
   }
 

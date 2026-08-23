@@ -175,4 +175,5 @@
   /* Focus outline for accessibility */
   --focus-outline: 2px solid var(--primary-color);
   --focus-outline-offset: 2px;
+  --focus-color: #005fcc;        /* High-contrast focus-visible outline color */
 }

@@ -2,6 +2,8 @@ package com.hcc.tfm_hcc.service;
 
 import java.util.UUID;
 
+import com.hcc.tfm_hcc.dto.AlergiaDTO;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 
 /**
@@ -35,41 +37,51 @@ public interface HistorialClinicoService {
     HistorialClinicoDTO obtenerHistoriaUsuarioActual();
     
     /**
-     * Actualiza los datos de identificación del historial clínico.
+     * Crea un nuevo antecedente clínico (personal o familiar) en el historial.
      *
-     * @param historialClinicoDTO los datos de identificación
+     * @param antecedenteDTO categoría y descripción del antecedente
      * @return el DTO del historial clínico actualizado
      * @throws IllegalArgumentException si los datos son inválidos
      */
-    HistorialClinicoDTO actualizarIdentificacion(HistorialClinicoDTO historialClinicoDTO);
-    
+    HistorialClinicoDTO crearAntecedente(AntecedenteClinicoDTO antecedenteDTO);
+
     /**
-     * Actualiza los antecedentes familiares del historial clínico.
+     * Edita un antecedente clínico existente.
      *
-     * @param antecedentesFamiliares los antecedentes familiares en formato texto
+     * @param id el ID del antecedente a editar
+     * @param antecedenteDTO categoría y descripción actualizadas
+     * @return el DTO del historial clínico actualizado
+     * @throws IllegalArgumentException si el antecedente no existe o no pertenece al usuario
+     */
+    HistorialClinicoDTO editarAntecedente(UUID id, AntecedenteClinicoDTO antecedenteDTO);
+
+    /**
+     * Borra un antecedente clínico específico.
+     *
+     * @param id el ID del antecedente a borrar
+     * @return el DTO del historial clínico actualizado
+     * @throws IllegalArgumentException si el antecedente no existe o no pertenece al usuario
+     */
+    HistorialClinicoDTO borrarAntecedente(UUID id);
+
+    /**
+     * Crea una nueva alergia o intolerancia en el historial.
+     *
+     * @param alergiaDTO descripción de la alergia
      * @return el DTO del historial clínico actualizado
      * @throws IllegalArgumentException si los datos son inválidos
      */
-    HistorialClinicoDTO actualizarAntecedentes(String antecedentesFamiliares);
-    
+    HistorialClinicoDTO crearAlergia(AlergiaDTO alergiaDTO);
+
     /**
-     * Actualiza las alergias del historial clínico.
+     * Borra una alergia específica.
      *
-     * @param alergiasJson las alergias en formato JSON
+     * @param id el ID de la alergia a borrar
      * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si el JSON es inválido
+     * @throws IllegalArgumentException si la alergia no existe o no pertenece al usuario
      */
-    HistorialClinicoDTO actualizarAlergias(String alergiasJson);
-    
-    /**
-     * Añade nuevas alergias al historial clínico sin eliminar las existentes.
-     *
-     * @param alergiasJson las nuevas alergias en formato texto (una por línea)
-     * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si los datos son inválidos
-     */
-    HistorialClinicoDTO añadirAlergias(String alergiasJson);
-    
+    HistorialClinicoDTO borrarAlergia(UUID id);
+
     /**
      * Actualiza los análisis de sangre del historial clínico.
      * Reemplaza todos los análisis existentes con los nuevos.
@@ -134,23 +146,4 @@ public interface HistorialClinicoService {
      * @throws IllegalArgumentException si el ID no existe o no pertenece al usuario
      */
     void borrarDatoClinico(UUID id);
-    
-    /**
-     * Borra un antecedente familiar específico por su índice.
-     *
-     * @param index el índice del antecedente a borrar
-     * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si el índice es inválido
-     */
-    HistorialClinicoDTO borrarAntecedente(int index);
-    
-    /**
-     * Edita un antecedente familiar específico por su índice.
-     *
-     * @param index el índice del antecedente a editar
-     * @param texto el nuevo texto del antecedente
-     * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si el índice es inválido o el texto es nulo
-     */
-    HistorialClinicoDTO editarAntecedente(int index, String texto);
 }

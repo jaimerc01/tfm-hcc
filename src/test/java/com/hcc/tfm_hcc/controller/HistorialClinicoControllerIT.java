@@ -1,5 +1,7 @@
 package com.hcc.tfm_hcc.controller;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -20,6 +22,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcc.tfm_hcc.controller.impl.HistorialClinicoControllerImpl;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
 
@@ -53,12 +56,11 @@ class HistorialClinicoControllerIT {
     @SuppressWarnings("null")
     @Test
     void deleteAntecedente_returnsUpdatedDto() throws Exception {
-        int index = 0;
+        UUID id = UUID.randomUUID();
         HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        dto.setAntecedentesFamiliares("[2025-01-01] entrada única");
-        when(historialClinicoFacade.borrarAntecedente(index)).thenReturn(dto);
+        when(historialClinicoFacade.borrarAntecedente(id)).thenReturn(dto);
 
-        mvc.perform(delete("/historia/me/antecedentes/" + index))
+        mvc.perform(delete("/historia/antecedentes/" + id))
             .andExpect(status().isOk())
             .andExpect(content().json(objectMapper.writeValueAsString(dto)));
     }
@@ -66,15 +68,16 @@ class HistorialClinicoControllerIT {
     @SuppressWarnings("null")
     @Test
     void editarAntecedente_returnsUpdatedDto() throws Exception {
-        int index = 1;
-        String nuevo = "texto modificado";
+        UUID id = UUID.randomUUID();
+        AntecedenteClinicoDTO body = new AntecedenteClinicoDTO();
+        body.setCategoria("PERSONAL");
+        body.setDescripcion("texto modificado");
         HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        dto.setAntecedentesFamiliares("[2025-01-01] entrada primera\n\n[2025-02-01] " + nuevo);
-        when(historialClinicoFacade.editarAntecedente(index, nuevo)).thenReturn(dto);
+        when(historialClinicoFacade.editarAntecedente(eq(id), any(AntecedenteClinicoDTO.class))).thenReturn(dto);
 
-        mvc.perform(put("/historia/me/antecedentes/" + index)
-                .contentType(MediaType.TEXT_PLAIN)
-                .content(nuevo))
+        mvc.perform(put("/historia/antecedentes/" + id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body)))
             .andExpect(status().isOk())
             .andExpect(content().json(objectMapper.writeValueAsString(dto)));
     }

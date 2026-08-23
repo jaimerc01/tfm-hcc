@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import authService from '@/services/authService'
+import { ROLES, hasRole } from '@/utils/roles'
 
 // Vistas
 import HomeView from '@/views/HomeView.vue'
@@ -68,19 +69,19 @@ const routes = [
     path: '/medico',
     name: 'Medico',
     component: MedicoView,
-    meta: { requiresAuth: true, requiresRole: 'MEDICO' }
+    meta: { requiresAuth: true, requiresRole: ROLES.MEDICO }
   },
   {
     path: '/admin',
     name: 'Admin',
     component: AdminView,
-    meta: { requiresAuth: true, requiresRole: 'ADMINISTRADOR' }
+    meta: { requiresAuth: true, requiresRole: ROLES.ADMINISTRADOR }
   },
   {
     path: '/admin/medicos',
     name: 'AdminMedicos',
     component: AdminMedicosView,
-    meta: { requiresAuth: true, requiresRole: 'ADMINISTRADOR' }
+    meta: { requiresAuth: true, requiresRole: ROLES.ADMINISTRADOR }
   },
   {
     path: '/privacidad',
@@ -105,7 +106,6 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const isAuth = authService.isAuthenticated()
   const claims = authService.getCurrentUser() || {}
-  const roles = (claims && (claims.authorities || claims.roles)) || []
 
   if (to.meta.requiresAuth && !isAuth) {
     return next({ name: 'Login' })
@@ -115,14 +115,8 @@ router.beforeEach((to, from, next) => {
     return next({ name: 'Dashboard' })
   }
 
-  if (to.meta.requiresRole) {
-    const required = String(to.meta.requiresRole)
-    const has = Array.isArray(roles)
-      ? roles.some(r => String(r).toUpperCase().includes(required.toUpperCase()))
-      : false
-    if (!has) {
-      return next({ name: 'Dashboard' })
-    }
+  if (to.meta.requiresRole && !hasRole(claims, to.meta.requiresRole)) {
+    return next({ name: 'Dashboard' })
   }
 
   next()
