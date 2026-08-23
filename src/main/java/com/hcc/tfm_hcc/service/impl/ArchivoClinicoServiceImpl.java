@@ -1,7 +1,8 @@
 package com.hcc.tfm_hcc.service.impl;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -11,8 +12,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.ArchivoClinicoRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.ArchivoCifradoService;
 import com.hcc.tfm_hcc.service.AuditoriaCambioService;
 
 import lombok.RequiredArgsConstructor;
@@ -80,6 +82,7 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     private final ArchivoClinicoRepository archivoClinicoRepository;
     private final UsuarioRepository usuarioRepository;
     private final AuditoriaCambioService auditoriaCambioService;
+    private final ArchivoCifradoService archivoCifradoService;
 
     @Value("${app.uploads.base-dir:uploads}")
     private String baseDir;
@@ -254,16 +257,18 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     }
 
     /**
-     * Almacena físicamente el archivo en el sistema de archivos
+     * Almacena físicamente el archivo en el sistema de archivos, cifrando su
+     * contenido con AES/GCM antes de escribirlo a disco (ver {@link ArchivoCifradoService}).
      */
     private Path almacenarArchivo(MultipartFile file, UUID userId, String nombreAlmacenado) throws IOException {
         Path directorio = userDir(userId);
         Files.createDirectories(directorio);
-        
+
         Path rutaDestino = directorio.resolve(nombreAlmacenado);
-        
-        try {
-            Files.copy(file.getInputStream(), rutaDestino);
+
+        try (InputStream entrada = file.getInputStream();
+             OutputStream salida = Files.newOutputStream(rutaDestino)) {
+            archivoCifradoService.cifrar(entrada, salida);
             return rutaDestino;
         } catch (IOException ex) {
             throw new IOException(ErrorMessages.ERROR_GUARDAR_ARCHIVO, ex);
@@ -316,31 +321,20 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     }
 
     /**
-     * Crea un Resource a partir de un archivo clínico
+     * Crea un Resource a partir de un archivo clínico, descifrando su contenido
+     * físico (ver {@link ArchivoCifradoService}) antes de servirlo al usuario.
      */
     private Resource crearResourceDesdeArchivo(ArchivoClinico archivo) {
-        try {
-            Path rutaArchivo = Paths.get(archivo.getRutaAlmacenada());
-            var uri = rutaArchivo.toUri();
-            if (uri == null) {
-                throw new IllegalStateException(ErrorMessages.ERROR_RUTA_INVALIDA);
-            }
-            Resource resource = new UrlResource(uri);
-            
-            validarResourceAccesible(resource);
-            
-            return resource;
-        } catch (MalformedURLException e) {
-            throw new IllegalStateException(ErrorMessages.ERROR_RUTA_INVALIDA, e);
-        }
-    }
-
-    /**
-     * Valida que el resource sea accesible
-     */
-    private void validarResourceAccesible(Resource resource) {
-        if (!resource.exists() || !resource.isReadable()) {
+        Path rutaArchivo = Paths.get(archivo.getRutaAlmacenada());
+        if (!Files.exists(rutaArchivo) || !Files.isReadable(rutaArchivo)) {
             throw new IllegalStateException(ErrorMessages.ERROR_ARCHIVO_NO_ACCESIBLE);
+        }
+
+        try {
+            InputStream contenidoDescifrado = archivoCifradoService.descifrar(rutaArchivo);
+            return new InputStreamResource(contenidoDescifrado);
+        } catch (IOException e) {
+            throw new IllegalStateException(ErrorMessages.ERROR_ARCHIVO_NO_ACCESIBLE, e);
         }
     }
 

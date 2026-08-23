@@ -1,6 +1,9 @@
 package com.hcc.tfm_hcc.model;
 
+import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
@@ -45,8 +48,10 @@ public class ArchivoClinico extends BaseEntity {
     /**
      * Nombre original del archivo cuando fue subido por el usuario.
      * Conserva el nombre con el que el usuario identificó el documento.
+     * Campo encriptado por poder revelar información clínica (p. ej. "analitica_vih.pdf").
      */
     @Column(name = "nombre_original", nullable = false)
+    @Convert(converter = AESEncryptionConverter.class)
     private String nombreOriginal;
 
     /**
@@ -66,7 +71,9 @@ public class ArchivoClinico extends BaseEntity {
     /**
      * Ruta o identificador donde se almacena físicamente el archivo.
      * Puede ser una ruta de sistema de archivos o un identificador de almacenamiento en la nube.
+     * Campo encriptado para no revelar en base de datos la estructura de almacenamiento en disco.
      */
     @Column(name = "ruta_almacenada", nullable = false)
+    @Convert(converter = AESEncryptionConverter.class)
     private String rutaAlmacenada;
 }

@@ -6,10 +6,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -46,6 +50,21 @@ class ArchivoClinicoServiceImplTest {
     @Mock
     private UsuarioRepository usuarioRepository;
 
+    @Mock
+    private AuditoriaCambioService auditoriaCambioService;
+
+    /**
+     * Cifrado "de mentira" para los tests: en vez de AES/GCM real, antepone un
+     * prefijo fijo al escribir y lo retira al leer. Evita depender de una clave
+     * AES real solo para probar la orquestación de ArchivoClinicoServiceImpl,
+     * que es lo que estos tests verifican (no el algoritmo de cifrado en sí,
+     * que ya se cubre en las pruebas de ArchivoCifradoServiceImpl).
+     */
+    private static final String PREFIJO_CIFRADO_FALSO = "CIFRADO:";
+
+    @Mock
+    private ArchivoCifradoService archivoCifradoService;
+
     @InjectMocks
     private ArchivoClinicoServiceImpl service;
 
@@ -57,7 +76,7 @@ class ArchivoClinicoServiceImplTest {
 
     @SuppressWarnings("null")
     @BeforeEach
-    void setUp() {
+    void setUp() throws IOException {
         mocks = MockitoAnnotations.openMocks(this);
 
         usuario = new Usuario();
@@ -66,6 +85,21 @@ class ArchivoClinicoServiceImplTest {
         ReflectionTestUtils.setField(service, "baseDir", tempDir.toString());
         ReflectionTestUtils.setField(service, "maxSizeBytes", 1024L * 1024L);
         ReflectionTestUtils.setField(service, "allowedTypes", "");
+
+        doAnswer(invocation -> {
+            InputStream entrada = invocation.getArgument(0);
+            OutputStream salida = invocation.getArgument(1);
+            salida.write(PREFIJO_CIFRADO_FALSO.getBytes());
+            entrada.transferTo(salida);
+            return null;
+        }).when(archivoCifradoService).cifrar(any(InputStream.class), any(OutputStream.class));
+
+        when(archivoCifradoService.descifrar(any(Path.class))).thenAnswer(invocation -> {
+            Path ruta = invocation.getArgument(0);
+            byte[] contenido = Files.readAllBytes(ruta);
+            String texto = new String(contenido).substring(PREFIJO_CIFRADO_FALSO.length());
+            return new ByteArrayInputStream(texto.getBytes());
+        });
 
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(usuario, null));

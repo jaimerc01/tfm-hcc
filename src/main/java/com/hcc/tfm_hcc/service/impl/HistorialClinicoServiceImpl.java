@@ -642,7 +642,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
 
         DatoClinico datoClinico = new DatoClinico();
         datoClinico.setTipo(tipo);
-        datoClinico.setValor(valor);
+        datoClinico.setValor(String.valueOf(valor));
         datoClinico.setUnidad(unidad);
         datoClinico.setObservacion(null);
         datoClinico.setHistorialClinico(historial);

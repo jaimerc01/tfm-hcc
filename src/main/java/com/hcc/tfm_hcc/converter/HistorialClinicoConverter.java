@@ -114,7 +114,7 @@ public class HistorialClinicoConverter {
         DatoClinicoDTO dto = new DatoClinicoDTO();
         dto.setId(datoClinico.getId() != null ? datoClinico.getId().toString() : null);
         dto.setTipo(datoClinico.getTipo());
-        dto.setValor(String.valueOf(datoClinico.getValor()));
+        dto.setValor(datoClinico.getValor());
         dto.setUnidad(datoClinico.getUnidad());
         dto.setObservacion(datoClinico.getObservacion());
         dto.setCreatedAt(datoClinico.getFechaCreacion() != null ? datoClinico.getFechaCreacion().toString() : null);

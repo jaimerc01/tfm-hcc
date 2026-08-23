@@ -1,6 +1,9 @@
 package com.hcc.tfm_hcc.model;
 
+import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -54,7 +57,9 @@ public class AnotacionMedica extends BaseEntity {
     /**
      * Contenido textual de la anotación médica.
      * Incluye observaciones, recomendaciones o notas del profesional.
+     * Campo encriptado por tratarse de un dato clínico del paciente.
      */
     @Column(name = "mensaje", nullable = false)
+    @Convert(converter = AESEncryptionConverter.class)
     private String mensaje;
 }

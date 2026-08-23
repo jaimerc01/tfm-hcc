@@ -1,6 +1,9 @@
 package com.hcc.tfm_hcc.model;
 
+import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -38,29 +41,37 @@ public class DatoClinico extends BaseEntity {
     /**
      * Tipo o categoría del dato clínico.
      * Ejemplos: "GLUCOSA", "PRESION_ARTERIAL", "ALERGIA", "COLESTEROL", etc.
+     * Campo encriptado por tratarse de un dato clínico del paciente.
      */
     @Column(name = "tipo", nullable = false)
+    @Convert(converter = AESEncryptionConverter.class)
     private String tipo;
 
     /**
-     * Valor numérico del dato clínico.
+     * Valor numérico del dato clínico, almacenado como texto para poder cifrarlo.
      * Para datos no numéricos, puede usarse como indicador booleano (0/1).
+     * Campo encriptado por tratarse de un dato clínico del paciente.
      */
     @Column(name = "valor", nullable = false)
-    private float valor;
+    @Convert(converter = AESEncryptionConverter.class)
+    private String valor;
 
     /**
      * Unidad de medida del valor.
      * Ejemplos: "mg/dL", "mmHg", "text", "UI/L", etc.
+     * Campo encriptado por tratarse de un dato clínico del paciente.
      */
     @Column(name = "unidad", nullable = false)
+    @Convert(converter = AESEncryptionConverter.class)
     private String unidad;
 
     /**
      * Observaciones adicionales o comentarios sobre el dato clínico.
      * Campo opcional para información textual complementaria.
+     * Campo encriptado por tratarse de un dato clínico del paciente.
      */
     @Column(name = "observacion")
+    @Convert(converter = AESEncryptionConverter.class)
     private String observacion;
 
     /**
