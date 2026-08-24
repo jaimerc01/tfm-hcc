@@ -33,10 +33,11 @@ security:
     secret-key: ${JWT_SECRET}
     expiration-time: 3600000 # 1 hour in milliseconds
   enforce-https: false # Cambiar a true en producción para redirigir HTTP->HTTPS
-  tfm:
-    hcc:
-      encryption:
-        key: ${TFM_HCC_ENCRYPTION_KEY} # Clave para cifrado de datos sensibles (NIF, teléfono)
+
+tfm:
+  hcc:
+    encryption:
+      key: ${TFM_HCC_ENCRYPTION_KEY} # Clave para cifrado de datos sensibles (NIF, teléfono)
 
 app:
   frontend:

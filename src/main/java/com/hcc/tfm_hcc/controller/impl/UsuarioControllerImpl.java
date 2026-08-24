@@ -94,7 +94,10 @@ public class UsuarioControllerImpl implements UsuarioController {
             
             log.info("Datos de usuario obtenidos exitosamente: {}", dto.getNif());
             return ResponseEntity.ok(dto);
-            
+
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al consultar datos del usuario actual");
+            throw e;
         } catch (Exception e) {
             log.error("Error al obtener datos del usuario autenticado: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error al obtener datos del usuario", e);
@@ -151,7 +154,10 @@ public class UsuarioControllerImpl implements UsuarioController {
             List<SolicitudAsignacion> solicitudes = usuarioFacade.listarMisSolicitudes();
             log.info("Se encontraron {} solicitudes para el usuario", solicitudes.size());
             return ResponseEntity.ok(solicitudes);
-            
+
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al listar solicitudes");
+            throw e;
         } catch (Exception e) {
             log.error("Error al listar solicitudes del usuario: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error al listar solicitudes del usuario", e);
@@ -194,6 +200,9 @@ public class UsuarioControllerImpl implements UsuarioController {
         } catch (UsuarioSinPermisoException e) {
             log.warn("Error de permisos al actualizar solicitud: {}", e.getMessage());
             return ResponseEntity.status(403).build();
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al actualizar solicitud");
+            throw e;
         } catch (Exception e) {
             log.error("Error interno al actualizar solicitud: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error interno al actualizar solicitud", e);
@@ -219,7 +228,10 @@ public class UsuarioControllerImpl implements UsuarioController {
             Map<String, NotificacionDTO> resp = notificacionFacade.listarNotificacionesUsuarioActual(page, size);
             log.info("Notificaciones listadas exitosamente");
             return ResponseEntity.ok(resp);
-            
+
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al listar notificaciones");
+            throw e;
         } catch (Exception e) {
             log.error("Error al listar notificaciones: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error al listar notificaciones", e);
@@ -244,7 +256,10 @@ public class UsuarioControllerImpl implements UsuarioController {
             notificacionFacade.marcarTodasComoLeidasUsuarioActual();
             log.info("Todas las notificaciones marcadas como leídas exitosamente");
             return ResponseEntity.ok("Notificaciones marcadas como leídas");
-            
+
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al marcar notificaciones");
+            throw e;
         } catch (Exception e) {
             log.error("Error al marcar notificaciones como leídas: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error marcando notificaciones", e);
@@ -361,7 +376,10 @@ public class UsuarioControllerImpl implements UsuarioController {
             Object logs = usuarioFacade.getMisLogs(d, h);
             log.info("Logs consultados exitosamente");
             return ResponseEntity.ok(logs);
-            
+
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al consultar logs");
+            throw e;
         } catch (Exception e) {
             log.error("Error al consultar logs: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error al consultar logs", e);
@@ -385,7 +403,10 @@ public class UsuarioControllerImpl implements UsuarioController {
             
             long count = notificacionFacade.contarNoLeidasUsuarioActual();
             return ResponseEntity.ok(Map.of("noLeidas", count));
-            
+
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al contar notificaciones no leídas");
+            throw e;
         } catch (Exception e) {
             log.error("Error al contar notificaciones no leídas: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error al contar notificaciones no leídas", e);
@@ -411,7 +432,10 @@ public class UsuarioControllerImpl implements UsuarioController {
             notificacionFacade.marcarNotificacionComoLeida(id);
             log.info("Notificación marcada como leída: {}", id);
             return ResponseEntity.ok().build();
-            
+
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al marcar notificación como leída");
+            throw e;
         } catch (Exception e) {
             log.error("Error al marcar notificación como leída: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error al marcar notificación como leída", e);
@@ -437,7 +461,10 @@ public class UsuarioControllerImpl implements UsuarioController {
             notificacionFacade.eliminarNotificacionUsuarioActual(id);
             log.info("Notificación eliminada: {}", id);
             return ResponseEntity.noContent().build();
-            
+
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al eliminar notificación");
+            throw e;
         } catch (Exception e) {
             log.error("Error al eliminar notificación: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error al eliminar notificación", e);
@@ -463,7 +490,10 @@ public class UsuarioControllerImpl implements UsuarioController {
             Object exportData = usuarioFacade.exportUsuario();
             log.info("Datos de usuario exportados exitosamente");
             return ResponseEntity.ok(exportData);
-            
+
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al exportar datos del usuario");
+            throw e;
         } catch (Exception e) {
             log.error("Error al exportar datos del usuario: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error al exportar datos del usuario", e);

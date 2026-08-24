@@ -172,9 +172,8 @@ public class MedicoServiceImpl implements MedicoService {
      */
     @Override
     public UsuarioDTO crearMedico(UsuarioDTO medicoDTO) {
-        log.debug("Creando nuevo médico con NIF: {}", medicoDTO.getNif());
-        
         validarDatosMedico(medicoDTO);
+        log.debug("Creando nuevo médico con NIF: {}", medicoDTO.getNif());
         
         try {
             medicoDTO.setEstadoCuenta(ESTADO_ACTIVO);
