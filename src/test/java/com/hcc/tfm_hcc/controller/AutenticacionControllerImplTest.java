@@ -107,6 +107,39 @@ class AutenticacionControllerImplTest {
     }
 
     @Test
+    void registrar_conIdYEstadoCuentaEnElJson_seIgnoranYNoLleganAlFacade() throws Exception {
+        // Regresión: el cuerpo de /authentication/signup solo debe poder fijar los
+        // campos de RegistroUsuarioRequest. Si un cliente no autenticado incluyera un
+        // "id" en el JSON (con o sin intención de sobrescribir una cuenta ajena), no
+        // debe llegar al UsuarioDTO que se pasa al resto de capas.
+        org.mockito.ArgumentCaptor<UsuarioDTO> captor = org.mockito.ArgumentCaptor.forClass(UsuarioDTO.class);
+        when(autenticacionFacade.registrar(captor.capture())).thenReturn(ResponseEntity.ok(new UsuarioDTO()));
+
+        String jsonConCamposNoPermitidos = """
+                {
+                  "id": "11111111-1111-1111-1111-111111111111",
+                  "estadoCuenta": "ADMINISTRADOR",
+                  "especialidad": "Cardiología",
+                  "nif": "12345678A",
+                  "email": "ana@example.com",
+                  "password": "password123",
+                  "fechaNacimiento": "1990-05-20T00:00:00"
+                }
+                """;
+
+        mvc.perform(post("/authentication/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonConCamposNoPermitidos))
+                .andExpect(status().isOk());
+
+        UsuarioDTO recibidoPorElFacade = captor.getValue();
+        org.junit.jupiter.api.Assertions.assertNull(recibidoPorElFacade.getId());
+        org.junit.jupiter.api.Assertions.assertNull(recibidoPorElFacade.getEstadoCuenta());
+        org.junit.jupiter.api.Assertions.assertNull(recibidoPorElFacade.getEspecialidad());
+        org.junit.jupiter.api.Assertions.assertEquals("12345678A", recibidoPorElFacade.getNif());
+    }
+
+    @Test
     void registrar_conErrorInesperado_devuelve500() throws Exception {
         when(autenticacionFacade.registrar(org.mockito.ArgumentMatchers.any()))
                 .thenThrow(new RuntimeException("fallo"));

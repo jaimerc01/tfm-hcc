@@ -14,6 +14,7 @@ import com.hcc.tfm_hcc.model.AuditoriaCambio.TipoOperacion;
 import com.hcc.tfm_hcc.repository.AuditoriaCambioRepository;
 import com.hcc.tfm_hcc.service.AuditoriaCambioService;
 import com.hcc.tfm_hcc.service.AuditoriaCambioStats;
+import com.hcc.tfm_hcc.service.FieldEncryptionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
     private static final String EUROPE_MADRID = "Europe/Madrid";
     private final AuditoriaCambioRepository auditoriaCambioRepository;
+    private final FieldEncryptionService fieldEncryptionService;
 
     @Override
     @Transactional
@@ -52,15 +54,37 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             auditoria.setFechaCambio(LocalDateTime.now(ZoneId.of(EUROPE_MADRID)));
         }
 
+        String valorAnteriorPlano = auditoria.getValorAnterior();
+        String valorNuevoPlano = auditoria.getValorNuevo();
+        auditoria.setValorAnterior(fieldEncryptionService.cifrar(valorAnteriorPlano));
+        auditoria.setValorNuevo(fieldEncryptionService.cifrar(valorNuevoPlano));
+
         AuditoriaCambio guardado = auditoriaCambioRepository.save(auditoria);
-        
+
+        // Devolver la entidad con los valores en claro: el cifrado es un detalle
+        // de persistencia, no debe filtrarse a quien llama a este servicio.
+        guardado.setValorAnterior(valorAnteriorPlano);
+        guardado.setValorNuevo(valorNuevoPlano);
+
         log.info(
             "Auditoría registrada: usuario={}, paciente={}, tipo={}, operacion={}",
-            guardado.getIdUsuario(), guardado.getIdPaciente(), 
+            guardado.getIdUsuario(), guardado.getIdPaciente(),
             guardado.getTipoCambio(), guardado.getTipoOperacion()
         );
 
         return guardado;
+    }
+
+    /**
+     * Descifra {@code valorAnterior}/{@code valorNuevo} de cada registro obtenido del
+     * repositorio, para que quien llama a este servicio siempre trabaje con texto en claro.
+     */
+    private List<AuditoriaCambio> descifrarValores(List<AuditoriaCambio> cambios) {
+        cambios.forEach(c -> {
+            c.setValorAnterior(fieldEncryptionService.descifrar(c.getValorAnterior()));
+            c.setValorNuevo(fieldEncryptionService.descifrar(c.getValorNuevo()));
+        });
+        return cambios;
     }
 
     @Override
@@ -102,7 +126,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository.findByIdUsuarioOrderByFechaCambioDesc(idUsuario);
         log.debug("Se recuperaron {} cambios para usuario {}", cambios.size(), idUsuario);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -115,7 +139,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository.findByIdPacienteOrderByFechaCambioDesc(idPaciente);
         log.debug("Se recuperaron {} cambios para paciente {}", cambios.size(), idPaciente);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -142,7 +166,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             "Se recuperaron {} cambios para paciente {} entre {} y {}",
             cambios.size(), idPaciente, desde, hasta
         );
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -155,7 +179,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository.findByIdRecursoOrderByFechaCambioDesc(idRecurso);
         log.debug("Se recuperaron {} cambios para recurso {}", cambios.size(), idRecurso);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -168,9 +192,9 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository
             .findByIdPacienteAndTipoCambioOrderByFechaCambioDesc(idPaciente, tipoCambio);
-        log.debug("Se recuperaron {} cambios de tipo {} para paciente {}", 
+        log.debug("Se recuperaron {} cambios de tipo {} para paciente {}",
             cambios.size(), tipoCambio, idPaciente);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -183,7 +207,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository.findByIdMedicoOrderByFechaCambioDesc(idMedico);
         log.debug("Se recuperaron {} cambios realizados por médico {}", cambios.size(), idMedico);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -199,9 +223,9 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository
             .findByIdPacienteAndTipoOperacionOrderByFechaCambioDesc(idPaciente, tipoOperacion);
-        log.debug("Se recuperaron {} cambios de tipo {} para paciente {}", 
+        log.debug("Se recuperaron {} cambios de tipo {} para paciente {}",
             cambios.size(), tipoOperacion, idPaciente);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override

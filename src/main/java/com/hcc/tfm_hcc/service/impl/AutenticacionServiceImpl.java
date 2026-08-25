@@ -1,10 +1,12 @@
 package com.hcc.tfm_hcc.service.impl;
 
 import java.net.URI;
-import java.util.Map;
+import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -18,10 +20,16 @@ import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.GoogleAuthenticationException;
 import com.hcc.tfm_hcc.exception.IncorrectCredentials;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
+import com.hcc.tfm_hcc.model.GoogleLoginCode;
 import com.hcc.tfm_hcc.model.LoginResponse;
+import com.hcc.tfm_hcc.model.TwoFactorChallenge;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.repository.GoogleLoginCodeRepository;
+import com.hcc.tfm_hcc.repository.TwoFactorChallengeRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.AutenticacionService;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
+import com.hcc.tfm_hcc.service.TotpService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,21 +45,19 @@ import lombok.RequiredArgsConstructor;
 public class AutenticacionServiceImpl implements AutenticacionService {
 
     private static final long GOOGLE_CODE_TTL_MILLIS = 60_000L;
+    private static final long TWO_FACTOR_CHALLENGE_TTL_MILLIS = 5 * 60_000L;
+    private static final int TWO_FACTOR_MAX_INTENTOS = 5;
 
     private final UsuarioFacade usuarioFacade;
     private final UsuarioRepository userRepository;
     private final UsuarioConverter usuarioConverter;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
-
-    /**
-     * Almacén en memoria de códigos de un solo uso para el login con Google.
-     * Proporcional al alcance del proyecto (una única instancia); no sobrevive a un reinicio.
-     */
-    private final Map<String, CodigoLoginGoogle> googleLoginCodes = new ConcurrentHashMap<>();
-
-    private record CodigoLoginGoogle(String token, long expirationTime, long expiraEnEpochMillis) {
-    }
+    private final HmacSearchIndexService hmacSearchIndexService;
+    private final GoogleLoginCodeRepository googleLoginCodeRepository;
+    private final TwoFactorChallengeRepository twoFactorChallengeRepository;
+    private final TotpService totpService;
+    private final MongoTemplate mongoTemplate;
 
     /**
      * Valida que el DTO de usuario no sea nulo
@@ -169,7 +175,7 @@ public class AutenticacionServiceImpl implements AutenticacionService {
                     ErrorMessages.ERROR_GOOGLE_EMAIL_NO_VERIFICADO, ErrorMessages.GOOGLE_ERROR_CODE_EMAIL_NOT_VERIFIED);
         }
 
-        Usuario usuarioPorEmail = userRepository.findByEmail(email)
+        Usuario usuarioPorEmail = userRepository.findByEmailHash(hmacSearchIndexService.indexar(email))
                 .orElseThrow(() -> new GoogleAuthenticationException(
                         ErrorMessages.ERROR_GOOGLE_CUENTA_NO_ENCONTRADA, ErrorMessages.GOOGLE_ERROR_CODE_ACCOUNT_NOT_FOUND));
 
@@ -188,9 +194,27 @@ public class AutenticacionServiceImpl implements AutenticacionService {
      */
     @Override
     public String generarCodigoLoginGoogle(String token, long expirationTime) {
-        String code = UUID.randomUUID().toString();
-        googleLoginCodes.put(code, new CodigoLoginGoogle(token, expirationTime, System.currentTimeMillis() + GOOGLE_CODE_TTL_MILLIS));
-        return code;
+        GoogleLoginCode codigo = new GoogleLoginCode();
+        codigo.setId(UUID.randomUUID().toString());
+        codigo.setToken(token);
+        codigo.setExpirationTime(expirationTime);
+        codigo.setFechaExpiracion(Instant.now().plusMillis(GOOGLE_CODE_TTL_MILLIS));
+        googleLoginCodeRepository.save(codigo);
+        return codigo.getId();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String generarCodigoLoginGoogleConDosFactores(String challengeId) {
+        GoogleLoginCode codigo = new GoogleLoginCode();
+        codigo.setId(UUID.randomUUID().toString());
+        codigo.setRequiresTwoFactor(true);
+        codigo.setChallengeId(challengeId);
+        codigo.setFechaExpiracion(Instant.now().plusMillis(GOOGLE_CODE_TTL_MILLIS));
+        googleLoginCodeRepository.save(codigo);
+        return codigo.getId();
     }
 
     /**
@@ -198,16 +222,88 @@ public class AutenticacionServiceImpl implements AutenticacionService {
      */
     @Override
     public LoginResponse canjearCodigoLoginGoogle(String code) {
-        CodigoLoginGoogle entrada = code != null ? googleLoginCodes.remove(code) : null;
+        GoogleLoginCode entrada = code != null
+                ? mongoTemplate.findAndRemove(Query.query(Criteria.where("_id").is(code)), GoogleLoginCode.class)
+                : null;
 
-        if (entrada == null || entrada.expiraEnEpochMillis() < System.currentTimeMillis()) {
+        if (entrada == null || entrada.getFechaExpiracion().isBefore(Instant.now())) {
             throw new GoogleAuthenticationException(
                     ErrorMessages.ERROR_GOOGLE_CODIGO_INVALIDO, ErrorMessages.GOOGLE_ERROR_CODE_INVALID_CODE);
         }
 
         LoginResponse loginResponse = new LoginResponse();
-        loginResponse.setToken(entrada.token());
-        loginResponse.setExpirationTime(entrada.expirationTime());
+        if (entrada.isRequiresTwoFactor()) {
+            loginResponse.setRequiresTwoFactor(true);
+            loginResponse.setChallengeId(entrada.getChallengeId());
+            return loginResponse;
+        }
+
+        loginResponse.setToken(entrada.getToken());
+        loginResponse.setExpirationTime(entrada.getExpirationTime());
         return loginResponse;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String crearChallengeDosFactores(Usuario usuario) {
+        TwoFactorChallenge challenge = new TwoFactorChallenge();
+        challenge.setId(UUID.randomUUID().toString());
+        challenge.setUsuarioId(usuario.getId().toString());
+        challenge.setIntentos(0);
+        challenge.setFechaExpiracion(Instant.now().plusMillis(TWO_FACTOR_CHALLENGE_TTL_MILLIS));
+        twoFactorChallengeRepository.save(challenge);
+        return challenge.getId();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Usuario verificarCodigoDosFactores(String challengeId, String code) {
+        if (challengeId == null || challengeId.isBlank()) {
+            throw new IncorrectCredentials(ErrorMessages.ERROR_TOTP_CHALLENGE_INVALIDO);
+        }
+
+        TwoFactorChallenge challenge = twoFactorChallengeRepository.findById(challengeId)
+                .orElseThrow(() -> new IncorrectCredentials(ErrorMessages.ERROR_TOTP_CHALLENGE_INVALIDO));
+
+        if (challenge.getFechaExpiracion().isBefore(Instant.now())) {
+            twoFactorChallengeRepository.deleteById(challengeId);
+            throw new IncorrectCredentials(ErrorMessages.ERROR_TOTP_CHALLENGE_INVALIDO);
+        }
+
+        Usuario usuario = userRepository.findById(UUID.fromString(challenge.getUsuarioId()))
+                .orElseThrow(() -> new IncorrectCredentials(ErrorMessages.ERROR_TOTP_CHALLENGE_INVALIDO));
+
+        if (!totpService.validarCodigo(usuario.getTotpSecret(), code)) {
+            registrarIntentoFallido(challenge);
+            throw new IncorrectCredentials(ErrorMessages.ERROR_TOTP_CODIGO_INVALIDO);
+        }
+
+        twoFactorChallengeRepository.deleteById(challengeId);
+
+        // Se recarga a través del UserDetailsService para obtener las authorities (roles),
+        // igual que en el resto de flujos de login de esta clase.
+        if (userDetailsService.loadUserByUsername(usuario.getNif()) instanceof Usuario usuarioConAuthorities) {
+            return usuarioConAuthorities;
+        }
+
+        throw new IncorrectCredentials(ErrorMessages.ERROR_CREDENCIALES_INVALIDAS);
+    }
+
+    /**
+     * Incrementa el contador de intentos fallidos de un reto de segundo factor y lo
+     * invalida si se ha alcanzado el máximo permitido, para dificultar la fuerza
+     * bruta sobre el código de 6 dígitos.
+     */
+    private void registrarIntentoFallido(TwoFactorChallenge challenge) {
+        challenge.setIntentos(challenge.getIntentos() + 1);
+        if (challenge.getIntentos() >= TWO_FACTOR_MAX_INTENTOS) {
+            twoFactorChallengeRepository.deleteById(challenge.getId());
+        } else {
+            twoFactorChallengeRepository.save(challenge);
+        }
     }
 }

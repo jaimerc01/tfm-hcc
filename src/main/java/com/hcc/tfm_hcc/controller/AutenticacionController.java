@@ -3,9 +3,12 @@ package com.hcc.tfm_hcc.controller;
 import org.springframework.http.ResponseEntity;
 
 import com.hcc.tfm_hcc.dto.GoogleCodeRequestDTO;
+import com.hcc.tfm_hcc.dto.LoginTwoFactorRequestDTO;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
+import com.hcc.tfm_hcc.dto.RegistroUsuarioRequest;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.GoogleAuthenticationException;
+import com.hcc.tfm_hcc.exception.IncorrectCredentials;
 import com.hcc.tfm_hcc.exception.InvalidLoginDataException;
 import com.hcc.tfm_hcc.exception.InvalidRegistrationDataException;
 import com.hcc.tfm_hcc.model.LoginResponse;
@@ -36,12 +39,12 @@ public interface AutenticacionController {
      * Valida los datos proporcionados, verifica que el usuario no exista
      * y crea una nueva cuenta con el perfil correspondiente.
      *
-     * @param usuarioDTO Datos completos del usuario a registrar
+     * @param request Datos de registro proporcionados por el cliente
      * @return ResponseEntity con el UsuarioDTO del usuario registrado exitosamente
      * @throws InvalidRegistrationDataException si los datos del usuario no son válidos
      * @throws IllegalStateException si el usuario ya existe en el sistema
      */
-    ResponseEntity<UsuarioDTO> registrar(UsuarioDTO usuarioDTO) throws InvalidRegistrationDataException, IllegalStateException;
+    ResponseEntity<UsuarioDTO> registrar(RegistroUsuarioRequest request) throws InvalidRegistrationDataException, IllegalStateException;
 
     /**
      * Autentica un usuario existente mediante sus credenciales.
@@ -54,6 +57,17 @@ public interface AutenticacionController {
      * @throws SecurityException si la autenticación falla
      */
     ResponseEntity<LoginResponse> autenticar(LoginUsuarioDTO loginUsuarioDTO) throws InvalidLoginDataException, SecurityException;
+
+    /**
+     * Completa el login de un usuario con segundo factor (TOTP) activo.
+     * Se invoca tras un primer paso {@link #autenticar(LoginUsuarioDTO)} que haya
+     * devuelto un reto de segundo factor pendiente.
+     *
+     * @param request identificador del reto y código de 6 dígitos
+     * @return ResponseEntity con LoginResponse que incluye el token JWT y su expiración
+     * @throws IncorrectCredentials si el reto no existe, ha caducado o el código no es válido
+     */
+    ResponseEntity<LoginResponse> autenticarSegundoFactor(LoginTwoFactorRequestDTO request) throws IncorrectCredentials;
 
     /**
      * Inicia el flujo de autenticación con Google para usuarios existentes.

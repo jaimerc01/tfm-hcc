@@ -1,7 +1,5 @@
 package com.hcc.tfm_hcc.service.impl;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,9 +20,11 @@ import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
 import com.hcc.tfm_hcc.repository.PerfilRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.PerfilUsuarioService;
 import com.hcc.tfm_hcc.service.MedicoService;
 import com.hcc.tfm_hcc.util.FechaUtils;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,8 +46,7 @@ public class MedicoServiceImpl implements MedicoService {
     private static final String ESTADO_REVOCADA = "REVOCADA";
     private static final String PERFIL_MEDICO = "MEDICO";
     private static final String PERFIL_PACIENTE = "PACIENTE";
-    private static final String ZONE_ID_EUROPA_MADRID = "Europe/Madrid";
-    
+
     // Constantes de campos
     private static final String CAMPO_DNI = "DNI";
     private static final String CAMPO_NIF = "NIF";
@@ -63,6 +62,7 @@ public class MedicoServiceImpl implements MedicoService {
     private final UsuarioFacade usuarioFacade;
     private final PacienteConverter pacienteConverter;
     private final PerfilUsuarioService perfilUsuarioService;
+    private final HmacSearchIndexService hmacSearchIndexService;
 
     /**
      * Busca un paciente por DNI y fecha de nacimiento.
@@ -74,23 +74,24 @@ public class MedicoServiceImpl implements MedicoService {
      */
     @Override
     public PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento) {
-        log.debug("Buscando paciente con DNI: {} y fecha nacimiento: {}", dni, fechaNacimiento);
-        
+        String dniLog = LogMaskUtil.enmascarar(dni);
+        log.debug("Buscando paciente con DNI: {} y fecha nacimiento: {}", dniLog, fechaNacimiento);
+
         validarParametrosBusquedaPaciente(dni, fechaNacimiento);
-        
-        Usuario usuario = usuarioRepository.findByNif(dni).orElse(null);
+
+        Usuario usuario = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(dni)).orElse(null);
         if (usuario == null) {
-            log.debug("Paciente no encontrado con DNI: {}", dni);
+            log.debug("Paciente no encontrado con DNI: {}", dniLog);
             return null;
         }
-        
+
         if (!validarFechaNacimientoPaciente(usuario, fechaNacimiento)) {
-            log.debug("Fecha de nacimiento no coincide para DNI: {} - Fecha esperada: {}", dni, fechaNacimiento);
+            log.debug("Fecha de nacimiento no coincide para DNI: {} - Fecha esperada: {}", dniLog, fechaNacimiento);
             return null;
         }
         
         PacienteDTO resultado = pacienteConverter.toDto(usuario);
-        log.info("Paciente encontrado: {} con DNI: {}", usuario.getNombre(), dni);
+        log.info("Paciente encontrado: {} con DNI: {}", usuario.getNombre(), dniLog);
         
         return resultado;
     }
@@ -173,14 +174,14 @@ public class MedicoServiceImpl implements MedicoService {
     @Override
     public UsuarioDTO crearMedico(UsuarioDTO medicoDTO) {
         validarDatosMedico(medicoDTO);
-        log.debug("Creando nuevo médico con NIF: {}", medicoDTO.getNif());
-        
+        log.debug("Creando nuevo médico con NIF: {}", LogMaskUtil.enmascarar(medicoDTO.getNif()));
+
         try {
             medicoDTO.setEstadoCuenta(ESTADO_ACTIVO);
             UsuarioDTO usuarioDTO = usuarioFacade.altaUsuario(medicoDTO);
             perfilUsuarioService.asignarPerfil(UUID.fromString(usuarioDTO.getId()), PERFIL_MEDICO);
-            
-            log.info("Médico creado exitosamente: {} con NIF: {}", usuarioDTO.getNombre(), usuarioDTO.getNif());
+
+            log.info("Médico creado exitosamente: {} con NIF: {}", usuarioDTO.getNombre(), LogMaskUtil.enmascarar(usuarioDTO.getNif()));
             
             return usuarioDTO;
         } catch (Exception e) {
@@ -273,6 +274,7 @@ public class MedicoServiceImpl implements MedicoService {
         }
         if (medicoDTO.getEmail() != null) {
             usuario.setEmail(medicoDTO.getEmail());
+            usuario.setEmailHash(hmacSearchIndexService.indexar(medicoDTO.getEmail()));
         }
         if (medicoDTO.getTelefono() != null) {
             usuario.setTelefono(medicoDTO.getTelefono());
@@ -303,7 +305,6 @@ public class MedicoServiceImpl implements MedicoService {
         }
         perfilUsuarioService.revocarPerfil(id, PERFIL_MEDICO);
         usuario.setEstadoCuenta("ELIMINADO");
-        usuario.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
         usuarioRepository.save(usuario);
         return id;
     }
@@ -330,7 +331,6 @@ public class MedicoServiceImpl implements MedicoService {
         if (relacionesMP != null && !relacionesMP.isEmpty()) {
             for (var rel : relacionesMP) {
                 rel.setEstado(ESTADO_REVOCADA);
-                rel.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
                 String mensaje = "Tu médico " + (usuario.getNombre()!=null?usuario.getNombre():usuario.getNif()) + " ya no está asociado a tu cuenta";
                 notificacionFacade.crearNotificacionParaUsuario(rel.getPaciente().getNif(), mensaje);
             }

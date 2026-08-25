@@ -21,6 +21,7 @@ import com.hcc.tfm_hcc.facade.impl.AdminFacadeImpl;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.MedicoService;
 
 class AdminFacadeImplTest {
@@ -28,6 +29,7 @@ class AdminFacadeImplTest {
     private MedicoService medicoService;
     private UsuarioRepository usuarioRepository;
     private UsuarioMapper usuarioMapper;
+    private HmacSearchIndexService hmacSearchIndexService;
     private AdminFacadeImpl facade;
 
     @BeforeEach
@@ -35,7 +37,9 @@ class AdminFacadeImplTest {
         medicoService = mock(MedicoService.class);
         usuarioRepository = mock(UsuarioRepository.class);
         usuarioMapper = mock(UsuarioMapper.class);
-        facade = new AdminFacadeImpl(medicoService, usuarioRepository, usuarioMapper);
+        hmacSearchIndexService = mock(HmacSearchIndexService.class);
+        when(hmacSearchIndexService.indexar("12345678A")).thenReturn("hash-12345678A");
+        facade = new AdminFacadeImpl(medicoService, usuarioRepository, usuarioMapper, hmacSearchIndexService);
     }
 
     private UsuarioDTO medicoValido() {
@@ -155,7 +159,7 @@ class AdminFacadeImplTest {
     void buscarUsuarioPorNif_conUsuarioExistente_devuelveElDto() {
         Usuario usuario = new Usuario();
         UsuarioDTO dto = new UsuarioDTO();
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         when(usuarioMapper.toDto(usuario)).thenReturn(dto);
 
         assertEquals(dto, facade.buscarUsuarioPorNif("12345678A").getBody());
@@ -163,7 +167,7 @@ class AdminFacadeImplTest {
 
     @Test
     void buscarUsuarioPorNif_conUsuarioInexistente_lanzaAdminValidationException() {
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.empty());
 
         assertThrows(AdminValidationException.class, () -> facade.buscarUsuarioPorNif("12345678A"));
     }

@@ -235,6 +235,14 @@
             </div>
           </fieldset>
 
+          <p class="privacy-notice">
+            <i18n-t keypath="register_privacy_notice" tag="span">
+              <template #link>
+                <router-link :to="{ name: 'PoliticaPrivacidad' }" target="_blank">{{ $t('privacy') }}</router-link>
+              </template>
+            </i18n-t>
+          </p>
+
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="loading" :aria-disabled="loading ? 'true' : 'false'">
               <span v-if="!loading">
@@ -684,6 +692,18 @@ export default {
   margin: 0;
   font-size: 0.8rem;
   color: var(--danger-active);
+  font-weight: 600;
+}
+
+.privacy-notice {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.privacy-notice a {
+  color: var(--primary-color);
   font-weight: 600;
 }
 

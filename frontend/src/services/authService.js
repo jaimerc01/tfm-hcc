@@ -24,6 +24,28 @@ class AuthService {
     })
   }
 
+  // Guarda el token y calcula su expiración absoluta en localStorage.
+  // Compartido por login(), loginTwoFactor() y exchangeGoogleCode(): en los tres
+  // casos el backend devuelve el mismo par {token, expirationTime}.
+  _storeToken(token, expirationTime) {
+    localStorage.setItem('authToken', token)
+    // Calcular expiración absoluta: preferir 'exp' del JWT; si no, usar ahora + duration recibido
+    try {
+      const payload = token.split('.')[1]
+      const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+      const jwtExpSec = decoded?.exp
+      if (jwtExpSec && Number.isFinite(jwtExpSec)) {
+        localStorage.setItem('tokenExp', String(jwtExpSec * 1000))
+      } else if (typeof expirationTime === 'number' && Number.isFinite(expirationTime)) {
+        localStorage.setItem('tokenExp', String(Date.now() + Number(expirationTime)))
+      }
+    } catch (_) {
+      if (typeof expirationTime === 'number' && Number.isFinite(expirationTime)) {
+        localStorage.setItem('tokenExp', String(Date.now() + Number(expirationTime)))
+      }
+    }
+  }
+
   async login(credentials) {
     try {
       const response = await this.apiClient.post('/authentication/login', credentials)
@@ -34,30 +56,22 @@ class AuthService {
         throw new Error(tService('auth_generic_retry'))
       }
 
-      const { token, expirationTime } = (response && response.data) ? response.data : {}
+      const { token, expirationTime, requiresTwoFactor, challengeId } = (response && response.data) ? response.data : {}
+
+      // El NIF y la contraseña son correctos, pero el usuario tiene activado el
+      // segundo factor: todavía no hay token, hay que completar loginTwoFactor().
+      if (requiresTwoFactor) {
+        if (!challengeId) {
+          throw new Error(tService('auth_generic_retry'))
+        }
+        return { requiresTwoFactor: true, challengeId }
+      }
+
       if (!token) {
         throw new Error(tService('auth_generic_retry'))
       }
 
-      // Guardar token y expiración en localStorage
-      if (token) {
-        localStorage.setItem('authToken', token)
-      }
-      // Calcular expiración absoluta: preferir 'exp' del JWT; si no, usar ahora + duration recibido
-      try {
-        const payload = token.split('.')[1]
-        const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
-        const jwtExpSec = decoded?.exp
-        if (jwtExpSec && Number.isFinite(jwtExpSec)) {
-          localStorage.setItem('tokenExp', String(jwtExpSec * 1000))
-        } else if (typeof expirationTime === 'number' && Number.isFinite(expirationTime)) {
-          localStorage.setItem('tokenExp', String(Date.now() + Number(expirationTime)))
-        }
-      } catch (_) {
-        if (typeof expirationTime === 'number' && Number.isFinite(expirationTime)) {
-          localStorage.setItem('tokenExp', String(Date.now() + Number(expirationTime)))
-        }
-      }
+      this._storeToken(token, expirationTime)
 
       return { token, expirationTime }
     } catch (error) {
@@ -74,40 +88,31 @@ class AuthService {
     }
   }
 
+  // Segundo paso del login cuando el usuario tiene activado el segundo factor (TOTP).
+  async loginTwoFactor(challengeId, code) {
+    try {
+      const response = await this.apiClient.post('/authentication/login/2fa', { challengeId, code })
+      const { token, expirationTime } = (response && response.data) ? response.data : {}
+      if (!token) {
+        throw new Error(tService('auth_generic_retry'))
+      }
+
+      this._storeToken(token, expirationTime)
+
+      return { token, expirationTime }
+    } catch (error) {
+      if (error.response?.status === 401) {
+        throw new Error(tService('two_factor_code_invalid'))
+      }
+      throw new Error(tService('auth_generic_retry'))
+    }
+  }
+
   async logout() {
     // Logout en JWT es stateless - solo limpiamos el token local
     // No hay necesidad de llamar al backend ya que el token expirará naturalmente
     localStorage.removeItem('authToken')
     localStorage.removeItem('tokenExp')
-  }
-
-  async refreshToken() {
-    try {
-      const response = await this.apiClient.post('/auth/refresh')
-      const { token, expirationTime } = (response && response.data) ? response.data : {}
-      if (token) {
-        localStorage.setItem('authToken', token)
-        // Normalizar expiración como en login
-        try {
-          const payload = token.split('.')[1]
-          const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
-          const jwtExpSec = decoded?.exp
-          if (jwtExpSec && Number.isFinite(jwtExpSec)) {
-            localStorage.setItem('tokenExp', String(jwtExpSec * 1000))
-          } else if (typeof expirationTime === 'number' && Number.isFinite(expirationTime)) {
-            localStorage.setItem('tokenExp', String(Date.now() + Number(expirationTime)))
-          }
-        } catch (_) {
-          if (typeof expirationTime === 'number' && Number.isFinite(expirationTime)) {
-            localStorage.setItem('tokenExp', String(Date.now() + Number(expirationTime)))
-          }
-        }
-      }
-      return token
-    } catch (error) {
-      this.logout()
-      throw error
-    }
   }
 
   async fetchMyName() {
@@ -188,27 +193,22 @@ class AuthService {
   async exchangeGoogleCode(code) {
     try {
       const response = await this.apiClient.post('/authentication/google/token', { code })
-      const { token, expirationTime } = (response && response.data) ? response.data : {}
+      const { token, expirationTime, requiresTwoFactor, challengeId } = (response && response.data) ? response.data : {}
+
+      // El NIF/contraseña de Google eran válidos, pero el usuario tiene activado el
+      // segundo factor: todavía no hay token, hay que completar loginTwoFactor().
+      if (requiresTwoFactor) {
+        if (!challengeId) {
+          throw new Error(tService('auth_generic_retry'))
+        }
+        return { requiresTwoFactor: true, challengeId }
+      }
+
       if (!token) {
         throw new Error(tService('auth_generic_retry'))
       }
 
-      localStorage.setItem('authToken', token)
-
-      try {
-        const payload = token.split('.')[1]
-        const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
-        const jwtExpSec = decoded?.exp
-        if (jwtExpSec && Number.isFinite(jwtExpSec)) {
-          localStorage.setItem('tokenExp', String(jwtExpSec * 1000))
-        } else if (typeof expirationTime === 'number' && Number.isFinite(expirationTime)) {
-          localStorage.setItem('tokenExp', String(Date.now() + Number(expirationTime)))
-        }
-      } catch (_) {
-        if (typeof expirationTime === 'number' && Number.isFinite(expirationTime)) {
-          localStorage.setItem('tokenExp', String(Date.now() + Number(expirationTime)))
-        }
-      }
+      this._storeToken(token, expirationTime)
 
       return { token, expirationTime }
     } catch (error) {
@@ -266,14 +266,110 @@ class AuthService {
     }
   }
 
-  async deleteAccount() {
+  // Detecta la cabecera X-Reauth-Required que el backend añade a una respuesta 401
+  // cuando la operación exige reintroducir la contraseña actual (exportar/eliminar cuenta).
+  _isReauthRequired(response) {
+    const header = response?.headers?.['x-reauth-required'] ?? response?.headers?.get?.('x-reauth-required')
+    return header === 'true'
+  }
+
+  async deleteAccount(currentPassword) {
     try {
-      await this.apiClient.delete('/usuario/me')
+      const headers = currentPassword ? { 'X-Current-Password': currentPassword } : {}
+      await this.apiClient.delete('/usuario/me', { headers })
       this._clearAuth()
       return true
     } catch (e) {
+      if (e.response?.status === 401 && this._isReauthRequired(e.response)) {
+        throw new Error(tService('password_required_delete_account'))
+      }
       if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
       throw new Error(e.response?.data || tService('error_deleting_account'))
+    }
+  }
+
+  async exportMyData(currentPassword) {
+    try {
+      const headers = currentPassword ? { 'X-Current-Password': currentPassword } : {}
+      const resp = await this.apiClient.get('/usuario/export', { headers })
+      return resp?.data || null
+    } catch (e) {
+      if (e.response?.status === 401 && this._isReauthRequired(e.response)) {
+        throw new Error(tService('password_required_export'))
+      }
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      throw new Error(tService('error_exporting_data'))
+    }
+  }
+
+  // Derecho de limitación del tratamiento (art. 18 RGPD): pausa el acceso de los
+  // médicos al historial del usuario sin eliminar la cuenta.
+
+  async limitarTratamiento() {
+    try {
+      await this.apiClient.post('/usuario/me/limitar-tratamiento')
+      return true
+    } catch (e) {
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      if (e.response?.status === 409) throw new Error(tService('error_processing_restriction_conflict'))
+      throw new Error(tService('error_processing_restriction'))
+    }
+  }
+
+  async reanudarTratamiento() {
+    try {
+      await this.apiClient.post('/usuario/me/reanudar-tratamiento')
+      return true
+    } catch (e) {
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      if (e.response?.status === 409) throw new Error(tService('error_processing_restriction_conflict'))
+      throw new Error(tService('error_processing_resume'))
+    }
+  }
+
+  // Segundo factor (TOTP): configuración desde la pantalla de datos del usuario.
+
+  async getTotpStatus() {
+    try {
+      const resp = await this.apiClient.get('/usuario/2fa/status')
+      return Boolean(resp?.data)
+    } catch (e) {
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      throw new Error(tService('error_loading_data'))
+    }
+  }
+
+  async setupTotp() {
+    try {
+      const resp = await this.apiClient.post('/usuario/2fa/setup')
+      return resp?.data || null
+    } catch (e) {
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      throw new Error(tService('two_factor_setup_error'))
+    }
+  }
+
+  async confirmTotp(code) {
+    try {
+      await this.apiClient.post('/usuario/2fa/confirm', { code })
+      return true
+    } catch (e) {
+      if (e.response?.status === 400) throw new Error(tService('two_factor_code_invalid'))
+      if (e.response?.status === 409) throw new Error(tService('two_factor_state_error'))
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      throw new Error(tService('two_factor_setup_error'))
+    }
+  }
+
+  async disableTotp(code) {
+    try {
+      await this.apiClient.post('/usuario/2fa/disable', { code })
+      return true
+    } catch (e) {
+      if (e.response?.status === 400) throw new Error(tService('two_factor_code_invalid'))
+      if (e.response?.status === 409) throw new Error(tService('two_factor_state_error'))
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      throw new Error(tService('two_factor_setup_error'))
     }
   }
 }

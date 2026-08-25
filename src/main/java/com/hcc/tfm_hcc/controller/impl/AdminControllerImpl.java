@@ -21,6 +21,7 @@ import com.hcc.tfm_hcc.facade.AdminFacade;
 import com.hcc.tfm_hcc.exception.AdminValidationException;
 import com.hcc.tfm_hcc.exception.AdminOperacionException;
 import com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +75,8 @@ public class AdminControllerImpl implements AdminController {
     @Override
     @GetMapping(RestUrls.ADMIN_USUARIOS_BY_NIF)
     public ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(@RequestParam("nif") String nif) {
-        log.info("Buscando usuario por NIF: {}", nif);
+        String nifLog = LogMaskUtil.enmascarar(nif);
+        log.info("Buscando usuario por NIF: {}", nifLog);
         try {
             if (nif == null || nif.trim().isEmpty()) {
                 log.warn("Intento de búsqueda con NIF nulo o vacío");
@@ -83,11 +85,11 @@ public class AdminControllerImpl implements AdminController {
 
             ResponseEntity<UsuarioDTO> result = adminFacade.buscarUsuarioPorNif(nif);
             if (result.getBody() == null) {
-                log.warn("Usuario no encontrado con NIF: {}", nif);
-                throw new UsuarioNoEncontradoException("Usuario no encontrado con NIF: " + nif);
+                log.warn("Usuario no encontrado con NIF: {}", nifLog);
+                throw new UsuarioNoEncontradoException("Usuario no encontrado con NIF: " + nifLog);
             }
 
-            log.info("Usuario encontrado exitosamente: {}", nif);
+            log.info("Usuario encontrado exitosamente: {}", nifLog);
             return result;
         } catch (AdminValidationException | UsuarioNoEncontradoException e) {
             log.warn("Error: {}", e.getMessage());
@@ -115,9 +117,9 @@ public class AdminControllerImpl implements AdminController {
                 throw new AdminValidationException("El NIF del médico es obligatorio");
             }
 
-            log.info("Creando nuevo médico: {}", medicoDTO.getNif());
+            log.info("Creando nuevo médico: {}", LogMaskUtil.enmascarar(medicoDTO.getNif()));
             ResponseEntity<UsuarioDTO> result = adminFacade.crearMedico(medicoDTO);
-            log.info("Médico creado exitosamente: {}", medicoDTO.getNif());
+            log.info("Médico creado exitosamente: {}", LogMaskUtil.enmascarar(medicoDTO.getNif()));
             return result;
         } catch (AdminValidationException e) {
             log.warn("Error de validación al crear médico: {}", e.getMessage());

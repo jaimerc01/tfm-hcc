@@ -35,6 +35,7 @@ class NotificacionServiceImplTest {
     private NotificacionRepository notificacionRepository;
     private UsuarioRepository usuarioRepository;
     private UsuarioFacade usuarioFacade;
+    private HmacSearchIndexService hmacSearchIndexService;
     private NotificacionServiceImpl service;
 
     private final UUID usuarioId = UUID.randomUUID();
@@ -44,7 +45,10 @@ class NotificacionServiceImplTest {
         notificacionRepository = mock(NotificacionRepository.class);
         usuarioRepository = mock(UsuarioRepository.class);
         usuarioFacade = mock(UsuarioFacade.class);
-        service = new NotificacionServiceImpl(notificacionRepository, usuarioRepository, usuarioFacade);
+        hmacSearchIndexService = mock(HmacSearchIndexService.class);
+        when(hmacSearchIndexService.indexar("12345678A")).thenReturn("hash-12345678A");
+        when(hmacSearchIndexService.indexar("00000000Z")).thenReturn("hash-00000000Z");
+        service = new NotificacionServiceImpl(notificacionRepository, usuarioRepository, usuarioFacade, hmacSearchIndexService);
     }
 
     private Usuario usuarioActualMockeado() {
@@ -62,7 +66,7 @@ class NotificacionServiceImplTest {
     void crearNotificacionParaUsuario_conDatosValidos_creaLaNotificacion() {
         Usuario usuario = new Usuario();
         usuario.setNif("12345678A");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         when(notificacionRepository.save(any(Notificacion.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Notificacion resultado = service.crearNotificacionParaUsuario("12345678A", "Tienes una nueva solicitud");
@@ -74,7 +78,7 @@ class NotificacionServiceImplTest {
     @Test
     void crearNotificacionParaUsuario_conMensajeNulo_usaCadenaVacia() {
         Usuario usuario = new Usuario();
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         when(notificacionRepository.save(any(Notificacion.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Notificacion resultado = service.crearNotificacionParaUsuario("12345678A", null);
@@ -89,9 +93,25 @@ class NotificacionServiceImplTest {
 
     @Test
     void crearNotificacionParaUsuario_conUsuarioInexistente_lanzaIllegalArgumentException() {
-        when(usuarioRepository.findByNif("00000000Z")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByNifHash("hash-00000000Z")).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> service.crearNotificacionParaUsuario("00000000Z", "msg"));
+    }
+
+    /**
+     * Regresión: el mensaje de esta excepción se loguea tal cual en varios llamadores
+     * (p. ej. SolicitudAsignacionServiceImpl), así que debe llevar el NIF enmascarado y
+     * no el valor en claro -- igual que el resto de logs de la aplicación.
+     */
+    @Test
+    void crearNotificacionParaUsuario_conUsuarioInexistente_elMensajeDeLaExcepcionEnmascaraElNif() {
+        when(usuarioRepository.findByNifHash("hash-00000000Z")).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.crearNotificacionParaUsuario("00000000Z", "msg"));
+
+        assertFalse(ex.getMessage().contains("00000000Z"));
+        assertTrue(ex.getMessage().contains("***00Z"));
     }
 
     @Test

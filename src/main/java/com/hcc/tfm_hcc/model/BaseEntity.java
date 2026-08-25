@@ -4,7 +4,11 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -32,6 +36,7 @@ import lombok.Data;
  */
 @Data
 @MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
 public class BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 15L;
@@ -47,7 +52,13 @@ public class BaseEntity implements Serializable {
     
     /**
      * Fecha y hora de creación del registro.
-     * Se establece automáticamente al crear la entidad y no puede ser modificada.
+     *
+     * <p>Se establece manualmente en el servicio correspondiente (no vía
+     * {@code @CreatedDate}) porque en al menos una entidad, {@link DatoClinico},
+     * este campo no representa "cuándo se insertó la fila" sino la fecha real del
+     * dato clínico (p. ej. la fecha de un análisis de laboratorio pasado indicada
+     * por el usuario), que la auditoría automática de JPA sobrescribiría siempre
+     * con la fecha actual al persistir.</p>
      */
     @Column(name = "fecha_creacion", nullable = false)
     @Temporal(TemporalType.TIMESTAMP)
@@ -55,8 +66,10 @@ public class BaseEntity implements Serializable {
 
     /**
      * Fecha y hora de la última modificación del registro.
-     * Se actualiza automáticamente cada vez que se modifica la entidad.
+     * Se actualiza automáticamente cada vez que se crea o modifica la entidad,
+     * mediante la auditoría de JPA (ver {@code JpaAuditingConfig}).
      */
+    @LastModifiedDate
     @Column(name = "fecha_ultima_modificacion")
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime fechaUltimaModificacion;

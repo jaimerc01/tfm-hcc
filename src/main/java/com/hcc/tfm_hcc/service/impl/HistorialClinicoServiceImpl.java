@@ -35,10 +35,12 @@ import com.hcc.tfm_hcc.repository.AlergiaRepository;
 import com.hcc.tfm_hcc.repository.AntecedenteClinicoRepository;
 import com.hcc.tfm_hcc.repository.DatoClinicoRepository;
 import com.hcc.tfm_hcc.repository.HistorialClinicoRepository;
+import com.hcc.tfm_hcc.repository.MedicoPacienteRepository;
 import com.hcc.tfm_hcc.repository.RangoRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.AuditoriaCambioService;
 import com.hcc.tfm_hcc.service.HistorialClinicoService;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 
 @Service
 public class HistorialClinicoServiceImpl implements HistorialClinicoService {
@@ -54,6 +56,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     private static final String TIPO_CAMBIO_SIGNOS_VITALES = "SIGNOS_VITALES";
     private static final String TIPO_CAMBIO_ANALISIS_ORINA = "ANALISIS_ORINA";
     private static final String ZONE_ID_EUROPA_MADRID = "Europe/Madrid";
+    private static final String ESTADO_MEDICO_PACIENTE_ACTIVA = "ACTIVA";
 
     private final HistorialClinicoRepository historiaRepo;
     private final UsuarioFacade usuarioFacade;
@@ -62,11 +65,13 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     private final AlergiaRepository alergiaRepository;
     private final AntecedenteClinicoRepository antecedenteClinicoRepository;
     private final RangoRepository rangoRepository;
+    private final MedicoPacienteRepository medicoPacienteRepository;
     private final AuditoriaCambioService auditoriaCambioService;
     private final HistorialClinicoConverter historialClinicoConverter;
     private final AlergiaConverter alergiaConverter;
     private final AntecedenteClinicoConverter antecedenteClinicoConverter;
     private final ObjectMapper objectMapper;
+    private final HmacSearchIndexService hmacSearchIndexService;
 
     public HistorialClinicoServiceImpl(
             HistorialClinicoRepository historiaRepo,
@@ -76,10 +81,12 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             AlergiaRepository alergiaRepository,
             AntecedenteClinicoRepository antecedenteClinicoRepository,
             RangoRepository rangoRepository,
+            MedicoPacienteRepository medicoPacienteRepository,
             AuditoriaCambioService auditoriaCambioService,
             HistorialClinicoConverter historialClinicoConverter,
             AlergiaConverter alergiaConverter,
-            AntecedenteClinicoConverter antecedenteClinicoConverter) {
+            AntecedenteClinicoConverter antecedenteClinicoConverter,
+            HmacSearchIndexService hmacSearchIndexService) {
         this.historiaRepo = historiaRepo;
         this.usuarioFacade = usuarioFacade;
         this.usuarioRepository = usuarioRepository;
@@ -87,11 +94,13 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         this.alergiaRepository = alergiaRepository;
         this.antecedenteClinicoRepository = antecedenteClinicoRepository;
         this.rangoRepository = rangoRepository;
+        this.medicoPacienteRepository = medicoPacienteRepository;
         this.auditoriaCambioService = auditoriaCambioService;
         this.historialClinicoConverter = historialClinicoConverter;
         this.alergiaConverter = alergiaConverter;
         this.antecedenteClinicoConverter = antecedenteClinicoConverter;
         this.objectMapper = new ObjectMapper();
+        this.hmacSearchIndexService = hmacSearchIndexService;
     }
 
     /**
@@ -158,6 +167,33 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         return historiaRepo.findByUsuario(usuario.get())
             .map(this::construirHistorialClinicoDTO)
             .orElse(null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HistorialClinicoDTO obtenerHistorialPaciente(String nifPaciente) {
+        Usuario medico = obtenerUsuarioAutenticado();
+
+        if (nifPaciente == null || nifPaciente.isBlank()) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO);
+        }
+
+        Usuario paciente = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nifPaciente))
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
+
+        if (Usuario.ESTADO_CUENTA_SUSPENDIDO.equals(paciente.getEstadoCuenta())) {
+            throw new IllegalStateException(ErrorMessages.ERROR_TRATAMIENTO_LIMITADO);
+        }
+
+        boolean autorizado = medicoPacienteRepository.existsByMedicoIdAndPacienteIdAndEstado(
+                medico.getId(), paciente.getId(), ESTADO_MEDICO_PACIENTE_ACTIVA);
+        if (!autorizado) {
+            throw new IllegalStateException(ErrorMessages.ERROR_ACCESO_DENEGADO);
+        }
+
+        return historiaRepo.findByUsuario(paciente)
+                .map(this::construirHistorialClinicoDTO)
+                .orElse(null);
     }
 
     @Override
@@ -572,7 +608,8 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     // TODO Revisar esto, no tiene mucho sentido lo de eliminar todo para guardar una nueva
     private void procesarDatosClinicos(String datosJson, HistorialClinico historial, boolean eliminarExistentes, List<String> tiposConocidos) {
         if (eliminarExistentes) {
-            List<DatoClinico> datosExistentes = datoClinicoRepository.findByHistorialClinicoAndTipoIn(historial, tiposConocidos);
+            List<String> tiposConocidosHash = tiposConocidos.stream().map(hmacSearchIndexService::indexar).toList();
+            List<DatoClinico> datosExistentes = datoClinicoRepository.findByHistorialClinicoAndTipoHashIn(historial, tiposConocidosHash);
 
             if (!datosExistentes.isEmpty()) {
                 datoClinicoRepository.deleteAll(datosExistentes);
@@ -642,6 +679,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
 
         DatoClinico datoClinico = new DatoClinico();
         datoClinico.setTipo(tipo);
+        datoClinico.setTipoHash(hmacSearchIndexService.indexar(tipo));
         datoClinico.setValor(String.valueOf(valor));
         datoClinico.setUnidad(unidad);
         datoClinico.setObservacion(null);

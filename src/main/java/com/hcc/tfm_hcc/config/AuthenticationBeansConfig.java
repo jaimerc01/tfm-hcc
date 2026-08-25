@@ -1,8 +1,6 @@
 package com.hcc.tfm_hcc.config;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,10 +14,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
 import com.hcc.tfm_hcc.model.Perfil;
-import com.hcc.tfm_hcc.model.PerfilUsuario;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -41,13 +39,14 @@ public class AuthenticationBeansConfig {
 
     private final UsuarioRepository usuarioRepository;
     private final PerfilUsuarioRepository perfilUsuarioRepository;
+    private final HmacSearchIndexService hmacSearchIndexService;
 
     @Bean
     public UserDetailsService userDetailsService() {
         return nif -> {
-            Usuario usuario = findUsuarioByNifLegacyAware(nif)
+            Usuario usuario = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nif))
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-            List<Perfil> perfiles = findPerfilesByUsuarioLegacyAware(usuario);
+            List<Perfil> perfiles = perfilUsuarioRepository.getPerfilesByNifHash(usuario.getNifHash());
             var authorities = perfiles.stream()
                     .map(p -> new SimpleGrantedAuthority("ROLE_" + p.getRol()))
                     .toList();
@@ -66,43 +65,5 @@ public class AuthenticationBeansConfig {
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(userDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder);
         return new ProviderManager(authenticationProvider);
-    }
-
-    private Optional<Usuario> findUsuarioByNifLegacyAware(String nif) {
-        Optional<Usuario> usuarioDirecto = usuarioRepository.findByNif(nif);
-        if (usuarioDirecto.isPresent()) {
-            return usuarioDirecto;
-        }
-
-        for (Usuario usuario : usuarioRepository.findAll()) {
-            if (usuario != null && nif != null && nif.equals(usuario.getNif())) {
-                return Optional.of(usuario);
-            }
-        }
-
-        return Optional.empty();
-    }
-
-    private List<Perfil> findPerfilesByUsuarioLegacyAware(Usuario usuario) {
-        if (usuario == null || usuario.getId() == null) {
-            return List.of();
-        }
-
-        List<Perfil> perfiles = perfilUsuarioRepository.getPerfilesByNif(usuario.getNif());
-        if (!perfiles.isEmpty()) {
-            return perfiles;
-        }
-
-        List<Perfil> perfilesRespaldo = new ArrayList<>();
-        for (PerfilUsuario perfilUsuario : perfilUsuarioRepository.findAll()) {
-            if (perfilUsuario != null
-                    && perfilUsuario.getUsuario() != null
-                    && usuario.getId().equals(perfilUsuario.getUsuario().getId())
-                    && perfilUsuario.getPerfil() != null) {
-                perfilesRespaldo.add(perfilUsuario.getPerfil());
-            }
-        }
-
-        return perfilesRespaldo;
     }
 }

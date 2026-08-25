@@ -17,9 +17,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.hcc.tfm_hcc.controller.impl.MedicoControllerImpl;
+import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
 import com.hcc.tfm_hcc.exception.MedicoOperacionException;
+import com.hcc.tfm_hcc.exception.PacienteNoEncontradoException;
 import com.hcc.tfm_hcc.exception.SolicitudExistenteException;
+import com.hcc.tfm_hcc.exception.UsuarioSinPermisoException;
 import com.hcc.tfm_hcc.facade.MedicoFacade;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
@@ -65,6 +68,41 @@ class MedicoControllerImplTest {
                 () -> mvc.perform(get("/medico/pacientes/buscar")
                         .param("dni", "12345678A")
                         .param("fechaNacimiento", "1990-05-20")));
+        assertInstanceOf(MedicoOperacionException.class, ex.getCause());
+    }
+
+    @Test
+    void obtenerHistorialPaciente_conRelacionActiva_devuelveElHistorial() throws Exception {
+        when(medicoFacade.obtenerHistorialPaciente("12345678A")).thenReturn(new HistorialClinicoDTO());
+
+        mvc.perform(get("/medico/pacientes/12345678A/historial"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void obtenerHistorialPaciente_conPacienteNoEncontrado_devuelveNotFound() throws Exception {
+        when(medicoFacade.obtenerHistorialPaciente("00000000Z"))
+                .thenThrow(new PacienteNoEncontradoException("no encontrado"));
+
+        mvc.perform(get("/medico/pacientes/00000000Z/historial"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void obtenerHistorialPaciente_sinRelacionActiva_devuelveForbidden() throws Exception {
+        when(medicoFacade.obtenerHistorialPaciente("12345678A"))
+                .thenThrow(new UsuarioSinPermisoException("acceso denegado"));
+
+        mvc.perform(get("/medico/pacientes/12345678A/historial"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void obtenerHistorialPaciente_conErrorInesperado_propagaMedicoOperacionException() {
+        when(medicoFacade.obtenerHistorialPaciente("12345678A")).thenThrow(new RuntimeException("fallo"));
+
+        jakarta.servlet.ServletException ex = assertThrows(jakarta.servlet.ServletException.class,
+                () -> mvc.perform(get("/medico/pacientes/12345678A/historial")));
         assertInstanceOf(MedicoOperacionException.class, ex.getCause());
     }
 

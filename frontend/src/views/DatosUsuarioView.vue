@@ -89,10 +89,33 @@
             </div>
           </div>
 
+          <div class="form-group reauth-group">
+            <label class="form-label" for="reauth-password">{{ $t('current_password_confirm_label') }}</label>
+            <div class="password-input-wrap">
+              <input
+                id="reauth-password"
+                :type="showReauthPassword ? 'text' : 'password'"
+                v-model="reauth.password"
+                class="form-input"
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                class="password-visibility-btn"
+                :aria-pressed="showReauthPassword ? 'true' : 'false'"
+                :aria-label="showReauthPassword ? $t('hide_password') : $t('show_password')"
+                @click="showReauthPassword = !showReauthPassword"
+              >
+                {{ showReauthPassword ? $t('hide_password') : $t('show_password') }}
+              </button>
+            </div>
+            <p class="field-hint">{{ $t('current_password_confirm_help') }}</p>
+          </div>
+
           <div class="form-actions">
-            <button 
+            <button
               type="button"
-              class="btn-primary" 
+              class="btn-primary"
               @click="startEdit"
               :aria-label="$t('aria_edit_personal_data')">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -101,10 +124,10 @@
               </svg>
               {{ $t('edit_data') }}
             </button>
-            <button 
+            <button
               type="button"
-              class="btn-secondary" 
-              @click="exportData" 
+              class="btn-secondary"
+              @click="exportData"
               :disabled="exportLoading"
               :aria-label="exportLoading ? $t('aria_export_personal_data_loading') : $t('aria_export_personal_data')">
               <svg v-if="!exportLoading" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -351,6 +374,196 @@
         </div>
       </div>
 
+      <!-- Two-Factor Authentication Section -->
+      <div class="section">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2>{{ $t('two_factor_section_title') }}</h2>
+            <p class="panel-subtitle">{{ $t('two_factor_section_subtitle') }}</p>
+          </div>
+
+          <div v-if="totpStatusLoading" class="loading-container">
+            <div class="spinner"></div>
+          </div>
+
+          <template v-else>
+            <!-- Estado: sin configuración de segundo factor activa ni en curso -->
+            <template v-if="!totpEnabled && !showTotpSetup">
+              <p class="two-factor-status">
+                <span class="status-badge status-badge--off">{{ $t('two_factor_disabled_status') }}</span>
+              </p>
+              <button
+                type="button"
+                class="btn-secondary"
+                @click="startTotpSetup"
+                :disabled="totpSetupLoading"
+                :aria-label="$t('two_factor_enable_button')"
+              >
+                <div v-if="totpSetupLoading" class="spinner-small"></div>
+                {{ totpSetupLoading ? $t('loading_info') : $t('two_factor_enable_button') }}
+              </button>
+
+              <div v-if="totpSetupError" class="alert alert-danger" role="alert">
+                {{ totpSetupError }}
+              </div>
+            </template>
+
+            <!-- Configuración en curso: mostrar QR + secreto + código de confirmación -->
+            <template v-else-if="showTotpSetup">
+              <div class="info-box">
+                <span>{{ $t('two_factor_setup_instructions') }}</span>
+              </div>
+
+              <div class="totp-qr-wrap">
+                <img v-if="totpQrDataUrl" :src="totpQrDataUrl" :alt="$t('two_factor_qr_alt')" class="totp-qr" />
+                <p class="totp-secret">
+                  <span class="data-label">{{ $t('two_factor_secret_label') }}</span>
+                  <code>{{ totpSetupData?.secret }}</code>
+                </p>
+              </div>
+
+              <form @submit.prevent="confirmTotpSetup">
+                <div class="form-group">
+                  <label class="form-label" for="totp-confirm-code">{{ $t('two_factor_code_label') }} <span class="required">*</span></label>
+                  <input
+                    id="totp-confirm-code"
+                    v-model="totpConfirmCode"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="6"
+                    class="form-input"
+                    autocomplete="one-time-code"
+                    :placeholder="$t('two_factor_code_placeholder')"
+                    required
+                  />
+                </div>
+
+                <div v-if="totpSetupError" class="alert alert-danger" role="alert">
+                  {{ totpSetupError }}
+                </div>
+
+                <div class="form-actions form-actions--right">
+                  <button type="button" class="btn-secondary" @click="cancelTotpSetup" :disabled="totpSetupLoading">
+                    {{ $t('cancel') }}
+                  </button>
+                  <button type="submit" class="btn-primary" :disabled="totpSetupLoading">
+                    <div v-if="totpSetupLoading" class="spinner-small"></div>
+                    {{ totpSetupLoading ? $t('saving') : $t('two_factor_confirm_button') }}
+                  </button>
+                </div>
+              </form>
+            </template>
+
+            <!-- Segundo factor activo: permitir desactivarlo -->
+            <template v-else>
+              <p class="two-factor-status">
+                <span class="status-badge status-badge--on">{{ $t('two_factor_enabled_status') }}</span>
+              </p>
+
+              <button
+                v-if="!showTotpDisable"
+                type="button"
+                class="btn-danger"
+                @click="showTotpDisable = true"
+                :aria-label="$t('two_factor_disable_button')"
+              >
+                {{ $t('two_factor_disable_button') }}
+              </button>
+
+              <form v-else @submit.prevent="confirmTotpDisable">
+                <div class="info-box">
+                  <span>{{ $t('two_factor_disable_help') }}</span>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="totp-disable-code">{{ $t('two_factor_code_label') }} <span class="required">*</span></label>
+                  <input
+                    id="totp-disable-code"
+                    v-model="totpDisableCode"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="6"
+                    class="form-input"
+                    autocomplete="one-time-code"
+                    :placeholder="$t('two_factor_code_placeholder')"
+                    required
+                  />
+                </div>
+
+                <div v-if="totpDisableError" class="alert alert-danger" role="alert">
+                  {{ totpDisableError }}
+                </div>
+
+                <div class="form-actions form-actions--right">
+                  <button type="button" class="btn-secondary" @click="cancelTotpDisable" :disabled="totpDisableLoading">
+                    {{ $t('cancel') }}
+                  </button>
+                  <button type="submit" class="btn-danger" :disabled="totpDisableLoading">
+                    <div v-if="totpDisableLoading" class="spinner-small"></div>
+                    {{ totpDisableLoading ? $t('saving') : $t('two_factor_disable_button') }}
+                  </button>
+                </div>
+              </form>
+            </template>
+          </template>
+        </div>
+      </div>
+
+      <!-- Processing Restriction Section (GDPR Art. 18) -->
+      <div class="section">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2>{{ $t('processing_restriction_section_title') }}</h2>
+            <p class="panel-subtitle">{{ $t('processing_restriction_section_subtitle') }}</p>
+          </div>
+
+          <div class="info-box">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 16v-4"></path>
+              <path d="M12 8h.01"></path>
+            </svg>
+            <span>{{ $t('processing_restriction_help') }}</span>
+          </div>
+
+          <p class="two-factor-status">
+            <span :class="['status-badge', user.estadoCuenta === ESTADO_CUENTA_SUSPENDIDO ? 'status-badge--on' : 'status-badge--off']">
+              {{ user.estadoCuenta === ESTADO_CUENTA_SUSPENDIDO ? $t('processing_restriction_active_status') : $t('processing_restriction_inactive_status') }}
+            </span>
+          </p>
+
+          <button
+            v-if="user.estadoCuenta !== ESTADO_CUENTA_SUSPENDIDO"
+            type="button"
+            class="btn-secondary"
+            @click="enableProcessingRestriction"
+            :disabled="processingRestrictionLoading"
+            :aria-label="processingRestrictionLoading ? $t('aria_enable_processing_restriction_loading') : $t('aria_enable_processing_restriction')">
+            <div v-if="processingRestrictionLoading" class="spinner-small"></div>
+            {{ processingRestrictionLoading ? $t('saving') : $t('processing_restriction_enable_button') }}
+          </button>
+          <button
+            v-else
+            type="button"
+            class="btn-primary"
+            @click="disableProcessingRestriction"
+            :disabled="processingRestrictionLoading"
+            :aria-label="processingRestrictionLoading ? $t('aria_disable_processing_restriction_loading') : $t('aria_disable_processing_restriction')">
+            <div v-if="processingRestrictionLoading" class="spinner-small"></div>
+            {{ processingRestrictionLoading ? $t('saving') : $t('processing_restriction_disable_button') }}
+          </button>
+
+          <div v-if="processingRestrictionError" class="alert alert-danger" role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            {{ processingRestrictionError }}
+          </div>
+        </div>
+      </div>
+
       <!-- Delete Account Modal -->
       <div v-if="showDelete" class="modal-overlay" role="dialog" aria-modal="true" @click.self="closeDelete">
         <div
@@ -370,7 +583,30 @@
             <h2 id="delete-account-title">{{ $t('delete_account') }}</h2>
           </div>
           <p id="delete-account-desc" class="modal-text">{{ $t('delete_account_confirm') }}</p>
-          
+
+          <div class="form-group">
+            <label class="form-label" for="delete-reauth-password">{{ $t('current_password_confirm_label') }}</label>
+            <div class="password-input-wrap">
+              <input
+                id="delete-reauth-password"
+                :type="showReauthPassword ? 'text' : 'password'"
+                v-model="reauth.password"
+                class="form-input"
+                autocomplete="current-password"
+                required
+              />
+              <button
+                type="button"
+                class="password-visibility-btn"
+                :aria-pressed="showReauthPassword ? 'true' : 'false'"
+                :aria-label="showReauthPassword ? $t('hide_password') : $t('show_password')"
+                @click="showReauthPassword = !showReauthPassword"
+              >
+                {{ showReauthPassword ? $t('hide_password') : $t('show_password') }}
+              </button>
+            </div>
+          </div>
+
           <div v-if="deleteError" class="alert alert-danger" role="alert">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -429,9 +665,13 @@
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import QRCode from 'qrcode'
 import authService from '@/services/authService'
 import { validateNIF } from '@/utils/validateNIF'
 
+
+const ESTADO_CUENTA_SUSPENDIDO = 'SUSPENDIDO'
+const ESTADO_CUENTA_ACTIVO = 'ACTIVO'
 
 export default {
   name: 'DatosUsuarioView',
@@ -462,12 +702,31 @@ export default {
     const exportError = ref('')
     const exportSuccess = ref('')
     const reauth = ref({ password: '' })
+    const showReauthPassword = ref(false)
     const deleteModalRef = ref(null)
     const deleteCancelRef = ref(null)
     const deleteConfirmRef = ref(null)
     const deleteTriggerEl = ref(null)
     const appToast = ref({ visible: false, message: '', type: 'success' })
     let toastTimer = null
+
+    // Segundo factor (TOTP)
+    const totpEnabled = ref(false)
+    const totpStatusLoading = ref(true)
+    const showTotpSetup = ref(false)
+    const totpSetupData = ref(null)
+    const totpQrDataUrl = ref('')
+    const totpConfirmCode = ref('')
+    const totpSetupLoading = ref(false)
+    const totpSetupError = ref('')
+    const showTotpDisable = ref(false)
+    const totpDisableCode = ref('')
+    const totpDisableLoading = ref(false)
+    const totpDisableError = ref('')
+
+    // Limitación del tratamiento (derecho de limitación, art. 18 RGPD)
+    const processingRestrictionLoading = ref(false)
+    const processingRestrictionError = ref('')
 
       const showAppToast = (message, type = 'success', duration = 2600) => {
         if (!message) return
@@ -530,20 +789,113 @@ export default {
         pwSuccess.value = false
       }
 
+      const loadTotpStatus = async () => {
+        totpStatusLoading.value = true
+        try {
+          totpEnabled.value = await authService.getTotpStatus()
+        } catch (e) {
+          // No se bloquea el resto de la pantalla por esto: se deja como desactivado
+          // y el usuario puede reintentarlo al pulsar "activar".
+          totpEnabled.value = false
+        } finally {
+          totpStatusLoading.value = false
+        }
+      }
+
+      const startTotpSetup = async () => {
+        totpSetupError.value = ''
+        totpSetupLoading.value = true
+        try {
+          const data = await authService.setupTotp()
+          totpSetupData.value = data
+          totpConfirmCode.value = ''
+          totpQrDataUrl.value = data?.otpauthUri ? await QRCode.toDataURL(data.otpauthUri) : ''
+          showTotpSetup.value = true
+        } catch (e) {
+          totpSetupError.value = e.message || t('two_factor_setup_error')
+        } finally {
+          totpSetupLoading.value = false
+        }
+      }
+
+      const cancelTotpSetup = () => {
+        showTotpSetup.value = false
+        totpSetupData.value = null
+        totpQrDataUrl.value = ''
+        totpConfirmCode.value = ''
+        totpSetupError.value = ''
+      }
+
+      const confirmTotpSetup = async () => {
+        totpSetupError.value = ''
+        totpSetupLoading.value = true
+        try {
+          await authService.confirmTotp(totpConfirmCode.value)
+          totpEnabled.value = true
+          cancelTotpSetup()
+          showAppToast(t('two_factor_enabled_success'))
+        } catch (e) {
+          totpSetupError.value = e.message || t('two_factor_setup_error')
+        } finally {
+          totpSetupLoading.value = false
+        }
+      }
+
+      const cancelTotpDisable = () => {
+        showTotpDisable.value = false
+        totpDisableCode.value = ''
+        totpDisableError.value = ''
+      }
+
+      const confirmTotpDisable = async () => {
+        totpDisableError.value = ''
+        totpDisableLoading.value = true
+        try {
+          await authService.disableTotp(totpDisableCode.value)
+          totpEnabled.value = false
+          cancelTotpDisable()
+          showAppToast(t('two_factor_disabled_success'))
+        } catch (e) {
+          totpDisableError.value = e.message || t('two_factor_setup_error')
+        } finally {
+          totpDisableLoading.value = false
+        }
+      }
+
+      const enableProcessingRestriction = async () => {
+        processingRestrictionError.value = ''
+        processingRestrictionLoading.value = true
+        try {
+          await authService.limitarTratamiento()
+          if (user.value) user.value.estadoCuenta = ESTADO_CUENTA_SUSPENDIDO
+          showAppToast(t('processing_restriction_enable_success'))
+        } catch (e) {
+          processingRestrictionError.value = e.message || t('error_processing_restriction')
+        } finally {
+          processingRestrictionLoading.value = false
+        }
+      }
+
+      const disableProcessingRestriction = async () => {
+        processingRestrictionError.value = ''
+        processingRestrictionLoading.value = true
+        try {
+          await authService.reanudarTratamiento()
+          if (user.value) user.value.estadoCuenta = ESTADO_CUENTA_ACTIVO
+          showAppToast(t('processing_restriction_disable_success'))
+        } catch (e) {
+          processingRestrictionError.value = e.message || t('error_processing_resume')
+        } finally {
+          processingRestrictionLoading.value = false
+        }
+      }
+
       const exportData = async () => {
         exportLoading.value = true
         exportError.value = ''
         exportSuccess.value = ''
         try {
-          const token = authService.getToken()
-          const headers = { 'Authorization': 'Bearer ' + token }
-          if (reauth.value.password) headers['X-Current-Password'] = reauth.value.password
-          const resp = await fetch((process.env.VUE_APP_API_URL || 'http://localhost:8081') + '/usuario/export', { headers })
-          if (resp.status === 401 && resp.headers.get('X-Reauth-Required') === 'true') {
-            throw new Error(t('password_required_export'))
-          }
-          if (!resp.ok) throw new Error(t('error_exporting_data'))
-          const json = await resp.json()
+          const json = await authService.exportMyData(reauth.value.password)
           const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' })
           const a = document.createElement('a')
           a.href = URL.createObjectURL(blob)
@@ -608,13 +960,7 @@ export default {
         deleteError.value=''
         deleteLoading.value = true
         try {
-          const token = authService.getToken()
-          const resp = await fetch((process.env.VUE_APP_API_URL || 'http://localhost:8081') + '/usuario/me', { method:'DELETE', headers: { 'Authorization':'Bearer '+token, 'X-Current-Password': reauth.value.password || '' }})
-          if (resp.status === 401 && resp.headers.get('X-Reauth-Required') === 'true') {
-              throw new Error(t('password_required_delete_account'))
-          }
-          if (!resp.ok && resp.status !== 204) throw new Error(t('error_deleting_account'))
-          authService._clearAuth?.()
+          await authService.deleteAccount(reauth.value.password)
           router.push({ name: 'Login' })
         } catch (e) {
           deleteError.value = e.message || t('error_deleting_account')
@@ -680,7 +1026,10 @@ export default {
         }
       }
 
-      onMounted(load)
+      onMounted(() => {
+        load()
+        loadTotpStatus()
+      })
       onBeforeUnmount(() => {
         if (toastTimer) {
           clearTimeout(toastTimer)
@@ -688,12 +1037,24 @@ export default {
         }
       })
 
-    return { user, loading, error, formatDate, formatDateTime, showPwForm, showPwCurrent, showPwNew1, showPwNew2, pw, pwLoading, pwError, pwSuccess, submitPw, cancelPw, editMode, form, startEdit, cancelEdit, submitEdit, editLoading, editError, editSuccess, nifChanged, showDelete, openDelete, closeDelete, confirmDelete, deleteLoading, deleteError, exportData, exportLoading, exportError, exportSuccess, reauth, deleteModalRef, deleteCancelRef, deleteConfirmRef, onDeleteModalKeydown, appToast }
+    return { user, loading, error, formatDate, formatDateTime, showPwForm, showPwCurrent, showPwNew1, showPwNew2, pw, pwLoading, pwError, pwSuccess, submitPw, cancelPw, editMode, form, startEdit, cancelEdit, submitEdit, editLoading, editError, editSuccess, nifChanged, showDelete, openDelete, closeDelete, confirmDelete, deleteLoading, deleteError, exportData, exportLoading, exportError, exportSuccess, reauth, showReauthPassword, deleteModalRef, deleteCancelRef, deleteConfirmRef, onDeleteModalKeydown, appToast,
+      totpEnabled, totpStatusLoading, showTotpSetup, totpSetupData, totpQrDataUrl, totpConfirmCode, totpSetupLoading, totpSetupError, startTotpSetup, cancelTotpSetup, confirmTotpSetup, showTotpDisable, totpDisableCode, totpDisableLoading, totpDisableError, cancelTotpDisable, confirmTotpDisable,
+      ESTADO_CUENTA_SUSPENDIDO, processingRestrictionLoading, processingRestrictionError, enableProcessingRestriction, disableProcessingRestriction }
   }
 }
 </script>
 
 <style scoped>
+.reauth-group {
+  margin-bottom: 1.5rem;
+}
+
+.field-hint {
+  margin: 0.4rem 0 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
 .password-input-wrap {
   position: relative;
 }
@@ -725,6 +1086,62 @@ export default {
 .password-visibility-btn:focus-visible {
   outline: 2px solid var(--focus-color);
   outline-offset: 1px;
+}
+
+/* Two-Factor Authentication section */
+.two-factor-status {
+  margin: 0 0 1rem 0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.status-badge--on {
+  background: var(--badge-success-bg);
+  color: var(--badge-success-text);
+}
+
+.status-badge--off {
+  background: var(--bg-light);
+  color: var(--text-secondary);
+}
+
+.totp-qr-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.totp-qr {
+  width: 200px;
+  height: 200px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-light);
+}
+
+.totp-secret {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.totp-secret code {
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-light);
+  border-radius: 6px;
+  word-break: break-all;
 }
 
 /* Data Grid - specific to this view */

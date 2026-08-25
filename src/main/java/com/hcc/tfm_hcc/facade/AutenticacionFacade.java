@@ -29,13 +29,29 @@ public interface AutenticacionFacade {
 
     /**
      * Realiza el proceso de autenticación de un usuario.
-     * Valida las credenciales y genera un token JWT para el acceso al sistema.
+     * Valida las credenciales y, si el usuario no tiene activado el segundo factor,
+     * genera directamente un token JWT para el acceso al sistema. Si lo tiene activo,
+     * en su lugar devuelve un reto de segundo factor pendiente
+     * (LoginResponse#isRequiresTwoFactor() a true, sin token) a completar con
+     * {@link #autenticarSegundoFactor(String, String)}.
      *
      * @param loginUsuarioDTO Credenciales del usuario (NIF y contraseña)
-     * @return ResponseEntity con LoginResponse que contiene el token JWT y tiempo de expiración
+     * @return ResponseEntity con LoginResponse: token JWT si el login se completa, o un
+     *         reto de segundo factor pendiente si el usuario tiene TOTP activo
      * @throws IncorrectCredentials si las credenciales son incorrectas o el usuario no existe
      */
     ResponseEntity<LoginResponse> autenticar(LoginUsuarioDTO loginUsuarioDTO) throws IncorrectCredentials;
+
+    /**
+     * Completa el login de un usuario con segundo factor activo, verificando el
+     * código TOTP contra el reto emitido por {@link #autenticar(LoginUsuarioDTO)}.
+     *
+     * @param challengeId identificador del reto de segundo factor pendiente
+     * @param code código de 6 dígitos de la aplicación autenticadora
+     * @return ResponseEntity con LoginResponse que contiene el token JWT y tiempo de expiración
+     * @throws IncorrectCredentials si el reto no existe, ha caducado o el código no es válido
+     */
+    ResponseEntity<LoginResponse> autenticarSegundoFactor(String challengeId, String code) throws IncorrectCredentials;
 
     /**
      * Registra un nuevo usuario en el sistema.

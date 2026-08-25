@@ -11,25 +11,31 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
 import com.hcc.tfm_hcc.exception.MedicoOperacionException;
 import com.hcc.tfm_hcc.exception.MedicoValidationException;
+import com.hcc.tfm_hcc.exception.PacienteNoEncontradoException;
 import com.hcc.tfm_hcc.exception.SolicitudAsignacionException;
+import com.hcc.tfm_hcc.exception.UsuarioSinPermisoException;
 import com.hcc.tfm_hcc.facade.impl.MedicoFacadeImpl;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
+import com.hcc.tfm_hcc.service.HistorialClinicoService;
 import com.hcc.tfm_hcc.service.MedicoService;
 
 class MedicoFacadeImplTest {
 
     private MedicoService medicoService;
     private SolicitudAsignacionFacade solicitudAsignacionFacade;
+    private HistorialClinicoService historialClinicoService;
     private MedicoFacadeImpl facade;
 
     @BeforeEach
     void setUp() {
         medicoService = mock(MedicoService.class);
         solicitudAsignacionFacade = mock(SolicitudAsignacionFacade.class);
-        facade = new MedicoFacadeImpl(medicoService, solicitudAsignacionFacade);
+        historialClinicoService = mock(HistorialClinicoService.class);
+        facade = new MedicoFacadeImpl(medicoService, solicitudAsignacionFacade, historialClinicoService);
     }
 
     @Test
@@ -59,6 +65,43 @@ class MedicoFacadeImplTest {
 
         assertThrows(MedicoOperacionException.class,
                 () -> facade.buscarPacientePorDniYFechaNacimiento("12345678A", "1990-05-20"));
+    }
+
+    @Test
+    void obtenerHistorialPaciente_conNifValido_delegaEnElServicioDeHistorial() {
+        HistorialClinicoDTO dto = new HistorialClinicoDTO();
+        when(historialClinicoService.obtenerHistorialPaciente("12345678A")).thenReturn(dto);
+
+        assertEquals(dto, facade.obtenerHistorialPaciente("12345678A"));
+    }
+
+    @Test
+    void obtenerHistorialPaciente_conNifVacio_lanzaMedicoValidationException() {
+        assertThrows(MedicoValidationException.class, () -> facade.obtenerHistorialPaciente("  "));
+    }
+
+    @Test
+    void obtenerHistorialPaciente_conPacienteNoEncontrado_lanzaPacienteNoEncontradoException() {
+        when(historialClinicoService.obtenerHistorialPaciente("12345678A"))
+                .thenThrow(new IllegalArgumentException("Usuario no encontrado"));
+
+        assertThrows(PacienteNoEncontradoException.class, () -> facade.obtenerHistorialPaciente("12345678A"));
+    }
+
+    @Test
+    void obtenerHistorialPaciente_sinRelacionActiva_lanzaUsuarioSinPermisoException() {
+        when(historialClinicoService.obtenerHistorialPaciente("12345678A"))
+                .thenThrow(new IllegalStateException("Acceso denegado"));
+
+        assertThrows(UsuarioSinPermisoException.class, () -> facade.obtenerHistorialPaciente("12345678A"));
+    }
+
+    @Test
+    void obtenerHistorialPaciente_conErrorInesperado_lanzaMedicoOperacionException() {
+        when(historialClinicoService.obtenerHistorialPaciente("12345678A"))
+                .thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(MedicoOperacionException.class, () -> facade.obtenerHistorialPaciente("12345678A"));
     }
 
     @Test

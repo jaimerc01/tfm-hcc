@@ -34,7 +34,19 @@ public interface MedicoPacienteRepository extends JpaRepository<MedicoPaciente, 
      * @return true si existe la relación médico-paciente, false en caso contrario
      */
     boolean existsByMedicoIdAndPacienteId(UUID medicoId, UUID pacienteId);
-    
+
+    /**
+     * Verifica si existe una relación médico-paciente con un estado concreto.
+     * Se usa para autorizar el acceso de un médico al historial de un paciente,
+     * exigiendo explícitamente que la relación esté en estado "ACTIVA".
+     *
+     * @param medicoId ID único del médico
+     * @param pacienteId ID único del paciente
+     * @param estado Estado exacto que debe tener la relación (p. ej. "ACTIVA")
+     * @return true si existe una relación médico-paciente con ese estado
+     */
+    boolean existsByMedicoIdAndPacienteIdAndEstado(UUID medicoId, UUID pacienteId, String estado);
+
     /**
      * Busca todas las relaciones médico-paciente de un médico específico,
      * excluyendo aquellas que tengan un estado determinado.

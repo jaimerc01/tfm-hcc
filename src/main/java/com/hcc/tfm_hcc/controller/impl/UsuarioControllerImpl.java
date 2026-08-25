@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,22 +13,28 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.UsuarioController;
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
 import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.dto.TotpCodeRequestDTO;
+import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UpdateUsuarioRequest;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
+import com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException;
 import com.hcc.tfm_hcc.exception.UsuarioNoAutenticadoException;
 import com.hcc.tfm_hcc.exception.UsuarioOperacionException;
 import com.hcc.tfm_hcc.exception.UsuarioSinPermisoException;
 import com.hcc.tfm_hcc.exception.UsuarioValidationException;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -92,7 +99,7 @@ public class UsuarioControllerImpl implements UsuarioController {
                 dto.setPassword(null);
             }
             
-            log.info("Datos de usuario obtenidos exitosamente: {}", dto.getNif());
+            log.info("Datos de usuario obtenidos exitosamente: {}", LogMaskUtil.enmascarar(dto.getNif()));
             return ResponseEntity.ok(dto);
 
         } catch (UsuarioNoAutenticadoException e) {
@@ -305,7 +312,7 @@ public class UsuarioControllerImpl implements UsuarioController {
                 builder.header("X-Reauth-Required", "true");
             }
             
-            log.info("Datos de usuario actualizados exitosamente: {}", actualizado.getNif());
+            log.info("Datos de usuario actualizados exitosamente: {}", LogMaskUtil.enmascarar(actualizado.getNif()));
             return builder.body(actualizado);
             
         } catch (IllegalArgumentException e) {
@@ -320,18 +327,24 @@ public class UsuarioControllerImpl implements UsuarioController {
     /**
      * Elimina la cuenta del usuario autenticado.
      * Operación irreversible que elimina todos los datos del usuario.
+     * Exige confirmar la contraseña actual mediante la cabecera {@code X-Current-Password}.
      *
+     * @param currentPassword contraseña actual del usuario, enviada en la cabecera {@code X-Current-Password}
      * @return ResponseEntity vacío confirmando la eliminación
      */
     @DeleteMapping(RestUrls.USUARIO_ME)
-    public ResponseEntity<Void> deleteCuenta() {
+    public ResponseEntity<Void> deleteCuenta(
+            @RequestHeader(value = "X-Current-Password", required = false) String currentPassword) {
         log.info("Eliminando cuenta del usuario autenticado");
-        
+
         try {
-            usuarioFacade.deleteCuentaActual();
+            usuarioFacade.deleteCuentaActual(currentPassword);
             log.info("Cuenta eliminada exitosamente");
             return ResponseEntity.noContent().build();
-            
+
+        } catch (ReautenticacionRequeridaException _) {
+            log.warn("Reautenticación requerida para eliminar cuenta");
+            return ResponseEntity.status(401).header("X-Reauth-Required", "true").build();
         } catch (IllegalStateException _) {
             log.warn("Usuario no autenticado al eliminar cuenta");
             return ResponseEntity.status(401).build();
@@ -342,6 +355,66 @@ public class UsuarioControllerImpl implements UsuarioController {
             log.error("Error al eliminar cuenta: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error al eliminar cuenta", e);
         }
+    }
+
+    /**
+     * Limita el tratamiento de los datos del usuario autenticado (derecho de limitación
+     * del tratamiento, art. 18 RGPD): mientras dure, ningún médico puede consultar su
+     * historial clínico.
+     *
+     * @return ResponseEntity vacío confirmando la limitación
+     */
+    @PostMapping(RestUrls.USUARIO_LIMITAR_TRATAMIENTO)
+    public ResponseEntity<Void> limitarTratamiento() {
+        log.info("Limitando el tratamiento de datos del usuario autenticado");
+
+        try {
+            usuarioFacade.limitarTratamiento();
+            log.info("Tratamiento de datos limitado exitosamente");
+            return ResponseEntity.noContent().build();
+
+        } catch (IllegalStateException e) {
+            return respuestaSegunEstadoDeCuenta(e);
+        } catch (Exception e) {
+            log.error("Error al limitar el tratamiento de datos: {}", e.getMessage(), e);
+            throw new UsuarioOperacionException("Error al limitar el tratamiento de datos", e);
+        }
+    }
+
+    /**
+     * Revierte la limitación del tratamiento aplicada por {@link #limitarTratamiento()}.
+     *
+     * @return ResponseEntity vacío confirmando la reanudación
+     */
+    @PostMapping(RestUrls.USUARIO_REANUDAR_TRATAMIENTO)
+    public ResponseEntity<Void> reanudarTratamiento() {
+        log.info("Reanudando el tratamiento de datos del usuario autenticado");
+
+        try {
+            usuarioFacade.reanudarTratamiento();
+            log.info("Tratamiento de datos reanudado exitosamente");
+            return ResponseEntity.noContent().build();
+
+        } catch (IllegalStateException e) {
+            return respuestaSegunEstadoDeCuenta(e);
+        } catch (Exception e) {
+            log.error("Error al reanudar el tratamiento de datos: {}", e.getMessage(), e);
+            throw new UsuarioOperacionException("Error al reanudar el tratamiento de datos", e);
+        }
+    }
+
+    /**
+     * Traduce las dos causas posibles de {@link IllegalStateException} que lanza el
+     * servicio para {@code limitarTratamiento}/{@code reanudarTratamiento}: usuario no
+     * autenticado (401) o cuenta ya eliminada, que no admite este cambio de estado (409).
+     */
+    private ResponseEntity<Void> respuestaSegunEstadoDeCuenta(IllegalStateException e) {
+        if (ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO.equals(e.getMessage())) {
+            log.warn("Usuario no autenticado al cambiar el estado del tratamiento de datos");
+            return ResponseEntity.status(401).build();
+        }
+        log.warn("No se pudo cambiar el estado del tratamiento de datos: {}", e.getMessage());
+        return ResponseEntity.status(409).build();
     }
 
     /**
@@ -473,24 +546,30 @@ public class UsuarioControllerImpl implements UsuarioController {
 
     /**
      * Exporta todos los datos del usuario autenticado.
-     * Funcionalidad para cumplimiento RGPD.
+     * Funcionalidad para cumplimiento RGPD. Exige confirmar la contraseña actual
+     * mediante la cabecera {@code X-Current-Password}.
      *
+     * @param currentPassword contraseña actual del usuario, enviada en la cabecera {@code X-Current-Password}
      * @return ResponseEntity con los datos exportados del usuario
      */
     @GetMapping(RestUrls.USUARIO_EXPORT)
-    public ResponseEntity<Object> exportUsuario() {
+    public ResponseEntity<Object> exportUsuario(
+            @RequestHeader(value = "X-Current-Password", required = false) String currentPassword) {
         log.info("Exportando datos del usuario autenticado");
-        
+
         try {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
                 throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
-            
-            Object exportData = usuarioFacade.exportUsuario();
+
+            Object exportData = usuarioFacade.exportUsuario(currentPassword);
             log.info("Datos de usuario exportados exitosamente");
             return ResponseEntity.ok(exportData);
 
+        } catch (ReautenticacionRequeridaException e) {
+            log.warn("Reautenticación requerida para exportar datos del usuario");
+            return ResponseEntity.status(401).header("X-Reauth-Required", "true").build();
         } catch (UsuarioNoAutenticadoException e) {
             log.warn("Usuario no autenticado al exportar datos del usuario");
             throw e;
@@ -498,5 +577,78 @@ public class UsuarioControllerImpl implements UsuarioController {
             log.error("Error al exportar datos del usuario: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error al exportar datos del usuario", e);
         }
+    }
+
+    // ===============================
+    // SEGUNDO FACTOR (TOTP)
+    // ===============================
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @PostMapping(RestUrls.USUARIO_2FA_SETUP)
+    public ResponseEntity<TotpSetupResponseDTO> setupTotp() {
+        log.info("Iniciando configuración de segundo factor");
+        try {
+            return ResponseEntity.ok(usuarioFacade.setupTotp());
+        } catch (Exception e) {
+            log.error("Error al iniciar configuración de segundo factor: {}", e.getMessage(), e);
+            throw new UsuarioOperacionException("Error al iniciar la configuración del segundo factor", e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @PostMapping(RestUrls.USUARIO_2FA_CONFIRM)
+    public ResponseEntity<Void> confirmTotp(@RequestBody TotpCodeRequestDTO body) {
+        log.info("Confirmando activación de segundo factor");
+        try {
+            usuarioFacade.confirmTotp(body != null ? body.getCode() : null);
+            return ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            log.warn("Estado inválido al confirmar segundo factor: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (IllegalArgumentException e) {
+            log.warn("Código inválido al confirmar segundo factor: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error al confirmar segundo factor: {}", e.getMessage(), e);
+            throw new UsuarioOperacionException("Error al confirmar el segundo factor", e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @PostMapping(RestUrls.USUARIO_2FA_DISABLE)
+    public ResponseEntity<Void> disableTotp(@RequestBody TotpCodeRequestDTO body) {
+        log.info("Desactivando segundo factor");
+        try {
+            usuarioFacade.disableTotp(body != null ? body.getCode() : null);
+            return ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            log.warn("Estado inválido al desactivar segundo factor: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (IllegalArgumentException e) {
+            log.warn("Código inválido al desactivar segundo factor: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Error al desactivar segundo factor: {}", e.getMessage(), e);
+            throw new UsuarioOperacionException("Error al desactivar el segundo factor", e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @GetMapping(RestUrls.USUARIO_2FA_STATUS)
+    public ResponseEntity<Boolean> getTotpStatus() {
+        log.debug("Consultando estado del segundo factor");
+        return ResponseEntity.ok(usuarioFacade.isTotpEnabled());
     }
 }

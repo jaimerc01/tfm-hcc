@@ -3,8 +3,6 @@ package com.hcc.tfm_hcc.service.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 
@@ -62,11 +60,10 @@ public class ArchivoCifradoServiceImpl implements ArchivoCifradoService {
     }
 
     @Override
-    public InputStream descifrar(Path rutaArchivoCifrado) throws IOException {
-        InputStream entrada = Files.newInputStream(rutaArchivoCifrado);
+    public InputStream descifrar(InputStream entradaCifrada) throws IOException {
         try {
             byte[] iv = new byte[IV_LENGTH_BYTES];
-            int leidos = entrada.readNBytes(iv, 0, IV_LENGTH_BYTES);
+            int leidos = entradaCifrada.readNBytes(iv, 0, IV_LENGTH_BYTES);
             if (leidos != IV_LENGTH_BYTES) {
                 throw new IOException(ErrorMessages.ERROR_ARCHIVO_NO_ACCESIBLE);
             }
@@ -74,12 +71,12 @@ public class ArchivoCifradoServiceImpl implements ArchivoCifradoService {
             Cipher cipher = Cipher.getInstance(ALGORITMO);
             cipher.init(Cipher.DECRYPT_MODE, encryptionKeyProvider.getSecretKey(), new GCMParameterSpec(TAG_LENGTH_BITS, iv));
 
-            return new CipherInputStream(entrada, cipher);
+            return new CipherInputStream(entradaCifrada, cipher);
         } catch (GeneralSecurityException e) {
-            entrada.close();
+            entradaCifrada.close();
             throw new IOException(ErrorMessages.ERROR_ARCHIVO_NO_ACCESIBLE, e);
         } catch (IOException e) {
-            entrada.close();
+            entradaCifrada.close();
             throw e;
         }
     }

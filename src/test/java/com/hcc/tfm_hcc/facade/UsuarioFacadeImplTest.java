@@ -2,6 +2,7 @@ package com.hcc.tfm_hcc.facade;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException;
 import com.hcc.tfm_hcc.facade.impl.UsuarioFacadeImpl;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
@@ -117,9 +119,17 @@ class UsuarioFacadeImplTest {
 
     @Test
     void deleteCuentaActual_delegaEnElServicio() {
-        facade.deleteCuentaActual();
+        facade.deleteCuentaActual("miContraseñaActual");
 
-        verify(usuarioService, times(1)).deleteCuentaActual();
+        verify(usuarioService, times(1)).deleteCuentaActual("miContraseñaActual");
+    }
+
+    @Test
+    void deleteCuentaActual_conReautenticacionRequerida_propagaLaExcepcion() {
+        org.mockito.Mockito.doThrow(new ReautenticacionRequeridaException("reautenticación requerida"))
+                .when(usuarioService).deleteCuentaActual(any());
+
+        assertThrows(ReautenticacionRequeridaException.class, () -> facade.deleteCuentaActual("incorrecta"));
     }
 
     @Test
@@ -142,9 +152,9 @@ class UsuarioFacadeImplTest {
     @Test
     void exportUsuario_delegaEnElServicio() {
         UserExportDTO export = UserExportDTO.builder().build();
-        when(usuarioService.exportUsuario()).thenReturn(export);
+        when(usuarioService.exportUsuario("miContraseñaActual")).thenReturn(export);
 
-        assertEquals(export, facade.exportUsuario());
+        assertEquals(export, facade.exportUsuario("miContraseñaActual"));
     }
 
     @Test

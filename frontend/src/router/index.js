@@ -86,14 +86,12 @@ const routes = [
   {
     path: '/privacidad',
     name: 'PoliticaPrivacidad',
-    component: PoliticaPrivacidadView,
-    meta: { requiresAuth: true }
+    component: PoliticaPrivacidadView
   },
   {
     path: '/cookies',
     name: 'PoliticaCookies',
-    component: PoliticaCookiesView,
-    meta: { requiresAuth: true }
+    component: PoliticaCookiesView
   },
 ]
 

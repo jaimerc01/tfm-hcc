@@ -29,6 +29,7 @@ class SolicitudAsignacionServiceImplTest {
     private SolicitudAsignacionRepository solicitudAsignacionRepository;
     private UsuarioRepository usuarioRepository;
     private NotificacionFacade notificacionFacade;
+    private HmacSearchIndexService hmacSearchIndexService;
     private SolicitudAsignacionServiceImpl service;
 
     @BeforeEach
@@ -36,12 +37,16 @@ class SolicitudAsignacionServiceImplTest {
         solicitudAsignacionRepository = mock(SolicitudAsignacionRepository.class);
         usuarioRepository = mock(UsuarioRepository.class);
         notificacionFacade = mock(NotificacionFacade.class);
-        service = new SolicitudAsignacionServiceImpl(solicitudAsignacionRepository, usuarioRepository, notificacionFacade);
+        hmacSearchIndexService = mock(HmacSearchIndexService.class);
+        when(hmacSearchIndexService.indexar(anyString())).thenAnswer(inv -> "hash-" + inv.getArgument(0, String.class));
+        service = new SolicitudAsignacionServiceImpl(solicitudAsignacionRepository, usuarioRepository, notificacionFacade,
+                hmacSearchIndexService);
     }
 
     private Usuario usuarioConNif(String nif) {
         Usuario usuario = new Usuario();
         usuario.setNif(nif);
+        usuario.setNifHash("hash-" + nif);
         usuario.setNombre("Nombre" + nif);
         return usuario;
     }
@@ -50,10 +55,10 @@ class SolicitudAsignacionServiceImplTest {
     void crearSolicitud_conMedicoYPacienteExistentes_creaYNotifica() {
         Usuario medico = usuarioConNif("11111111A");
         Usuario paciente = usuarioConNif("22222222B");
-        when(usuarioRepository.findByNif("11111111A")).thenReturn(Optional.of(medico));
-        when(usuarioRepository.findByNif("22222222B")).thenReturn(Optional.of(paciente));
-        when(solicitudAsignacionRepository.existsByMedicoNifAndPacienteNifAndEstado("11111111A", "22222222B", "PENDIENTE"))
-                .thenReturn(false);
+        when(usuarioRepository.findByNifHash("hash-11111111A")).thenReturn(Optional.of(medico));
+        when(usuarioRepository.findByNifHash("hash-22222222B")).thenReturn(Optional.of(paciente));
+        when(solicitudAsignacionRepository.existsByMedicoNifHashAndPacienteNifHashAndEstado(
+                "hash-11111111A", "hash-22222222B", "PENDIENTE")).thenReturn(false);
         when(solicitudAsignacionRepository.save(any(SolicitudAsignacion.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -65,28 +70,28 @@ class SolicitudAsignacionServiceImplTest {
 
     @Test
     void crearSolicitud_conMedicoInexistente_lanzaUsuarioNoEncontradoException() {
-        when(usuarioRepository.findByNif("11111111A")).thenReturn(Optional.empty());
-        when(usuarioRepository.findByNif("22222222B")).thenReturn(Optional.of(usuarioConNif("22222222B")));
+        when(usuarioRepository.findByNifHash("hash-11111111A")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByNifHash("hash-22222222B")).thenReturn(Optional.of(usuarioConNif("22222222B")));
 
         assertThrows(UsuarioNoEncontradoException.class, () -> service.crearSolicitud("11111111A", "22222222B"));
     }
 
     @Test
     void crearSolicitud_conSolicitudPendienteYaExistente_lanzaSolicitudExistenteException() {
-        when(usuarioRepository.findByNif("11111111A")).thenReturn(Optional.of(usuarioConNif("11111111A")));
-        when(usuarioRepository.findByNif("22222222B")).thenReturn(Optional.of(usuarioConNif("22222222B")));
-        when(solicitudAsignacionRepository.existsByMedicoNifAndPacienteNifAndEstado("11111111A", "22222222B", "PENDIENTE"))
-                .thenReturn(true);
+        when(usuarioRepository.findByNifHash("hash-11111111A")).thenReturn(Optional.of(usuarioConNif("11111111A")));
+        when(usuarioRepository.findByNifHash("hash-22222222B")).thenReturn(Optional.of(usuarioConNif("22222222B")));
+        when(solicitudAsignacionRepository.existsByMedicoNifHashAndPacienteNifHashAndEstado(
+                "hash-11111111A", "hash-22222222B", "PENDIENTE")).thenReturn(true);
 
         assertThrows(SolicitudExistenteException.class, () -> service.crearSolicitud("11111111A", "22222222B"));
     }
 
     @Test
     void crearSolicitud_conFalloAlNotificar_noPropagaLaExcepcionYDevuelveLaSolicitud() {
-        when(usuarioRepository.findByNif("11111111A")).thenReturn(Optional.of(usuarioConNif("11111111A")));
-        when(usuarioRepository.findByNif("22222222B")).thenReturn(Optional.of(usuarioConNif("22222222B")));
-        when(solicitudAsignacionRepository.existsByMedicoNifAndPacienteNifAndEstado("11111111A", "22222222B", "PENDIENTE"))
-                .thenReturn(false);
+        when(usuarioRepository.findByNifHash("hash-11111111A")).thenReturn(Optional.of(usuarioConNif("11111111A")));
+        when(usuarioRepository.findByNifHash("hash-22222222B")).thenReturn(Optional.of(usuarioConNif("22222222B")));
+        when(solicitudAsignacionRepository.existsByMedicoNifHashAndPacienteNifHashAndEstado(
+                "hash-11111111A", "hash-22222222B", "PENDIENTE")).thenReturn(false);
         when(solicitudAsignacionRepository.save(any(SolicitudAsignacion.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(notificacionFacade.crearNotificacionParaUsuario(anyString(), anyString()))
@@ -99,7 +104,7 @@ class SolicitudAsignacionServiceImplTest {
 
     @Test
     void listarSolicitudesPendientesPorMedico_devuelveLasDelRepositorio() {
-        when(solicitudAsignacionRepository.findByMedicoNifAndEstado("11111111A", "PENDIENTE"))
+        when(solicitudAsignacionRepository.findByMedicoNifHashAndEstado("hash-11111111A", "PENDIENTE"))
                 .thenReturn(List.of(new SolicitudAsignacion()));
 
         List<SolicitudAsignacion> resultado = service.listarSolicitudesPendientesPorMedico("11111111A");
@@ -109,7 +114,7 @@ class SolicitudAsignacionServiceImplTest {
 
     @Test
     void listarSolicitudesEnviadasPorMedico_devuelveLasDelRepositorio() {
-        when(solicitudAsignacionRepository.findByMedicoNifOrderByFechaCreacionDesc("11111111A"))
+        when(solicitudAsignacionRepository.findByMedicoNifHashOrderByFechaCreacionDesc("hash-11111111A"))
                 .thenReturn(List.of(new SolicitudAsignacion(), new SolicitudAsignacion()));
 
         List<SolicitudAsignacion> resultado = service.listarSolicitudesEnviadasPorMedico("11111111A");

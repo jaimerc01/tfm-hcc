@@ -43,6 +43,7 @@ import com.hcc.tfm_hcc.repository.AlergiaRepository;
 import com.hcc.tfm_hcc.repository.AntecedenteClinicoRepository;
 import com.hcc.tfm_hcc.repository.DatoClinicoRepository;
 import com.hcc.tfm_hcc.repository.HistorialClinicoRepository;
+import com.hcc.tfm_hcc.repository.MedicoPacienteRepository;
 import com.hcc.tfm_hcc.repository.RangoRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.impl.HistorialClinicoServiceImpl;
@@ -64,6 +65,8 @@ class HistorialClinicoServiceImplTest {
     @Mock
     RangoRepository rangoRepository;
     @Mock
+    MedicoPacienteRepository medicoPacienteRepository;
+    @Mock
     AuditoriaCambioService auditoriaCambioService;
     @Mock
     HistorialClinicoConverter historialClinicoConverter;
@@ -71,6 +74,8 @@ class HistorialClinicoServiceImplTest {
     AlergiaConverter alergiaConverter;
     @Mock
     AntecedenteClinicoConverter antecedenteClinicoConverter;
+    @Mock
+    HmacSearchIndexService hmacSearchIndexService;
 
     @InjectMocks
     HistorialClinicoServiceImpl svc;
@@ -154,6 +159,76 @@ class HistorialClinicoServiceImplTest {
         when(historiaRepo.findByUsuario(u)).thenReturn(Optional.empty());
 
         assertNull(svc.obtenerHistoriaUsuarioActual());
+    }
+
+    // ---- obtenerHistorialPaciente ----
+
+    @Test
+    void obtenerHistorialPaciente_conRelacionActiva_devuelveElHistorialDelPaciente() {
+        mockUsuarioAutenticado();
+
+        Usuario paciente = new Usuario();
+        paciente.setId(UUID.randomUUID());
+        HistorialClinico historialPaciente = new HistorialClinico();
+        historialPaciente.setId(UUID.randomUUID());
+        historialPaciente.setUsuario(paciente);
+
+        when(hmacSearchIndexService.indexar("12345678A")).thenReturn("hash-12345678A");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(paciente));
+        when(medicoPacienteRepository.existsByMedicoIdAndPacienteIdAndEstado(u.getId(), paciente.getId(), "ACTIVA"))
+                .thenReturn(true);
+        when(historiaRepo.findByUsuario(paciente)).thenReturn(Optional.of(historialPaciente));
+        when(datoRepo.findByHistorialClinico(historialPaciente)).thenReturn(List.of());
+        when(alergiaRepository.findByHistorialClinico(historialPaciente)).thenReturn(List.of());
+        when(antecedenteClinicoRepository.findByHistorialClinico(historialPaciente)).thenReturn(List.of());
+        when(historialClinicoConverter.toDto(any(), any(), any(), any())).thenReturn(new HistorialClinicoDTO());
+
+        assertNotNull(svc.obtenerHistorialPaciente("12345678A"));
+    }
+
+    @Test
+    void obtenerHistorialPaciente_conNifVacio_lanzaIllegalArgumentException() {
+        mockUsuarioAutenticado();
+
+        assertThrows(IllegalArgumentException.class, () -> svc.obtenerHistorialPaciente("  "));
+    }
+
+    @Test
+    void obtenerHistorialPaciente_conPacienteNoEncontrado_lanzaIllegalArgumentException() {
+        mockUsuarioAutenticado();
+        when(hmacSearchIndexService.indexar("12345678A")).thenReturn("hash-12345678A");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class, () -> svc.obtenerHistorialPaciente("12345678A"));
+    }
+
+    @Test
+    void obtenerHistorialPaciente_sinRelacionActiva_lanzaIllegalStateException() {
+        mockUsuarioAutenticado();
+        Usuario paciente = new Usuario();
+        paciente.setId(UUID.randomUUID());
+
+        when(hmacSearchIndexService.indexar("12345678A")).thenReturn("hash-12345678A");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(paciente));
+        when(medicoPacienteRepository.existsByMedicoIdAndPacienteIdAndEstado(u.getId(), paciente.getId(), "ACTIVA"))
+                .thenReturn(false);
+
+        assertThrows(IllegalStateException.class, () -> svc.obtenerHistorialPaciente("12345678A"));
+    }
+
+    @Test
+    void obtenerHistorialPaciente_sinHistorialCreado_devuelveNull() {
+        mockUsuarioAutenticado();
+        Usuario paciente = new Usuario();
+        paciente.setId(UUID.randomUUID());
+
+        when(hmacSearchIndexService.indexar("12345678A")).thenReturn("hash-12345678A");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(paciente));
+        when(medicoPacienteRepository.existsByMedicoIdAndPacienteIdAndEstado(u.getId(), paciente.getId(), "ACTIVA"))
+                .thenReturn(true);
+        when(historiaRepo.findByUsuario(paciente)).thenReturn(Optional.empty());
+
+        assertNull(svc.obtenerHistorialPaciente("12345678A"));
     }
 
     // ---- obtenerUsuarioAutenticado (a través de crearAntecedente) ----
@@ -460,7 +535,7 @@ class HistorialClinicoServiceImplTest {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
         DatoClinico previo = new DatoClinico();
-        when(datoRepo.findByHistorialClinicoAndTipoIn(eq(h), any())).thenReturn(List.of(previo));
+        when(datoRepo.findByHistorialClinicoAndTipoHashIn(eq(h), any())).thenReturn(List.of(previo));
 
         svc.actualizarAnalisisSangre("[]");
 

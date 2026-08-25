@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
 import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.dto.TotpCodeRequestDTO;
+import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
@@ -95,4 +97,36 @@ public interface UsuarioController {
      * @return ResponseEntity con mensaje de confirmación
      */
     ResponseEntity<String> marcarTodasNotificacionesLeidas();
+
+    /**
+     * Inicia la configuración del segundo factor (TOTP) para el usuario autenticado.
+     * Genera un secreto nuevo, pendiente de confirmar con {@link #confirmTotp}.
+     *
+     * @return ResponseEntity con el secreto (Base32) y la URI otpauth para el código QR
+     */
+    ResponseEntity<TotpSetupResponseDTO> setupTotp();
+
+    /**
+     * Confirma la activación del segundo factor con el primer código válido de la
+     * aplicación autenticadora.
+     *
+     * @param body código de 6 dígitos
+     * @return ResponseEntity vacío en caso de éxito
+     */
+    ResponseEntity<Void> confirmTotp(@RequestBody TotpCodeRequestDTO body);
+
+    /**
+     * Desactiva el segundo factor del usuario autenticado.
+     *
+     * @param body código de 6 dígitos, para probar la posesión del segundo factor
+     * @return ResponseEntity vacío en caso de éxito
+     */
+    ResponseEntity<Void> disableTotp(@RequestBody TotpCodeRequestDTO body);
+
+    /**
+     * Indica si el usuario autenticado tiene activado el segundo factor.
+     *
+     * @return ResponseEntity con un booleano: true si está activo
+     */
+    ResponseEntity<Boolean> getTotpStatus();
 }

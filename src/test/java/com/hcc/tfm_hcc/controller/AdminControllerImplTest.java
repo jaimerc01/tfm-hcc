@@ -69,6 +69,24 @@ class AdminControllerImplTest {
         mvc.perform(get("/admin/usuarios/by-nif").param("nif", "00000000Z")).andExpect(status().isNotFound());
     }
 
+    /**
+     * Regresión: el mensaje de esta excepción se vuelve a loguear tal cual justo
+     * después de lanzarla, así que debe llevar el NIF enmascarado y no el valor en
+     * claro -- igual que el resto de logs de la aplicación.
+     */
+    @Test
+    void buscarUsuarioPorNif_conCuerpoVacioDelFacade_elMensajeDeLaExcepcionEnmascaraElNif() {
+        AdminControllerImpl controller = new AdminControllerImpl(adminFacade);
+        when(adminFacade.buscarUsuarioPorNif("00000000Z")).thenReturn(ResponseEntity.ok(null));
+
+        com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException ex = org.junit.jupiter.api.Assertions.assertThrows(
+                com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException.class,
+                () -> controller.buscarUsuarioPorNif("00000000Z"));
+
+        org.junit.jupiter.api.Assertions.assertFalse(ex.getMessage().contains("00000000Z"));
+        org.junit.jupiter.api.Assertions.assertTrue(ex.getMessage().contains("***00Z"));
+    }
+
     @Test
     void crearMedico_conDatosValidos_devuelveElMedicoCreado() throws Exception {
         UsuarioDTO dto = new UsuarioDTO();

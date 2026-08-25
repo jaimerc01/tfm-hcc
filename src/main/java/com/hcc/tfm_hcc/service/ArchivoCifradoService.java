@@ -3,11 +3,10 @@ package com.hcc.tfm_hcc.service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Path;
 
 /**
  * Servicio para el cifrado y descifrado del contenido binario de los archivos
- * clínicos almacenados en disco.
+ * clínicos almacenados en MongoDB.
  *
  * <p>Se mantiene independiente de {@code AESEncryptionConverter} porque ese
  * conversor está pensado para columnas de texto de base de datos (cifrado
@@ -27,12 +26,12 @@ public interface ArchivoCifradoService {
     void cifrar(InputStream entrada, OutputStream salida) throws IOException;
 
     /**
-     * Abre un archivo cifrado en disco y devuelve un flujo que produce su
-     * contenido ya descifrado, listo para servir al usuario propietario.
+     * Envuelve el contenido cifrado de {@code entradaCifrada} en un flujo que
+     * produce su contenido ya descifrado, listo para servir al usuario propietario.
      *
-     * @param rutaArchivoCifrado ruta del archivo cifrado en disco
+     * @param entradaCifrada flujo con el contenido cifrado tal y como se guardó en MongoDB
      * @return flujo de lectura con el contenido en claro
-     * @throws IOException si falla la lectura del archivo o el propio descifrado
+     * @throws IOException si falla la lectura del flujo o el propio descifrado
      */
-    InputStream descifrar(Path rutaArchivoCifrado) throws IOException;
+    InputStream descifrar(InputStream entradaCifrada) throws IOException;
 }

@@ -14,12 +14,12 @@ import com.hcc.tfm_hcc.model.ArchivoClinico;
  * 
  * <p>Este servicio proporciona operaciones para la gestión segura de archivos
  * clínicos de los usuarios, incluyendo subida, descarga, listado y eliminación.</p>
- * 
+ *
  * <p>Características principales:</p>
  * <ul>
  *   <li>Control de acceso basado en el usuario autenticado</li>
  *   <li>Validaciones de seguridad para archivos</li>
- *   <li>Almacenamiento seguro en el sistema de archivos</li>
+ *   <li>Almacenamiento seguro en MongoDB, con el contenido cifrado con AES/GCM</li>
  *   <li>Gestión del ciclo de vida de archivos</li>
  * </ul>
  * 
@@ -41,7 +41,7 @@ public interface ArchivoClinicoService {
      *
      * @param file el archivo a subir
      * @return el registro del archivo clínico creado
-     * @throws IOException si ocurre un error durante el almacenamiento
+     * @throws IOException si ocurre un error durante el cifrado del contenido
      * @throws IllegalArgumentException si el archivo es inválido
      */
     ArchivoClinico uploadMine(MultipartFile file) throws IOException;
@@ -63,4 +63,5 @@ public interface ArchivoClinicoService {
      * @throws IllegalArgumentException si el archivo no existe o no pertenece al usuario
      */
     void borrarArchivo(UUID id) throws IOException;
+
 }

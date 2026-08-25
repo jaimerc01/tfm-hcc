@@ -165,6 +165,18 @@ class AutenticacionFacadeImplTest {
     }
 
     @Test
+    void procesarLoginGoogle_conTotpActivado_creaElRetoYDevuelveElCodigoDeDosFactores() {
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setTotpEnabled(true);
+        when(autenticacionService.autenticarConGoogle("ana@example.com", true)).thenReturn(usuario);
+        when(autenticacionService.crearChallengeDosFactores(usuario)).thenReturn("challenge-1");
+        when(autenticacionService.generarCodigoLoginGoogleConDosFactores("challenge-1")).thenReturn("codigo-2fa");
+
+        assertEquals("codigo-2fa", facade.procesarLoginGoogle("ana@example.com", true));
+    }
+
+    @Test
     void procesarLoginGoogle_conCuentaInexistente_propagaGoogleAuthenticationException() {
         when(autenticacionService.autenticarConGoogle("ana@example.com", true))
                 .thenThrow(new GoogleAuthenticationException("no existe", "google_account_not_found"));

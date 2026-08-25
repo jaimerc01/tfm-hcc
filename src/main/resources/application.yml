@@ -14,7 +14,15 @@ spring:
       auto-index-creation: true
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-  
+  servlet:
+    multipart:
+      # Por defecto Spring Boot limita la subida a 1MB, muy por debajo del límite
+      # real de la aplicación (app.uploads.max-size-bytes, 10MB por defecto). Sin
+      # este ajuste, cualquier archivo de más de 1MB se rechaza antes de llegar
+      # al controlador con un MaxUploadSizeExceededException.
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 server:
   port: 8081 # Puerto HTTPS (cuando SSL habilitado)
   # Puerto HTTP adicional para redirigir a HTTPS (configurado en HttpToHttpsRedirectConfig)
@@ -32,7 +40,10 @@ security:
   jwt:
     secret-key: ${JWT_SECRET}
     expiration-time: 3600000 # 1 hour in milliseconds
-  enforce-https: false # Cambiar a true en producción para redirigir HTTP->HTTPS
+  cors:
+    # Orígenes permitidos por CORS, separados por comas. En producción, sustituir por
+    # el origen real del frontend desplegado (vía la variable de entorno).
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8080,https://localhost:8080}
 
 tfm:
   hcc:
@@ -42,6 +53,29 @@ tfm:
 app:
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:8080} # Origen del SPA, usado para las redirecciones del login con Google
+
+logging:
+  level:
+    root: INFO
+    com.hcc.tfm_hcc: INFO
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN
+    org.mongodb.driver: WARN
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+logging:
+  file:
+    name: ${LOG_PATH:/var/log/tfm-hcc}/tfm-hcc.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 1GB
 
 ---
 spring:

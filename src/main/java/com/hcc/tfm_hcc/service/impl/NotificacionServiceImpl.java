@@ -20,7 +20,9 @@ import com.hcc.tfm_hcc.model.Notificacion;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.NotificacionRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.NotificacionService;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +41,7 @@ public class NotificacionServiceImpl implements NotificacionService {
     private final NotificacionRepository notificacionRepository;
     private final UsuarioRepository usuarioRepository;
     private final UsuarioFacade usuarioFacade;
+    private final HmacSearchIndexService hmacSearchIndexService;
 
     @Override
     @Transactional
@@ -50,9 +53,10 @@ public class NotificacionServiceImpl implements NotificacionService {
             mensaje = "";
         }
 
-        var usuarioOpt = usuarioRepository.findByNif(usuarioNif);
+        var usuarioOpt = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(usuarioNif));
         if (usuarioOpt.isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO + " (NIF: " + usuarioNif + ")");
+            throw new IllegalArgumentException(
+                    ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO + " (NIF: " + LogMaskUtil.enmascarar(usuarioNif) + ")");
         }
 
         Usuario usuario = usuarioOpt.get();
@@ -185,7 +189,6 @@ public class NotificacionServiceImpl implements NotificacionService {
 
     private Notificacion softDeleteNotificacion(Notificacion notificacion) {
         notificacion.setLeida(true);
-        notificacion.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(EUROPE_MADRID)));
         return notificacionRepository.save(notificacion);
     }
 

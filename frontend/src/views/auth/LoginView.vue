@@ -1,9 +1,56 @@
 <template>
   <main class="login-container">
     <section class="login-card" aria-labelledby="login-title">
-      <h1 id="login-title">{{ $t('login_title') }}</h1>
+      <h1 id="login-title">{{ step === 'twoFactor' ? $t('two_factor_title') : $t('login_title') }}</h1>
 
-      <form ref="formRef" @submit.prevent="handleLogin" class="login-form" novalidate :aria-busy="isLoading ? 'true' : 'false'">
+      <form
+        v-if="step === 'twoFactor'"
+        ref="twoFactorFormRef"
+        @submit.prevent="handleTwoFactorSubmit"
+        class="login-form"
+        novalidate
+        :aria-busy="twoFactorLoading ? 'true' : 'false'"
+      >
+        <p class="two-factor-help">{{ $t('two_factor_help') }}</p>
+
+        <div class="form-group">
+          <label for="two-factor-code">{{ $t('two_factor_code_label') }}</label>
+          <input
+            id="two-factor-code"
+            ref="twoFactorInput"
+            v-model="twoFactorCode"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            required
+            aria-required="true"
+            maxlength="6"
+            :placeholder="$t('two_factor_code_placeholder')"
+            :aria-invalid="twoFactorError ? 'true' : 'false'"
+            :aria-describedby="twoFactorError ? 'two-factor-error' : undefined"
+          />
+        </div>
+
+        <button type="submit" :disabled="twoFactorLoading" class="login-btn">
+          {{ twoFactorLoading ? $t('logging_in') : $t('two_factor_verify_button') }}
+        </button>
+
+        <button type="button" class="link-btn" @click="backToCredentials">
+          {{ $t('two_factor_back') }}
+        </button>
+
+        <div
+          v-if="twoFactorError"
+          id="two-factor-error"
+          class="error-message"
+          role="alert"
+          aria-live="assertive"
+        >
+          {{ twoFactorError }}
+        </div>
+      </form>
+
+      <form v-else ref="formRef" @submit.prevent="handleLogin" class="login-form" novalidate :aria-busy="isLoading ? 'true' : 'false'">
         <div class="form-group">
           <label for="nif">{{ $t('nif_label') }}</label>
           <input
@@ -103,7 +150,7 @@
         </div>
       </form>
 
-      <div class="alt-actions">
+      <div v-if="step === 'credentials'" class="alt-actions">
         <router-link to="/register"><strong>{{ $t('no_account') }}</strong></router-link>
       </div>
     </section>
@@ -132,7 +179,7 @@
       const router = useRouter()
       const route = useRoute()
       const { t } = useI18n()
-      const { login } = useAuth()
+      const { login, loginTwoFactor } = useAuth()
 
       const credentials = ref({ nif: '', password: '' })
       const fieldErrors = ref({ nif: '', password: '' })
@@ -143,6 +190,16 @@
       const nifInput = ref(null)
       const passwordInput = ref(null)
       const formErrorRef = ref(null)
+
+      // Segundo factor (TOTP): 'credentials' es el paso normal de NIF/contraseña;
+      // 'twoFactor' aparece solo si el usuario tiene activado el segundo factor.
+      const step = ref('credentials')
+      const challengeId = ref('')
+      const twoFactorCode = ref('')
+      const twoFactorError = ref('')
+      const twoFactorLoading = ref(false)
+      const twoFactorFormRef = ref(null)
+      const twoFactorInput = ref(null)
 
       const normalizeNif = () => {
         credentials.value.nif = credentials.value.nif.toUpperCase().replace(/\s+/g, '')
@@ -216,7 +273,18 @@
 
         try {
           isLoading.value = true
-          await login(credentials.value)
+          const result = await login(credentials.value)
+
+          if (result.requiresTwoFactor) {
+            challengeId.value = result.challengeId
+            twoFactorCode.value = ''
+            twoFactorError.value = ''
+            step.value = 'twoFactor'
+            await nextTick()
+            twoFactorInput.value?.focus()
+            return
+          }
+
           router.push('/dashboard')
         } catch (err) {
           error.value = err.message || t('login_error')
@@ -233,12 +301,55 @@
         authService.redirectToGoogleLogin()
       }
 
+      const handleTwoFactorSubmit = async () => {
+        twoFactorError.value = ''
+
+        if (!twoFactorCode.value || !/^\d{6}$/.test(twoFactorCode.value)) {
+          twoFactorError.value = t('two_factor_code_invalid')
+          return
+        }
+
+        try {
+          twoFactorLoading.value = true
+          await loginTwoFactor(challengeId.value, twoFactorCode.value)
+          router.push('/dashboard')
+        } catch (err) {
+          twoFactorError.value = err.message || t('two_factor_code_invalid')
+          twoFactorCode.value = ''
+          await nextTick()
+          twoFactorInput.value?.focus()
+        } finally {
+          twoFactorLoading.value = false
+        }
+      }
+
+      const backToCredentials = () => {
+        step.value = 'credentials'
+        challengeId.value = ''
+        twoFactorCode.value = ''
+        twoFactorError.value = ''
+      }
+
       onMounted(async () => {
         const googleError = route.query.error
         if (googleError) {
           error.value = t(GOOGLE_ERROR_KEYS[googleError] || 'google_login_error')
           router.replace({ name: 'Login' })
           await focusFirstError()
+          return
+        }
+
+        // Login con Google, pero el usuario tiene activado el segundo factor:
+        // GoogleCallbackView reenvía aquí con el challengeId pendiente de resolver.
+        const googleChallengeId = route.query.challengeId
+        if (googleChallengeId) {
+          challengeId.value = googleChallengeId
+          twoFactorCode.value = ''
+          twoFactorError.value = ''
+          step.value = 'twoFactor'
+          router.replace({ name: 'Login' })
+          await nextTick()
+          twoFactorInput.value?.focus()
         }
       })
 
@@ -256,7 +367,15 @@
         validatePasswordField,
         buildDescribedBy,
         handleLogin,
-        handleGoogleLogin
+        handleGoogleLogin,
+        step,
+        twoFactorCode,
+        twoFactorError,
+        twoFactorLoading,
+        twoFactorFormRef,
+        twoFactorInput,
+        handleTwoFactorSubmit,
+        backToCredentials
       }
     }
   }
@@ -446,5 +565,27 @@
     height: 18px;
     flex-shrink: 0;
     color: var(--tertiary-color);
+  }
+
+  .two-factor-help {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    text-decoration: underline;
+    cursor: pointer;
+    align-self: center;
+  }
+
+  .link-btn:focus-visible {
+    outline: 3px solid var(--focus-color);
+    outline-offset: 2px;
   }
 </style>

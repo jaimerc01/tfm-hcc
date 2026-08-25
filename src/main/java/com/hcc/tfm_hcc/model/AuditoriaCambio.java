@@ -85,6 +85,12 @@ public class AuditoriaCambio {
      * Valor anterior del dato (antes de la modificación).
      * Para eliminaciones, contiene el valor completo que fue borrado.
      * Puede ser null en inserciones nuevas.
+     *
+     * <p>Se almacena cifrado con AES/GCM (ver {@code FieldEncryptionService}), ya que
+     * puede contener valores clínicos completos (categoría especial de datos, art. 9
+     * RGPD). El cifrado/descifrado lo gestiona {@code AuditoriaCambioServiceImpl} de
+     * forma transparente: este campo contiene texto en claro mientras la entidad está
+     * en memoria.</p>
      */
     @Field("valor_anterior")
     private String valorAnterior;
@@ -93,6 +99,8 @@ public class AuditoriaCambio {
      * Valor nuevo del dato (después de la modificación).
      * Para eliminaciones, puede ser null.
      * Para inserciones, contiene el valor inicial.
+     *
+     * <p>Se almacena cifrado con AES/GCM, igual que {@link #valorAnterior}.</p>
      */
     @Field("valor_nuevo")
     private String valorNuevo;

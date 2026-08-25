@@ -25,10 +25,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.hcc.tfm_hcc.converter.UsuarioExportConverter;
+import com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException;
+import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.AccessLog;
+import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.AccessLogRepository;
@@ -49,6 +52,9 @@ class UsuarioServiceImplTest {
     private NotificacionRepository notificacionRepository;
     private MedicoPacienteRepository medicoPacienteRepository;
     private UsuarioExportConverter usuarioExportConverter;
+    private HmacSearchIndexService hmacSearchIndexService;
+    private TotpService totpService;
+    private AuditoriaCambioService auditoriaCambioService;
     private UsuarioServiceImpl service;
 
     @BeforeEach
@@ -62,10 +68,13 @@ class UsuarioServiceImplTest {
         notificacionRepository = mock(NotificacionRepository.class);
         medicoPacienteRepository = mock(MedicoPacienteRepository.class);
         usuarioExportConverter = mock(UsuarioExportConverter.class);
+        hmacSearchIndexService = mock(HmacSearchIndexService.class);
+        when(hmacSearchIndexService.indexar(anyString())).thenAnswer(inv -> "hash-" + inv.getArgument(0, String.class));
+        totpService = mock(TotpService.class);
+        auditoriaCambioService = mock(AuditoriaCambioService.class);
         service = new UsuarioServiceImpl(usuarioMapper, usuarioRepository, passwordEncoder, perfilUsuarioService,
                 accessLogRepository, solicitudAsignacionRepository, notificacionRepository, medicoPacienteRepository,
-                usuarioExportConverter);
-        when(usuarioRepository.findAll()).thenReturn(List.of());
+                usuarioExportConverter, hmacSearchIndexService, totpService, auditoriaCambioService);
     }
 
     @AfterEach
@@ -90,8 +99,8 @@ class UsuarioServiceImplTest {
     @Test
     void altaUsuario_conDatosValidos_creaElUsuarioYAsignaElPerfilPaciente() {
         UsuarioDTO dto = usuarioDtoValido();
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.empty());
-        when(usuarioRepository.findByEmail("usuario@example.com")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByEmailHash("hash-usuario@example.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("contraseñaSegura1")).thenReturn("hash-bcrypt");
         Usuario nuevo = new Usuario();
         nuevo.setId(UUID.randomUUID());
@@ -102,6 +111,31 @@ class UsuarioServiceImplTest {
 
         assertEquals("ACTIVO", resultado.getEstadoCuenta());
         verify(perfilUsuarioService, times(1)).asignarPerfil(nuevo.getId(), "PACIENTE");
+    }
+
+    /**
+     * Regresión: si el UsuarioDTO llegase con un id ya fijado (p. ej. porque algún
+     * futuro llamador reutilizara un DTO con datos de un usuario existente), JPA
+     * trataría un id no nulo como "entidad existente" y el guardado sería una
+     * actualización de esa fila en vez de una inserción nueva -- exactamente lo que
+     * permitiría sobrescribir una cuenta ajena. altaUsuario debe anular siempre el id
+     * antes de guardar, sin importar lo que traiga el DTO de entrada.
+     */
+    @Test
+    void altaUsuario_anulaElIdAunqueElMapperLoHayaCopiadoDelDto() {
+        UsuarioDTO dto = usuarioDtoValido();
+        dto.setId(UUID.randomUUID().toString());
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByEmailHash("hash-usuario@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("contraseñaSegura1")).thenReturn("hash-bcrypt");
+        Usuario nuevo = new Usuario();
+        nuevo.setId(UUID.randomUUID()); // simula que el mapper hubiera copiado el id del dto
+        when(usuarioMapper.toEntity(dto)).thenReturn(nuevo);
+        when(usuarioRepository.save(nuevo)).thenReturn(nuevo);
+
+        service.altaUsuario(dto);
+
+        assertNull(nuevo.getId());
     }
 
     @Test
@@ -120,7 +154,7 @@ class UsuarioServiceImplTest {
     @Test
     void altaUsuario_conNifYaExistente_lanzaIllegalArgumentException() {
         UsuarioDTO dto = usuarioDtoValido();
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(new Usuario()));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(new Usuario()));
 
         assertThrows(IllegalArgumentException.class, () -> service.altaUsuario(dto));
     }
@@ -128,8 +162,8 @@ class UsuarioServiceImplTest {
     @Test
     void altaUsuario_conEmailYaExistente_lanzaIllegalArgumentException() {
         UsuarioDTO dto = usuarioDtoValido();
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.empty());
-        when(usuarioRepository.findByEmail("usuario@example.com")).thenReturn(Optional.of(new Usuario()));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByEmailHash("hash-usuario@example.com")).thenReturn(Optional.of(new Usuario()));
 
         assertThrows(IllegalArgumentException.class, () -> service.altaUsuario(dto));
     }
@@ -143,15 +177,13 @@ class UsuarioServiceImplTest {
         usuario.setNombre("Ana");
         usuario.setApellido1("García");
         usuario.setApellido2("López");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
 
         assertEquals("Ana García López", service.getNombreUsuario());
     }
 
     @Test
     void getNombreUsuario_sinAutenticar_devuelveNull() {
-        when(usuarioRepository.findByNif(null)).thenReturn(Optional.empty());
-
         assertNull(service.getNombreUsuario());
     }
 
@@ -162,7 +194,7 @@ class UsuarioServiceImplTest {
         autenticarComo("12345678A");
         Usuario usuario = new Usuario();
         UsuarioDTO dto = new UsuarioDTO();
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         when(usuarioMapper.toDto(usuario)).thenReturn(dto);
 
         assertEquals(dto, service.getUsuarioActual());
@@ -180,7 +212,7 @@ class UsuarioServiceImplTest {
         autenticarComo("12345678A");
         Usuario usuario = new Usuario();
         usuario.setPassword("hash-actual");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("actual123", "hash-actual")).thenReturn(true);
         when(passwordEncoder.encode("nueva456")).thenReturn("hash-nuevo");
 
@@ -195,7 +227,7 @@ class UsuarioServiceImplTest {
         autenticarComo("12345678A");
         Usuario usuario = new Usuario();
         usuario.setPassword("hash-actual");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("incorrecta", "hash-actual")).thenReturn(false);
 
         assertThrows(IllegalArgumentException.class, () -> service.changePassword("incorrecta", "nueva456"));
@@ -213,7 +245,7 @@ class UsuarioServiceImplTest {
         autenticarComo("12345678A");
         Usuario usuario = new Usuario();
         usuario.setNif("12345678A");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         UsuarioDTO resultado = new UsuarioDTO();
         when(usuarioMapper.toDto(usuario)).thenReturn(resultado);
 
@@ -231,7 +263,7 @@ class UsuarioServiceImplTest {
         autenticarComo("12345678A");
         Usuario usuario = new Usuario();
         usuario.setNif("12345678A");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
 
         UsuarioDTO cambios = new UsuarioDTO();
         cambios.setNombre("a".repeat(101));
@@ -246,8 +278,8 @@ class UsuarioServiceImplTest {
         Usuario usuario = new Usuario();
         usuario.setId(id);
         usuario.setNif("12345678A");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
-        when(usuarioRepository.existsByEmailAndIdNot("ocupado@example.com", id)).thenReturn(true);
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.existsByEmailHashAndIdNot("hash-ocupado@example.com", id)).thenReturn(true);
 
         UsuarioDTO cambios = new UsuarioDTO();
         cambios.setEmail("ocupado@example.com");
@@ -260,7 +292,7 @@ class UsuarioServiceImplTest {
         autenticarComo("12345678A");
         Usuario usuario = new Usuario();
         usuario.setNif("12345678A");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
 
         UsuarioDTO cambios = new UsuarioDTO();
         cambios.setTelefono("telefono-no-valido-###");
@@ -275,8 +307,8 @@ class UsuarioServiceImplTest {
         Usuario usuario = new Usuario();
         usuario.setId(id);
         usuario.setNif("12345678A");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
-        when(usuarioRepository.existsByNifAndIdNot("87654321B", id)).thenReturn(true);
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.existsByNifHashAndIdNot("hash-87654321B", id)).thenReturn(true);
 
         UsuarioDTO cambios = new UsuarioDTO();
         cambios.setNif("87654321B");
@@ -291,7 +323,7 @@ class UsuarioServiceImplTest {
         Usuario usuario = new Usuario();
         usuario.setId(id);
         usuario.setNif("12345678A");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         when(usuarioMapper.toDto(usuario)).thenReturn(new UsuarioDTO());
 
         UsuarioDTO cambios = new UsuarioDTO();
@@ -299,7 +331,7 @@ class UsuarioServiceImplTest {
 
         service.updateUsuarioActual(cambios);
 
-        verify(usuarioRepository, never()).existsByNifAndIdNot(anyString(), any());
+        verify(usuarioRepository, never()).existsByNifHashAndIdNot(anyString(), any());
         assertEquals("12345678A", usuario.getNif());
     }
 
@@ -312,13 +344,44 @@ class UsuarioServiceImplTest {
         Usuario usuario = new Usuario();
         usuario.setId(id);
         usuario.setNif("12345678A");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        usuario.setPassword("hash-actual");
+        usuario.setFechaNacimiento(LocalDateTime.of(1990, 5, 14, 0, 0));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("contraseñaActual", "hash-actual")).thenReturn(true);
 
-        service.deleteCuentaActual();
+        service.deleteCuentaActual("contraseñaActual");
 
         assertEquals("ELIMINADO", usuario.getEstadoCuenta());
         assertEquals("_eliminado_", usuario.getNombre());
+        assertNull(usuario.getFechaNacimiento());
         verify(usuarioRepository, times(1)).save(usuario);
+    }
+
+    @Test
+    void deleteCuentaActual_sinContrasena_lanzaReautenticacionRequerida() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setId(UUID.randomUUID());
+        usuario.setNif("12345678A");
+        usuario.setPassword("hash-actual");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+
+        assertThrows(ReautenticacionRequeridaException.class, () -> service.deleteCuentaActual(null));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteCuentaActual_conContrasenaIncorrecta_lanzaReautenticacionRequerida() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setId(UUID.randomUUID());
+        usuario.setNif("12345678A");
+        usuario.setPassword("hash-actual");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("incorrecta", "hash-actual")).thenReturn(false);
+
+        assertThrows(ReautenticacionRequeridaException.class, () -> service.deleteCuentaActual("incorrecta"));
+        verify(usuarioRepository, never()).save(any());
     }
 
     // ---- getMisLogs ----
@@ -329,7 +392,7 @@ class UsuarioServiceImplTest {
         UUID id = UUID.randomUUID();
         Usuario usuario = new Usuario();
         usuario.setId(id);
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         UsuarioDTO dto = new UsuarioDTO();
         dto.setId(id.toString());
         when(usuarioMapper.toDto(usuario)).thenReturn(dto);
@@ -350,7 +413,7 @@ class UsuarioServiceImplTest {
         UUID id = UUID.randomUUID();
         Usuario usuario = new Usuario();
         usuario.setId(id);
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         UsuarioDTO dto = new UsuarioDTO();
         dto.setId(id.toString());
         when(usuarioMapper.toDto(usuario)).thenReturn(dto);
@@ -369,7 +432,9 @@ class UsuarioServiceImplTest {
         UUID id = UUID.randomUUID();
         Usuario usuario = new Usuario();
         usuario.setId(id);
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        usuario.setPassword("hash-actual");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+        when(passwordEncoder.matches("contraseñaActual", "hash-actual")).thenReturn(true);
         UsuarioDTO dto = new UsuarioDTO();
         dto.setId(id.toString());
         when(usuarioMapper.toDto(usuario)).thenReturn(dto);
@@ -377,7 +442,19 @@ class UsuarioServiceImplTest {
         UserExportDTO exportado = UserExportDTO.builder().id(id.toString()).build();
         when(usuarioExportConverter.toExportDto(eq(dto), eq(usuario), any())).thenReturn(exportado);
 
-        assertEquals(exportado, service.exportUsuario());
+        assertEquals(exportado, service.exportUsuario("contraseñaActual"));
+    }
+
+    @Test
+    void exportUsuario_sinContrasena_lanzaReautenticacionRequerida() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setId(UUID.randomUUID());
+        usuario.setPassword("hash-actual");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+
+        assertThrows(ReautenticacionRequeridaException.class, () -> service.exportUsuario(""));
+        verify(usuarioExportConverter, never()).toExportDto(any(), any(), any());
     }
 
     // ---- listarMisSolicitudes ----
@@ -385,7 +462,7 @@ class UsuarioServiceImplTest {
     @Test
     void listarMisSolicitudes_devuelveLasSolicitudesDelPaciente() {
         autenticarComo("12345678A");
-        when(solicitudAsignacionRepository.findByPacienteNifOrderByFechaCreacionDesc("12345678A"))
+        when(solicitudAsignacionRepository.findByPacienteNifHashOrderByFechaCreacionDesc("hash-12345678A"))
                 .thenReturn(List.of(new SolicitudAsignacion()));
 
         assertEquals(1, service.listarMisSolicitudes().size());
@@ -428,6 +505,17 @@ class UsuarioServiceImplTest {
         assertEquals("ACEPTADA", resultado.getEstado());
         verify(medicoPacienteRepository, times(1)).save(any());
         verify(notificacionRepository, times(1)).save(any());
+        verify(auditoriaCambioService).registrarCambio(
+                eq(solicitud.getPaciente().getId().toString()),
+                eq(solicitud.getPaciente().getId().toString()),
+                eq(solicitud.getMedico().getId().toString()),
+                eq("ACEPTADA"),
+                eq("solicitud_asignacion"),
+                eq(solicitud.getId().toString()),
+                eq("PENDIENTE"),
+                eq("ACEPTADA"),
+                eq(AuditoriaCambio.TipoOperacion.UPDATE),
+                any());
     }
 
     @Test
@@ -516,5 +604,125 @@ class UsuarioServiceImplTest {
         SolicitudAsignacion resultado = service.actualizarEstadoSolicitud(solicitud.getId().toString(), "RECHAZADA");
 
         assertEquals("RECHAZADA", resultado.getEstado());
+    }
+
+    // ---- setupTotp / confirmTotp / disableTotp / isTotpEnabled ----
+
+    @Test
+    void setupTotp_generaUnSecretoPendienteYLoGuarda() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+        when(totpService.generarSecreto()).thenReturn("SECRETO");
+        when(totpService.generarOtpAuthUri("SECRETO", "12345678A")).thenReturn("otpauth://totp/HCC-TFM:12345678A?secret=SECRETO");
+
+        TotpSetupResponseDTO resultado = service.setupTotp();
+
+        assertEquals("SECRETO", resultado.getSecret());
+        assertEquals("otpauth://totp/HCC-TFM:12345678A?secret=SECRETO", resultado.getOtpauthUri());
+        assertEquals("SECRETO", usuario.getTotpSecret());
+        assertEquals(false, usuario.isTotpEnabled());
+        verify(usuarioRepository, times(1)).save(usuario);
+    }
+
+    @Test
+    void confirmTotp_conCodigoValido_activaElSegundoFactor() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setTotpSecret("SECRETO");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+        when(totpService.validarCodigo("SECRETO", "123456")).thenReturn(true);
+
+        service.confirmTotp("123456");
+
+        assertEquals(true, usuario.isTotpEnabled());
+        verify(usuarioRepository, times(1)).save(usuario);
+    }
+
+    @Test
+    void confirmTotp_sinSecretoPendiente_lanzaIllegalStateException() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+
+        assertThrows(IllegalStateException.class, () -> service.confirmTotp("123456"));
+    }
+
+    @Test
+    void confirmTotp_conSegundoFactorYaActivo_lanzaIllegalStateException() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setTotpSecret("SECRETO");
+        usuario.setTotpEnabled(true);
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+
+        assertThrows(IllegalStateException.class, () -> service.confirmTotp("123456"));
+    }
+
+    @Test
+    void confirmTotp_conCodigoInvalido_lanzaIllegalArgumentException() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setTotpSecret("SECRETO");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+        when(totpService.validarCodigo("SECRETO", "000000")).thenReturn(false);
+
+        assertThrows(IllegalArgumentException.class, () -> service.confirmTotp("000000"));
+    }
+
+    @Test
+    void disableTotp_conCodigoValido_desactivaYBorraElSecreto() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setTotpSecret("SECRETO");
+        usuario.setTotpEnabled(true);
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+        when(totpService.validarCodigo("SECRETO", "123456")).thenReturn(true);
+
+        service.disableTotp("123456");
+
+        assertEquals(false, usuario.isTotpEnabled());
+        assertNull(usuario.getTotpSecret());
+        verify(usuarioRepository, times(1)).save(usuario);
+    }
+
+    @Test
+    void disableTotp_conSegundoFactorNoActivo_lanzaIllegalStateException() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+
+        assertThrows(IllegalStateException.class, () -> service.disableTotp("123456"));
+    }
+
+    @Test
+    void disableTotp_conCodigoInvalido_lanzaIllegalArgumentException() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setTotpSecret("SECRETO");
+        usuario.setTotpEnabled(true);
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+        when(totpService.validarCodigo("SECRETO", "000000")).thenReturn(false);
+
+        assertThrows(IllegalArgumentException.class, () -> service.disableTotp("000000"));
+    }
+
+    @Test
+    void isTotpEnabled_devuelveElEstadoDelUsuarioAutenticado() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setTotpEnabled(true);
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+
+        assertEquals(true, service.isTotpEnabled());
     }
 }

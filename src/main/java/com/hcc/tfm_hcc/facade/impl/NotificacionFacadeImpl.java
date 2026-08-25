@@ -16,6 +16,7 @@ import com.hcc.tfm_hcc.exception.NotificacionOperacionException;
 import com.hcc.tfm_hcc.converter.NotificacionConverter;
 import com.hcc.tfm_hcc.dto.NotificacionDTO;
 import com.hcc.tfm_hcc.exception.NotificacionAccesoException;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -91,20 +92,21 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      */
     @Override
     public NotificacionDTO crearNotificacionParaUsuario(String usuarioNif, String mensaje) {
-        log.debug("Creando notificación para usuario NIF: {} - mensaje: {}", usuarioNif, mensaje);
+        String usuarioNifLog = LogMaskUtil.enmascarar(usuarioNif);
+        log.debug("Creando notificación para usuario NIF: {} - mensaje: {}", usuarioNifLog, mensaje);
         try {
             Notificacion notificacion = notificacionService.crearNotificacionParaUsuario(usuarioNif, mensaje);
             NotificacionDTO notificacionDTO = notificacionConverter.toDto(notificacion);
-            log.info("Notificación creada para NIF: {}", usuarioNif);
+            log.info("Notificación creada para NIF: {}", usuarioNifLog);
             return notificacionDTO;
         } catch (IllegalArgumentException e) {
-            log.warn("Validación al crear notificación para {}: {}", usuarioNif, e.getMessage());
+            log.warn("Validación al crear notificación para {}: {}", usuarioNifLog, e.getMessage());
             throw new NotificacionValidationException(e.getMessage(), e);
         } catch (SecurityException e) {
-            log.warn("Acceso denegado al crear notificación para {}: {}", usuarioNif, e.getMessage());
+            log.warn("Acceso denegado al crear notificación para {}: {}", usuarioNifLog, e.getMessage());
             throw new NotificacionAccesoException(e.getMessage(), e);
         } catch (Exception e) {
-            log.error("Error inesperado al crear notificación para {}: {}", usuarioNif, e.getMessage(), e);
+            log.error("Error inesperado al crear notificación para {}: {}", usuarioNifLog, e.getMessage(), e);
             throw new NotificacionOperacionException("Error interno al crear notificación", e);
         }
     }

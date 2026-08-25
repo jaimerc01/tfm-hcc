@@ -8,6 +8,7 @@ public final class RestUrls {
 
     public static final String AUTH_BASE = "/authentication";
     public static final String AUTH_LOGIN = "/login";
+    public static final String AUTH_LOGIN_2FA = "/login/2fa";
     public static final String AUTH_SIGNUP = "/signup";
     public static final String AUTH_GOOGLE_LOGIN = "/google/login";
     public static final String AUTH_GOOGLE_TOKEN = "/google/token";
@@ -38,6 +39,12 @@ public final class RestUrls {
     public static final String USUARIO_NOTIFICACION_ID = "/notificaciones/{id}";
     public static final String USUARIO_LOGS = "/logs";
     public static final String USUARIO_EXPORT = "/export";
+    public static final String USUARIO_LIMITAR_TRATAMIENTO = "/me/limitar-tratamiento";
+    public static final String USUARIO_REANUDAR_TRATAMIENTO = "/me/reanudar-tratamiento";
+    public static final String USUARIO_2FA_SETUP = "/2fa/setup";
+    public static final String USUARIO_2FA_CONFIRM = "/2fa/confirm";
+    public static final String USUARIO_2FA_DISABLE = "/2fa/disable";
+    public static final String USUARIO_2FA_STATUS = "/2fa/status";
 
     public static final String PERFIL_BASE = "/perfil";
     public static final String PERFIL_ROL = "/rol/{rol}";
@@ -47,6 +54,7 @@ public final class RestUrls {
     public static final String MEDICO_SOLICITUDES_ASIGNACION = "/solicitudes-asignacion";
     public static final String MEDICO_SOLICITUDES_PENDIENTES = "/solicitudes-asignacion/pendientes";
     public static final String MEDICO_SOLICITUDES_ENVIADAS = "/solicitudes-asignacion/enviadas";
+    public static final String MEDICO_PACIENTE_HISTORIAL = "/pacientes/{nif}/historial";
 
     public static final String ADMIN_BASE = "/admin";
     public static final String ADMIN_MEDICOS = "/medicos";

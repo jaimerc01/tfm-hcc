@@ -1,18 +1,27 @@
 package com.hcc.tfm_hcc.converter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.service.impl.HmacSearchIndexServiceImpl;
 
 class UsuarioConverterTest {
 
-    private final UsuarioConverter converter = new UsuarioConverter();
+    private static final String CLAVE_PRUEBAS_BASE64 =
+            Base64.getEncoder().encodeToString("0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8));
+
+    private final HmacSearchIndexServiceImpl hmacSearchIndexService =
+            new HmacSearchIndexServiceImpl(new EncryptionKeyProvider(CLAVE_PRUEBAS_BASE64));
+    private final UsuarioConverter converter = new UsuarioConverter(hmacSearchIndexService);
 
     @Test
     void toDto_mapeaTodosLosCamposDelUsuario() {
@@ -76,5 +85,19 @@ class UsuarioConverterTest {
         assertEquals(ahora, usuario.getFechaNacimiento());
         assertEquals(ahora, usuario.getLastPasswordChange());
         assertEquals(ahora, usuario.getFechaEliminacion());
+    }
+
+    @Test
+    void toEntity_calculaElIndiceDeBusquedaDeNifYEmail() {
+        UsuarioDTO dto = new UsuarioDTO();
+        dto.setNif("12345678A");
+        dto.setEmail("ana@example.com");
+
+        Usuario usuario = converter.toEntity(dto);
+
+        assertNotNull(usuario.getNifHash());
+        assertNotNull(usuario.getEmailHash());
+        assertEquals(hmacSearchIndexService.indexar("12345678A"), usuario.getNifHash());
+        assertEquals(hmacSearchIndexService.indexar("ana@example.com"), usuario.getEmailHash());
     }
 }

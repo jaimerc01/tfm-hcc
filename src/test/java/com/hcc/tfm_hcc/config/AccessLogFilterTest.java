@@ -30,6 +30,7 @@ import com.hcc.tfm_hcc.model.AccessLog;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.AccessLogService;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 
 import jakarta.servlet.FilterChain;
 
@@ -37,6 +38,7 @@ class AccessLogFilterTest {
 
     private AccessLogService accessLogService;
     private UsuarioRepository usuarioRepository;
+    private HmacSearchIndexService hmacSearchIndexService;
     private AccessLogFilter filter;
     private FilterChain chain;
 
@@ -44,7 +46,10 @@ class AccessLogFilterTest {
     void setUp() {
         accessLogService = mock(AccessLogService.class);
         usuarioRepository = mock(UsuarioRepository.class);
-        filter = new AccessLogFilter(accessLogService, usuarioRepository);
+        hmacSearchIndexService = mock(HmacSearchIndexService.class);
+        when(hmacSearchIndexService.indexar("12345678A")).thenReturn("hash-12345678A");
+        when(hmacSearchIndexService.indexar("00000000Z")).thenReturn("hash-00000000Z");
+        filter = new AccessLogFilter(accessLogService, usuarioRepository, hmacSearchIndexService);
         chain = mock(FilterChain.class);
     }
 
@@ -111,7 +116,7 @@ class AccessLogFilterTest {
 
         filter.doFilter(request, response, chain);
 
-        verify(usuarioRepository, never()).findByNif(any());
+        verify(usuarioRepository, never()).findByNifHash(any());
     }
 
     @Test
@@ -126,7 +131,7 @@ class AccessLogFilterTest {
         Usuario usuario = new Usuario();
         UUID id = UUID.randomUUID();
         usuario.setId(id);
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
 
         filter.doFilter(request, response, chain);
 
@@ -143,7 +148,7 @@ class AccessLogFilterTest {
         UserDetails userDetails = User.withUsername("00000000Z").password("x").authorities("ROLE_PACIENTE").build();
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()));
-        when(usuarioRepository.findByNif("00000000Z")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByNifHash("hash-00000000Z")).thenReturn(Optional.empty());
 
         filter.doFilter(request, response, chain);
 
@@ -163,6 +168,30 @@ class AccessLogFilterTest {
         ArgumentCaptor<AccessLog> captor = ArgumentCaptor.forClass(AccessLog.class);
         verify(accessLogService, times(1)).log(captor.capture());
         assertEquals("203.0.113.5", captor.getValue().getIp());
+    }
+
+    @Test
+    void doFilter_conNifEnLaRuta_loEnmascaraAntesDeGuardar() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/pacientes/12345678A/historial");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, chain);
+
+        ArgumentCaptor<AccessLog> captor = ArgumentCaptor.forClass(AccessLog.class);
+        verify(accessLogService, times(1)).log(captor.capture());
+        assertEquals("/pacientes/***78A/historial", captor.getValue().getRuta());
+    }
+
+    @Test
+    void doFilter_conNieEnLaRuta_loEnmascaraAntesDeGuardar() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/pacientes/X1234567A/historial");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, chain);
+
+        ArgumentCaptor<AccessLog> captor = ArgumentCaptor.forClass(AccessLog.class);
+        verify(accessLogService, times(1)).log(captor.capture());
+        assertEquals("/pacientes/***67A/historial", captor.getValue().getRuta());
     }
 
     @Test

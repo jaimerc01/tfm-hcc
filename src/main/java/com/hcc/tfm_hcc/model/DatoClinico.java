@@ -41,11 +41,21 @@ public class DatoClinico extends BaseEntity {
     /**
      * Tipo o categoría del dato clínico.
      * Ejemplos: "GLUCOSA", "PRESION_ARTERIAL", "ALERGIA", "COLESTEROL", etc.
-     * Campo encriptado por tratarse de un dato clínico del paciente.
+     * Campo cifrado con AES/GCM (no determinista): la búsqueda por igualdad ya no
+     * se aplica sobre esta columna, sino sobre {@link #tipoHash}.
      */
     @Column(name = "tipo", nullable = false)
     @Convert(converter = AESEncryptionConverter.class)
     private String tipo;
+
+    /**
+     * Índice de búsqueda determinista del tipo (HMAC-SHA256), calculado por
+     * {@link com.hcc.tfm_hcc.service.HmacSearchIndexService}. Permite filtrar por
+     * tipo (p. ej. "dame todos los datos de tipo GLUCOSA de este historial") sin
+     * depender de la igualdad sobre el valor cifrado, que nunca coincide dos veces.
+     */
+    @Column(name = "tipo_hash", nullable = false)
+    private String tipoHash;
 
     /**
      * Valor numérico del dato clínico, almacenado como texto para poder cifrarlo.

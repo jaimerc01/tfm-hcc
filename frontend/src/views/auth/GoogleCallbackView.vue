@@ -29,7 +29,13 @@
         }
 
         try {
-          await authService.exchangeGoogleCode(code)
+          const result = await authService.exchangeGoogleCode(code)
+
+          if (result?.requiresTwoFactor) {
+            router.replace({ name: 'Login', query: { challengeId: result.challengeId } })
+            return
+          }
+
           router.replace({ name: 'Dashboard' })
         } catch (_err) {
           router.replace({ name: 'Login', query: { error: 'google_auth_failed' } })

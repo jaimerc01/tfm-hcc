@@ -38,10 +38,13 @@ public interface DatoClinicoRepository extends JpaRepository<DatoClinico, UUID> 
     /**
      * Busca todos los datos clínicos asociados a un historial que pertenezcan a un conjunto de tipos.
      * Útil para obtener múltiples tipos de análisis de sangre de una vez.
-     * 
+     *
+     * <p>El tipo está cifrado de forma no determinista, así que el filtro se aplica sobre
+     * {@code tipoHash}, no sobre el tipo cifrado (ver {@link com.hcc.tfm_hcc.service.HmacSearchIndexService}).</p>
+     *
      * @param historial HistorialClinico del cual obtener los datos clínicos
-     * @param tipos Lista de tipos de datos clínicos a buscar
+     * @param tipoHashes Lista de índices de búsqueda (HMAC) de los tipos de dato clínico a buscar
      * @return Lista de DatoClinico que coinciden con los tipos especificados
      */
-    List<DatoClinico> findByHistorialClinicoAndTipoIn(HistorialClinico historial, List<String> tipos);
+    List<DatoClinico> findByHistorialClinicoAndTipoHashIn(HistorialClinico historial, List<String> tipoHashes);
 }

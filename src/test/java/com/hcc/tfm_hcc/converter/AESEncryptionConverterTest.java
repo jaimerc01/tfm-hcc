@@ -41,11 +41,11 @@ class AESEncryptionConverterTest {
     }
 
     @Test
-    void convertToDatabaseColumn_devuelveValorConPrefijoDeterminista() {
+    void convertToDatabaseColumn_noUsaElPrefijoDeterminista() {
         String cifrado = converter.convertToDatabaseColumn("12345678A");
 
         assertNotNull(cifrado);
-        assertTrue(cifrado.startsWith("DET1:"));
+        assertTrue(!cifrado.startsWith("DET1:"));
     }
 
     @Test
@@ -59,11 +59,23 @@ class AESEncryptionConverterTest {
     }
 
     @Test
-    void convertToDatabaseColumn_esDeterminista_mismoValorProduceMismoCifrado() {
+    void convertToDatabaseColumn_noEsDeterminista_mismoValorProduceCifradosDistintos() {
         String cifrado1 = converter.convertToDatabaseColumn("12345678A");
         String cifrado2 = converter.convertToDatabaseColumn("12345678A");
 
-        assertEquals(cifrado1, cifrado2);
+        assertTrue(!cifrado1.equals(cifrado2));
+        assertEquals("12345678A", converter.convertToEntityAttribute(cifrado1));
+        assertEquals("12345678A", converter.convertToEntityAttribute(cifrado2));
+    }
+
+    @Test
+    void convertToEntityAttribute_conFormatoDeterministaAntiguo_sigueSiendoLegible() throws Exception {
+        String original = "12345678A";
+        String ciphertextDeterminista = "DET1:" + cifrarConFormatoDeterminista(original);
+
+        String descifrado = converter.convertToEntityAttribute(ciphertextDeterminista);
+
+        assertEquals(original, descifrado);
     }
 
     @Test
@@ -90,6 +102,14 @@ class AESEncryptionConverterTest {
         String corrupto = "DET1:no-es-base64-valido!!!";
 
         assertThrows(IllegalStateException.class, () -> converter.convertToEntityAttribute(corrupto));
+    }
+
+    private String cifrarConFormatoDeterminista(String plaintext) throws Exception {
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, keyProvider.getSecretKey());
+
+        byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+        return Base64.getEncoder().encodeToString(ciphertext);
     }
 
     private String cifrarConFormatoLegacyGcm(String plaintext) throws Exception {

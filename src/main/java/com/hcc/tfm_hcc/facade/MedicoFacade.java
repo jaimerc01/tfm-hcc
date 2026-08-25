@@ -2,6 +2,7 @@ package com.hcc.tfm_hcc.facade;
 
 import java.util.List;
 
+import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
@@ -35,7 +36,16 @@ public interface MedicoFacade {
      * @throws IllegalArgumentException si los datos de identificación no son válidos
      */
     PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento) throws IllegalArgumentException;
-    
+
+    /**
+     * Obtiene el historial clínico de un paciente vinculado al médico autenticado.
+     *
+     * @param nifPaciente NIF del paciente cuyo historial se consulta
+     * @return HistorialClinicoDTO con los datos médicos del paciente
+     * @throws IllegalArgumentException si el NIF es inválido o el paciente no existe
+     */
+    HistorialClinicoDTO obtenerHistorialPaciente(String nifPaciente);
+
     /**
      * Crea una nueva solicitud de asignación entre el médico autenticado y un paciente.
      * La solicitud queda pendiente hasta que sea aprobada por el sistema o el paciente.

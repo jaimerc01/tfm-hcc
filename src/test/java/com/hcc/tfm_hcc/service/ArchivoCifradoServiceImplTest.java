@@ -1,12 +1,14 @@
 package com.hcc.tfm_hcc.service;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.converter.EncryptionKeyProvider;
 import com.hcc.tfm_hcc.service.impl.ArchivoCifradoServiceImpl;
 
@@ -48,7 +51,7 @@ class ArchivoCifradoServiceImplTest {
         }
 
         byte[] contenidoDescifrado;
-        try (var descifrado = service.descifrar(archivoCifrado)) {
+        try (var descifrado = service.descifrar(Files.newInputStream(archivoCifrado))) {
             contenidoDescifrado = descifrado.readAllBytes();
         }
 
@@ -90,9 +93,18 @@ class ArchivoCifradoServiceImplTest {
         Files.write(archivoCorrupto, "contenido-no-cifrado-demasiado-corto".getBytes(StandardCharsets.UTF_8));
 
         assertThrows(IOException.class, () -> {
-            try (var descifrado = service.descifrar(archivoCorrupto)) {
+            try (var descifrado = service.descifrar(Files.newInputStream(archivoCorrupto))) {
                 descifrado.readAllBytes();
             }
         });
+    }
+
+    @Test
+    void descifrar_lanzaExcepcionSiElContenidoEsMasCortoQueElIv() {
+        InputStream entradaTruncada = new ByteArrayInputStream(new byte[] {1, 2, 3});
+
+        IOException ex = assertThrows(IOException.class, () -> service.descifrar(entradaTruncada));
+
+        assertEquals(ErrorMessages.ERROR_ARCHIVO_NO_ACCESIBLE, ex.getMessage());
     }
 }

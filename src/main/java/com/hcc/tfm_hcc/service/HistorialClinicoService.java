@@ -35,7 +35,21 @@ public interface HistorialClinicoService {
      * @throws IllegalStateException si no hay usuario autenticado
      */
     HistorialClinicoDTO obtenerHistoriaUsuarioActual();
-    
+
+    /**
+     * Obtiene el historial clínico de un paciente vinculado al médico autenticado.
+     *
+     * <p>El médico autenticado se obtiene siempre del contexto de seguridad, nunca de
+     * un parámetro. Solo se permite el acceso si existe una relación {@code MedicoPaciente}
+     * con estado "ACTIVA" entre ese médico y el paciente solicitado.</p>
+     *
+     * @param nifPaciente NIF del paciente cuyo historial se consulta
+     * @return el DTO del historial clínico del paciente, o {@code null} si el paciente no tiene historial creado aún
+     * @throws IllegalArgumentException si el NIF es inválido o el paciente no existe
+     * @throws IllegalStateException si el médico autenticado no tiene una relación activa con el paciente
+     */
+    HistorialClinicoDTO obtenerHistorialPaciente(String nifPaciente);
+
     /**
      * Crea un nuevo antecedente clínico (personal o familiar) en el historial.
      *

@@ -5,14 +5,19 @@ import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
 import com.hcc.tfm_hcc.facade.MedicoFacade;
 import com.hcc.tfm_hcc.facade.SolicitudAsignacionFacade;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
+import com.hcc.tfm_hcc.service.HistorialClinicoService;
 import com.hcc.tfm_hcc.service.MedicoService;
+import com.hcc.tfm_hcc.exception.PacienteNoEncontradoException;
 import com.hcc.tfm_hcc.exception.SolicitudAsignacionException;
 import com.hcc.tfm_hcc.exception.MedicoOperacionException;
 import com.hcc.tfm_hcc.exception.MedicoValidationException;
+import com.hcc.tfm_hcc.exception.UsuarioSinPermisoException;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +58,7 @@ public class MedicoFacadeImpl implements MedicoFacade {
      */
     private final MedicoService medicoService;
     private final SolicitudAsignacionFacade solicitudAsignacionFacade;
+    private final HistorialClinicoService historialClinicoService;
 
     // ===============================
     // MÉTODOS DE GESTIÓN DE PACIENTES
@@ -70,23 +76,61 @@ public class MedicoFacadeImpl implements MedicoFacade {
     @Override
     @PreAuthorize("hasRole('MEDICO')")
     public PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento) {
-        log.debug("Buscando paciente por DNI: {} y fecha de nacimiento: {}", dni, fechaNacimiento);
-        
+        String dniLog = LogMaskUtil.enmascarar(dni);
+        log.debug("Buscando paciente por DNI: {} y fecha de nacimiento: {}", dniLog, fechaNacimiento);
+
         try {
             validarDatosBusquedaPaciente(dni, fechaNacimiento);
-            
+
             PacienteDTO paciente = medicoService.buscarPacientePorDniYFechaNacimiento(dni, fechaNacimiento);
-            
-            log.info("Paciente encontrado exitosamente: DNI {}", dni);
+
+            log.info("Paciente encontrado exitosamente: DNI {}", dniLog);
             return paciente;
         } catch (MedicoValidationException e) {
-            log.warn("Error de validación en búsqueda de paciente: DNI {} - Error: {}", 
-                    dni, e.getMessage());
+            log.warn("Error de validación en búsqueda de paciente: DNI {} - Error: {}",
+                    dniLog, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado durante búsqueda de paciente: DNI {} - Error: {}", 
-                     dni, e.getMessage(), e);
+            log.error("Error inesperado durante búsqueda de paciente: DNI {} - Error: {}",
+                     dniLog, e.getMessage(), e);
             throw new MedicoOperacionException("Error interno durante la búsqueda del paciente", e);
+        }
+    }
+
+    /**
+     * Obtiene el historial clínico de un paciente vinculado al médico autenticado.
+     *
+     * @param nifPaciente NIF del paciente cuyo historial se consulta
+     * @return HistorialClinicoDTO Los datos del historial clínico del paciente
+     * @throws MedicoValidationException Si el NIF del paciente es inválido
+     * @throws PacienteNoEncontradoException Si no existe un paciente con ese NIF
+     * @throws UsuarioSinPermisoException Si el médico no tiene una relación activa con el paciente
+     */
+    @Override
+    @PreAuthorize("hasRole('MEDICO')")
+    public HistorialClinicoDTO obtenerHistorialPaciente(String nifPaciente) {
+        String nifPacienteLog = LogMaskUtil.enmascarar(nifPaciente);
+        log.debug("Consultando historial clínico del paciente: {}", nifPacienteLog);
+
+        try {
+            validarNifPaciente(nifPaciente);
+
+            HistorialClinicoDTO historial = historialClinicoService.obtenerHistorialPaciente(nifPaciente);
+
+            log.info("Historial clínico del paciente {} consultado exitosamente", nifPacienteLog);
+            return historial;
+        } catch (MedicoValidationException e) {
+            log.warn("Error de validación al consultar historial del paciente {}: {}", nifPacienteLog, e.getMessage());
+            throw e;
+        } catch (IllegalStateException e) {
+            log.warn("Acceso denegado al consultar historial del paciente {}: {}", nifPacienteLog, e.getMessage());
+            throw new UsuarioSinPermisoException(e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            log.warn("Paciente no encontrado al consultar historial: {} - {}", nifPacienteLog, e.getMessage());
+            throw new PacienteNoEncontradoException(e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Error inesperado al consultar historial del paciente {}: {}", nifPacienteLog, e.getMessage(), e);
+            throw new MedicoOperacionException("Error interno durante la consulta del historial del paciente", e);
         }
     }
 
@@ -105,23 +149,24 @@ public class MedicoFacadeImpl implements MedicoFacade {
     @Override
     @PreAuthorize("hasRole('MEDICO')")
     public SolicitudAsignacion crearSolicitudAsignacion(String nifPaciente) {
-        log.debug("Creando solicitud de asignación para paciente: {}", nifPaciente);
-        
+        String nifPacienteLog = LogMaskUtil.enmascarar(nifPaciente);
+        log.debug("Creando solicitud de asignación para paciente: {}", nifPacienteLog);
+
         try {
             validarNifPaciente(nifPaciente);
-            
+
             SolicitudAsignacion solicitud = solicitudAsignacionFacade.crearSolicitudAsignacion(nifPaciente);
-            
-            log.info("Solicitud de asignación creada exitosamente: ID {} para paciente {}", 
-                    solicitud.getId(), nifPaciente);
+
+            log.info("Solicitud de asignación creada exitosamente: ID {} para paciente {}",
+                    solicitud.getId(), nifPacienteLog);
             return solicitud;
         } catch (MedicoValidationException e) {
-            log.warn("Error de validación al crear solicitud de asignación: Paciente {} - Error: {}", 
-                    nifPaciente, e.getMessage());
+            log.warn("Error de validación al crear solicitud de asignación: Paciente {} - Error: {}",
+                    nifPacienteLog, e.getMessage());
             throw new SolicitudAsignacionException(e.getMessage(), e);
         } catch (Exception e) {
-            log.error("Error inesperado al crear solicitud de asignación: Paciente {} - Error: {}", 
-                     nifPaciente, e.getMessage(), e);
+            log.error("Error inesperado al crear solicitud de asignación: Paciente {} - Error: {}",
+                     nifPacienteLog, e.getMessage(), e);
             throw new MedicoOperacionException("Error interno durante la creación de solicitud de asignación", e);
         }
     }

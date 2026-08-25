@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.service.impl;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.SolicitudAsignacionService;
 
 import lombok.RequiredArgsConstructor;
@@ -24,20 +26,24 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SolicitudAsignacionServiceImpl implements SolicitudAsignacionService {
 
+    private static final String ZONE_ID_EUROPA_MADRID = "Europe/Madrid";
+
     private final SolicitudAsignacionRepository solicitudAsignacionRepository;
     private final UsuarioRepository usuarioRepository;
     private final NotificacionFacade notificacionFacade;
+    private final HmacSearchIndexService hmacSearchIndexService;
 
     @Override
     @Transactional
     public SolicitudAsignacion crearSolicitud(String nifMedico, String nifPaciente) {
-        Usuario medico = usuarioRepository.findByNif(nifMedico).orElse(null);
-        Usuario paciente = usuarioRepository.findByNif(nifPaciente).orElse(null);
+        Usuario medico = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nifMedico)).orElse(null);
+        Usuario paciente = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nifPaciente)).orElse(null);
         if (medico == null || paciente == null) {
             throw new UsuarioNoEncontradoException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO);
         }
 
-        boolean exists = solicitudAsignacionRepository.existsByMedicoNifAndPacienteNifAndEstado(nifMedico, nifPaciente, "PENDIENTE");
+        boolean exists = solicitudAsignacionRepository.existsByMedicoNifHashAndPacienteNifHashAndEstado(
+                medico.getNifHash(), paciente.getNifHash(), "PENDIENTE");
         if (exists) {
             throw new SolicitudExistenteException("Ya existe una solicitud pendiente para este médico y paciente");
         }
@@ -46,7 +52,7 @@ public class SolicitudAsignacionServiceImpl implements SolicitudAsignacionServic
         solicitud.setMedico(medico);
         solicitud.setPaciente(paciente);
         solicitud.setEstado("PENDIENTE");
-        solicitud.setFechaCreacion(LocalDateTime.now());
+        solicitud.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
 
         var saved = solicitudAsignacionRepository.save(solicitud);
 
@@ -63,11 +69,11 @@ public class SolicitudAsignacionServiceImpl implements SolicitudAsignacionServic
 
     @Override
     public List<SolicitudAsignacion> listarSolicitudesPendientesPorMedico(String nifMedico) {
-        return solicitudAsignacionRepository.findByMedicoNifAndEstado(nifMedico, "PENDIENTE");
+        return solicitudAsignacionRepository.findByMedicoNifHashAndEstado(hmacSearchIndexService.indexar(nifMedico), "PENDIENTE");
     }
 
     @Override
     public List<SolicitudAsignacion> listarSolicitudesEnviadasPorMedico(String nifMedico) {
-        return solicitudAsignacionRepository.findByMedicoNifOrderByFechaCreacionDesc(nifMedico);
+        return solicitudAsignacionRepository.findByMedicoNifHashOrderByFechaCreacionDesc(hmacSearchIndexService.indexar(nifMedico));
     }
 }

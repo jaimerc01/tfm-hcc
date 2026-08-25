@@ -3,7 +3,9 @@ package com.hcc.tfm_hcc.config;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.JwtService;
 import com.hcc.tfm_hcc.service.AccessLogService;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.context.annotation.Bean;
@@ -33,14 +35,15 @@ public class WebSecurityConfig {
 
 
     private final UsuarioRepository usuarioRepository;
+    private final HmacSearchIndexService hmacSearchIndexService;
     private final GoogleOAuth2AuthenticationSuccessHandler googleOAuth2AuthenticationSuccessHandler;
     private final GoogleOAuth2AuthenticationFailureHandler googleOAuth2AuthenticationFailureHandler;
 
-    @Value("${security.enforce-https:false}")
-    private boolean enforceHttps;
-
     @Value("${spring.security.oauth2.client.registration.google.client-id:}")
     private String googleClientId;
+
+    @Value("${security.cors.allowed-origins:http://localhost:8080,https://localhost:8080}")
+    private String allowedOrigins;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService, HandlerExceptionResolver handlerExceptionResolver) {
@@ -85,6 +88,7 @@ public class WebSecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(requests -> requests
                 .requestMatchers("/authentication/login").permitAll()
+                .requestMatchers("/authentication/login/2fa").permitAll()
                 .requestMatchers("/authentication/signup").permitAll()
                 .requestMatchers("/authentication/google/login").permitAll()
                 .requestMatchers("/authentication/google/token").permitAll()
@@ -100,7 +104,10 @@ public class WebSecurityConfig {
 
         aplicarCabecerasSeguridad(http);
 
-    // Nota: Enforcement HTTPS se recomienda via reverse proxy (Nginx/Apache) para evitar APIs deprecated.
+        // Nota: el enforcement de HTTPS se resuelve fuera de Spring Security, vía
+        // HttpToHttpsRedirectConfig (redirección a nivel de conector Tomcat, activa
+        // cuando server.ssl.enabled=true) o, en despliegues detrás de reverse proxy
+        // (Nginx/Apache), delegando esa redirección en el propio proxy.
         return http.build();
     }
 
@@ -120,14 +127,20 @@ public class WebSecurityConfig {
 
     @Bean
     public AccessLogFilter accessLogFilter(AccessLogService accessLogService) {
-        return new AccessLogFilter(accessLogService, usuarioRepository);
+        return new AccessLogFilter(accessLogService, usuarioRepository, hmacSearchIndexService);
     }
 
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("http://localhost:8080", "https://localhost:8080")); // Frontend Vue.js (HTTP y HTTPS dev)
+        // Orígenes permitidos: configurables vía security.cors.allowed-origins (application.yml)
+        // o la variable de entorno correspondiente, para poder ajustarlos por entorno sin tocar
+        // código (en producción, el origen real del frontend desplegado).
+        configuration.setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Incluir OPTIONS
         configuration.setAllowedHeaders(List.of("*")); // Permitir todos los headers
         configuration.setAllowCredentials(true); // Permitir credenciales

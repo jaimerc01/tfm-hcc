@@ -48,6 +48,7 @@ class MedicoServiceImplTest {
     private UsuarioFacade usuarioFacade;
     private PacienteConverter pacienteConverter;
     private PerfilUsuarioService perfilUsuarioService;
+    private HmacSearchIndexService hmacSearchIndexService;
     private MedicoServiceImpl service;
 
     @BeforeEach
@@ -60,15 +61,19 @@ class MedicoServiceImplTest {
         usuarioFacade = mock(UsuarioFacade.class);
         pacienteConverter = mock(PacienteConverter.class);
         perfilUsuarioService = mock(PerfilUsuarioService.class);
+        hmacSearchIndexService = mock(HmacSearchIndexService.class);
+        when(hmacSearchIndexService.indexar("12345678A")).thenReturn("hash-12345678A");
+        when(hmacSearchIndexService.indexar("00000000Z")).thenReturn("hash-00000000Z");
         service = new MedicoServiceImpl(notificacionFacade, usuarioRepository, perfilRepository,
-                medicoPacienteRepository, usuarioMapper, usuarioFacade, pacienteConverter, perfilUsuarioService);
+                medicoPacienteRepository, usuarioMapper, usuarioFacade, pacienteConverter, perfilUsuarioService,
+                hmacSearchIndexService);
     }
 
     @Test
     void buscarPacientePorDniYFechaNacimiento_conFechaCoincidente_devuelveElPaciente() {
         Usuario usuario = new Usuario();
         usuario.setFechaNacimiento(LocalDateTime.of(1990, 5, 20, 0, 0));
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         PacienteDTO dto = new PacienteDTO();
         when(pacienteConverter.toDto(usuario)).thenReturn(dto);
 
@@ -81,14 +86,14 @@ class MedicoServiceImplTest {
     void buscarPacientePorDniYFechaNacimiento_conFechaDistinta_devuelveNull() {
         Usuario usuario = new Usuario();
         usuario.setFechaNacimiento(LocalDateTime.of(1990, 5, 20, 0, 0));
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
 
         assertNull(service.buscarPacientePorDniYFechaNacimiento("12345678A", "2000-01-01"));
     }
 
     @Test
     void buscarPacientePorDniYFechaNacimiento_conUsuarioInexistente_devuelveNull() {
-        when(usuarioRepository.findByNif("00000000Z")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByNifHash("hash-00000000Z")).thenReturn(Optional.empty());
 
         assertNull(service.buscarPacientePorDniYFechaNacimiento("00000000Z", "1990-05-20"));
     }

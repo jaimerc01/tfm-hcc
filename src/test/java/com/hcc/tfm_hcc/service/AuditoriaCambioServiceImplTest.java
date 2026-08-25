@@ -25,12 +25,14 @@ import com.hcc.tfm_hcc.service.impl.AuditoriaCambioServiceImpl;
 class AuditoriaCambioServiceImplTest {
 
     private AuditoriaCambioRepository repository;
+    private FieldEncryptionService fieldEncryptionService;
     private AuditoriaCambioServiceImpl service;
 
     @BeforeEach
     void setUp() {
         repository = mock(AuditoriaCambioRepository.class);
-        service = new AuditoriaCambioServiceImpl(repository);
+        fieldEncryptionService = mock(FieldEncryptionService.class);
+        service = new AuditoriaCambioServiceImpl(repository, fieldEncryptionService);
     }
 
     @Test
@@ -64,13 +66,43 @@ class AuditoriaCambioServiceImplTest {
     }
 
     @Test
-    void obtenerHistorialCambiosUsuario_conIdValido_devuelveLosCambios() {
-        when(repository.findByIdUsuarioOrderByFechaCambioDesc("usuario-1"))
-                .thenReturn(List.of(new AuditoriaCambio()));
+    void registrarCambio_guardaLosValoresCifradosYDevuelveElTextoEnClaro() {
+        when(fieldEncryptionService.cifrar("100")).thenReturn("CIFRADO(100)");
+        when(fieldEncryptionService.cifrar("110")).thenReturn("CIFRADO(110)");
+        // La misma instancia se pasa a save() y luego se restaura a texto en claro antes de
+        // devolverla, así que hay que capturar los valores en el momento exacto de guardar
+        // (un ArgumentCaptor vería el estado final, ya restaurado, por ser el mismo objeto).
+        List<String> valoresGuardados = new ArrayList<>();
+        when(repository.save(any(AuditoriaCambio.class))).thenAnswer(inv -> {
+            AuditoriaCambio guardando = inv.getArgument(0);
+            valoresGuardados.add(guardando.getValorAnterior());
+            valoresGuardados.add(guardando.getValorNuevo());
+            return guardando;
+        });
+
+        AuditoriaCambio resultado = service.registrarCambio(
+                "usuario-1", "paciente-1", null, "GLUCOSA", "dato_clinico",
+                "recurso-1", "100", "110", TipoOperacion.UPDATE, "Corrección");
+
+        assertEquals(List.of("CIFRADO(100)", "CIFRADO(110)"), valoresGuardados);
+        assertEquals("100", resultado.getValorAnterior());
+        assertEquals("110", resultado.getValorNuevo());
+    }
+
+    @Test
+    void obtenerHistorialCambiosUsuario_conIdValido_devuelveLosCambiosDescifrados() {
+        AuditoriaCambio cambio = new AuditoriaCambio();
+        cambio.setValorAnterior("CIFRADO(100)");
+        cambio.setValorNuevo("CIFRADO(110)");
+        when(repository.findByIdUsuarioOrderByFechaCambioDesc("usuario-1")).thenReturn(List.of(cambio));
+        when(fieldEncryptionService.descifrar("CIFRADO(100)")).thenReturn("100");
+        when(fieldEncryptionService.descifrar("CIFRADO(110)")).thenReturn("110");
 
         List<AuditoriaCambio> resultado = service.obtenerHistorialCambiosUsuario("usuario-1");
 
         assertEquals(1, resultado.size());
+        assertEquals("100", resultado.get(0).getValorAnterior());
+        assertEquals("110", resultado.get(0).getValorNuevo());
     }
 
     @Test

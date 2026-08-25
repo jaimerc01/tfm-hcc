@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
+import com.hcc.tfm_hcc.converter.AESEncryptionLocalDateTimeConverter;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -71,11 +72,20 @@ public class Usuario extends BaseEntity implements UserDetails {
 
     /**
      * Dirección de correo electrónico del usuario.
-     * Debe ser única en el sistema. Campo encriptado.
+     * Campo cifrado con AES/GCM (no determinista): la unicidad y la búsqueda por
+     * igualdad ya no se aplican sobre esta columna, sino sobre {@link #emailHash}.
      */
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false)
     @Convert(converter = AESEncryptionConverter.class)
     private String email;
+
+    /**
+     * Índice de búsqueda determinista del email (HMAC-SHA256), calculado por
+     * {@link com.hcc.tfm_hcc.service.HmacSearchIndexService}. Único en el sistema:
+     * sustituye a la antigua restricción de unicidad sobre la columna cifrada.
+     */
+    @Column(name = "email_hash", nullable = false, unique = true)
+    private String emailHash;
 
     /**
      * Contraseña del usuario almacenada únicamente como hash BCrypt.
@@ -85,18 +95,31 @@ public class Usuario extends BaseEntity implements UserDetails {
 
     /**
      * Fecha de nacimiento del usuario.
-     * Utilizada para validaciones de identidad.
+     * Utilizada para validaciones de identidad, lo que la hace especialmente sensible.
+     * Campo cifrado con AES/GCM igual que el resto de datos personales de esta entidad
+     * (ver {@link AESEncryptionLocalDateTimeConverter}); la columna es de tipo texto en
+     * base de datos, no una fecha nativa.
      */
     @Column(name = "fecha_nacimiento")
+    @Convert(converter = AESEncryptionLocalDateTimeConverter.class)
     private LocalDateTime fechaNacimiento;
 
     /**
-     * NIF (Número de Identificación Fiscal) del usuario.
-     * Identificador único encriptado utilizado como username.
+     * NIF (Número de Identificación Fiscal) del usuario, utilizado como username.
+     * Campo cifrado con AES/GCM (no determinista): la unicidad y la búsqueda por
+     * igualdad ya no se aplican sobre esta columna, sino sobre {@link #nifHash}.
      */
-    @Column(name = "nif", nullable = false, unique = true)
+    @Column(name = "nif", nullable = false)
     @Convert(converter = AESEncryptionConverter.class)
     private String nif;
+
+    /**
+     * Índice de búsqueda determinista del NIF (HMAC-SHA256), calculado por
+     * {@link com.hcc.tfm_hcc.service.HmacSearchIndexService}. Único en el sistema:
+     * sustituye a la antigua restricción de unicidad sobre la columna cifrada.
+     */
+    @Column(name = "nif_hash", nullable = false, unique = true)
+    private String nifHash;
 
     /**
      * Número de teléfono del usuario (opcional).
@@ -115,10 +138,24 @@ public class Usuario extends BaseEntity implements UserDetails {
 
     /**
      * Estado actual de la cuenta del usuario.
-     * Valores posibles: "ACTIVO", "ELIMINADO", "SUSPENDIDO", etc.
+     * Valores posibles: {@link #ESTADO_CUENTA_ACTIVO}, {@link #ESTADO_CUENTA_ELIMINADO},
+     * {@link #ESTADO_CUENTA_SUSPENDIDO}.
      */
     @Column(name = "estado_cuenta")
     private String estadoCuenta;
+
+    public static final String ESTADO_CUENTA_ACTIVO = "ACTIVO";
+
+    public static final String ESTADO_CUENTA_ELIMINADO = "ELIMINADO";
+
+    /**
+     * Cuenta con el tratamiento de sus datos limitado a petición propia (derecho de
+     * limitación del tratamiento, art. 18 RGPD): la cuenta sigue existiendo y su titular
+     * puede seguir accediendo a ella (para poder revertir la limitación cuando quiera),
+     * pero ningún médico puede consultar su historial clínico mientras dure
+     * (ver {@code HistorialClinicoServiceImpl.obtenerHistorialPaciente}).
+     */
+    public static final String ESTADO_CUENTA_SUSPENDIDO = "SUSPENDIDO";
 
     /**
      * Fecha y hora cuando se eliminó la cuenta.
@@ -133,6 +170,25 @@ public class Usuario extends BaseEntity implements UserDetails {
      */
     @Column(name = "last_password_change")
     private LocalDateTime lastPasswordChange;
+
+    /**
+     * Secreto TOTP (RFC 6238) del segundo factor de autenticación, en Base32.
+     * Campo cifrado con AES/GCM. Nulo si el usuario nunca ha configurado 2FA o lo
+     * ha desactivado. Mientras {@link #totpEnabled} sea falso pero este campo no
+     * sea nulo, el secreto está "pendiente de confirmar" (generado pero todavía
+     * no verificado con un primer código correcto).
+     */
+    @Column(name = "totp_secret")
+    @Convert(converter = AESEncryptionConverter.class)
+    private String totpSecret;
+
+    /**
+     * Indica si el segundo factor de autenticación (TOTP) está activo para este
+     * usuario. Si es true, el login con NIF/contraseña no basta por sí solo: debe
+     * completarse además con un código TOTP válido.
+     */
+    @Column(name = "totp_enabled")
+    private boolean totpEnabled;
 
     /**
      * Autoridades de Spring Security asignadas al usuario.

@@ -16,7 +16,9 @@ import com.hcc.tfm_hcc.facade.AdminFacade;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.MedicoService;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,8 +79,14 @@ public class AdminFacadeImpl implements AdminFacade {
     private final UsuarioMapper usuarioMapper;
 
     /**
+     * Servicio para calcular el índice de búsqueda (HMAC) del NIF, necesario porque
+     * el NIF está cifrado de forma no determinista y no es consultable por igualdad.
+     */
+    private final HmacSearchIndexService hmacSearchIndexService;
+
+    /**
      * {@inheritDoc}
-     * 
+     *
      * <p>Implementación que obtiene la lista completa de usuarios con perfil médico,
      * proporcionando información detallada para operaciones administrativas.</p>
      * 
@@ -231,25 +239,26 @@ public class AdminFacadeImpl implements AdminFacade {
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(String nif) {
-        log.debug("Buscando usuario por NIF: {}", nif);
-        
+        String nifLog = LogMaskUtil.enmascarar(nif);
+        log.debug("Buscando usuario por NIF: {}", nifLog);
+
         try {
             validarNif(nif);
-            
-            Optional<Usuario> usuarioOpt = usuarioRepository.findByNif(nif);
+
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nif));
             if (usuarioOpt.isPresent()) {
                 UsuarioDTO usuarioDTO = usuarioMapper.toDto(usuarioOpt.get());
-                log.info("Usuario encontrado exitosamente por NIF: {}", nif);
+                log.info("Usuario encontrado exitosamente por NIF: {}", nifLog);
                 return ResponseEntity.ok(usuarioDTO);
             } else {
-                log.warn("Usuario no encontrado con NIF: {}", nif);
+                log.warn("Usuario no encontrado con NIF: {}", nifLog);
                 throw new AdminValidationException(ErrorMessages.entidadNoEncontrada("Usuario", nif));
             }
         } catch (AdminValidationException e) {
-            log.warn("Error de validación al buscar usuario por NIF {}: {}", nif, e.getMessage());
+            log.warn("Error de validación al buscar usuario por NIF {}: {}", nifLog, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al buscar usuario por NIF {}: {}", nif, e.getMessage(), e);
+            log.error("Error inesperado al buscar usuario por NIF {}: {}", nifLog, e.getMessage(), e);
             throw new AdminOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }

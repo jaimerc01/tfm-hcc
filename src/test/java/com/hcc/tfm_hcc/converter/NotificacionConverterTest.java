@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -13,10 +15,15 @@ import org.junit.jupiter.api.Test;
 import com.hcc.tfm_hcc.dto.NotificacionDTO;
 import com.hcc.tfm_hcc.model.Notificacion;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.service.impl.HmacSearchIndexServiceImpl;
 
 class NotificacionConverterTest {
 
-    private final NotificacionConverter converter = new NotificacionConverter(new UsuarioConverter());
+    private static final String CLAVE_PRUEBAS_BASE64 =
+            Base64.getEncoder().encodeToString("0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8));
+
+    private final NotificacionConverter converter = new NotificacionConverter(
+            new UsuarioConverter(new HmacSearchIndexServiceImpl(new EncryptionKeyProvider(CLAVE_PRUEBAS_BASE64))));
 
     @Test
     void toDto_conUsuarioAsociado_incluyeElUsuarioDto() {

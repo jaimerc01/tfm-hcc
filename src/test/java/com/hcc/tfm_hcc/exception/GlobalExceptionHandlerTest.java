@@ -14,6 +14,7 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.core.MethodParameter;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 
@@ -47,5 +48,35 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, respuesta.getStatusCode());
         assertEquals("Formato de email inválido", respuesta.getBody().get("email"));
         assertEquals("El campo 'nif' es requerido", respuesta.getBody().get("nif"));
+    }
+
+    @Test
+    void handleValidacionDatosClinicos_devuelve400ConElMensajeDeLaExcepcion() {
+        DatosClinicosValidationException excepcion = new DatosClinicosValidationException("El archivo debe tener un nombre válido");
+
+        ResponseEntity<String> respuesta = handler.handleValidacionDatosClinicos(excepcion);
+
+        assertEquals(HttpStatus.BAD_REQUEST, respuesta.getStatusCode());
+        assertEquals("El archivo debe tener un nombre válido", respuesta.getBody());
+    }
+
+    @Test
+    void handleArchivoClinico_devuelve500ConElMensajeDeLaExcepcion() {
+        ArchivoClinicoException excepcion = new ArchivoClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR);
+
+        ResponseEntity<String> respuesta = handler.handleArchivoClinico(excepcion);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, respuesta.getStatusCode());
+        assertEquals(ErrorMessages.ERROR_INTERNO_SERVIDOR, respuesta.getBody());
+    }
+
+    @Test
+    void handleArchivoDemasiadoGrande_devuelve400ConMensajeDeTamañoExcedido() {
+        MaxUploadSizeExceededException excepcion = new MaxUploadSizeExceededException(10485760L);
+
+        ResponseEntity<String> respuesta = handler.handleArchivoDemasiadoGrande(excepcion);
+
+        assertEquals(HttpStatus.BAD_REQUEST, respuesta.getStatusCode());
+        assertEquals(ErrorMessages.ERROR_TAMAÑO_EXCEDIDO, respuesta.getBody());
     }
 }

@@ -1,6 +1,5 @@
 package com.hcc.tfm_hcc.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -25,10 +24,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
 import com.hcc.tfm_hcc.converter.EncryptionKeyProvider;
 import com.hcc.tfm_hcc.model.Perfil;
-import com.hcc.tfm_hcc.model.PerfilUsuario;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
+import com.hcc.tfm_hcc.service.impl.HmacSearchIndexServiceImpl;
 
 class AuthenticationBeansConfigTest {
 
@@ -37,29 +37,32 @@ class AuthenticationBeansConfigTest {
 
     private UsuarioRepository usuarioRepository;
     private PerfilUsuarioRepository perfilUsuarioRepository;
+    private HmacSearchIndexService hmacSearchIndexService;
     private AuthenticationBeansConfig config;
 
     @BeforeEach
     void setUp() {
         usuarioRepository = mock(UsuarioRepository.class);
         perfilUsuarioRepository = mock(PerfilUsuarioRepository.class);
-        config = new AuthenticationBeansConfig(usuarioRepository, perfilUsuarioRepository);
+        hmacSearchIndexService = new HmacSearchIndexServiceImpl(new EncryptionKeyProvider(CLAVE_PRUEBAS_BASE64));
+        config = new AuthenticationBeansConfig(usuarioRepository, perfilUsuarioRepository, hmacSearchIndexService);
     }
 
     private Usuario usuarioConId(String nif) {
         Usuario usuario = new Usuario();
         usuario.setId(UUID.randomUUID());
         usuario.setNif(nif);
+        usuario.setNifHash(hmacSearchIndexService.indexar(nif));
         return usuario;
     }
 
     @Test
-    void userDetailsService_conUsuarioYPerfilesDirectos_asignaLasAuthorities() {
+    void userDetailsService_conUsuarioYPerfiles_asignaLasAuthorities() {
         Usuario usuario = usuarioConId("12345678A");
         Perfil perfil = new Perfil();
         perfil.setRol("MEDICO");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
-        when(perfilUsuarioRepository.getPerfilesByNif("12345678A")).thenReturn(List.of(perfil));
+        when(usuarioRepository.findByNifHash(usuario.getNifHash())).thenReturn(Optional.of(usuario));
+        when(perfilUsuarioRepository.getPerfilesByNifHash(usuario.getNifHash())).thenReturn(List.of(perfil));
 
         UserDetailsService uds = config.userDetailsService();
         UserDetails resultado = uds.loadUserByUsername("12345678A");
@@ -68,22 +71,8 @@ class AuthenticationBeansConfigTest {
     }
 
     @Test
-    void userDetailsService_conUsuarioSoloEncontradoPorFindAll_loCargaIgual() {
-        Usuario usuario = usuarioConId("12345678A");
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.empty());
-        when(usuarioRepository.findAll()).thenReturn(List.of(usuario));
-        when(perfilUsuarioRepository.getPerfilesByNif("12345678A")).thenReturn(List.of());
-        when(perfilUsuarioRepository.findAll()).thenReturn(List.of());
-
-        UserDetailsService uds = config.userDetailsService();
-
-        assertEquals("12345678A", uds.loadUserByUsername("12345678A").getUsername());
-    }
-
-    @Test
     void userDetailsService_conUsuarioInexistente_lanzaUsernameNotFoundException() {
-        when(usuarioRepository.findByNif("00000000Z")).thenReturn(Optional.empty());
-        when(usuarioRepository.findAll()).thenReturn(List.of());
+        when(usuarioRepository.findByNifHash(hmacSearchIndexService.indexar("00000000Z"))).thenReturn(Optional.empty());
 
         UserDetailsService uds = config.userDetailsService();
 
@@ -91,21 +80,15 @@ class AuthenticationBeansConfigTest {
     }
 
     @Test
-    void userDetailsService_conPerfilesSoloPorFindAll_losRecuperaComoRespaldo() {
+    void userDetailsService_sinPerfilesAsignados_devuelveUsuarioSinAuthorities() {
         Usuario usuario = usuarioConId("12345678A");
-        Perfil perfil = new Perfil();
-        perfil.setRol("PACIENTE");
-        PerfilUsuario relacion = new PerfilUsuario();
-        relacion.setUsuario(usuario);
-        relacion.setPerfil(perfil);
-        when(usuarioRepository.findByNif("12345678A")).thenReturn(Optional.of(usuario));
-        when(perfilUsuarioRepository.getPerfilesByNif("12345678A")).thenReturn(List.of());
-        when(perfilUsuarioRepository.findAll()).thenReturn(List.of(relacion));
+        when(usuarioRepository.findByNifHash(usuario.getNifHash())).thenReturn(Optional.of(usuario));
+        when(perfilUsuarioRepository.getPerfilesByNifHash(usuario.getNifHash())).thenReturn(List.of());
 
         UserDetailsService uds = config.userDetailsService();
         UserDetails resultado = uds.loadUserByUsername("12345678A");
 
-        assertTrue(resultado.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_PACIENTE")));
+        assertTrue(resultado.getAuthorities().isEmpty());
     }
 
     @Test

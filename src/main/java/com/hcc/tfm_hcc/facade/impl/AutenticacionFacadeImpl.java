@@ -22,6 +22,7 @@ import com.hcc.tfm_hcc.model.LoginResponse;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.service.AutenticacionService;
 import com.hcc.tfm_hcc.service.JwtService;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -97,31 +98,36 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
      */
     @Override
     public ResponseEntity<LoginResponse> autenticar(LoginUsuarioDTO loginUsuarioDTO) throws IncorrectCredentials {
-        log.debug("Iniciando proceso de autenticación para usuario: {}", 
-                 loginUsuarioDTO != null ? loginUsuarioDTO.getNif() : "null");
-        
+        String nifLog = LogMaskUtil.enmascarar(loginUsuarioDTO != null ? loginUsuarioDTO.getNif() : null);
+        log.debug("Iniciando proceso de autenticación para usuario: {}", nifLog);
+
         try {
             validarDatosAutenticacion(loginUsuarioDTO);
-            
+
             Usuario usuarioAutenticado = autenticacionService.autenticar(loginUsuarioDTO);
+
+            if (usuarioAutenticado.isTotpEnabled()) {
+                String challengeId = autenticacionService.crearChallengeDosFactores(usuarioAutenticado);
+                LoginResponse pendiente = new LoginResponse();
+                pendiente.setRequiresTwoFactor(true);
+                pendiente.setChallengeId(challengeId);
+                log.info("Login con NIF/contraseña correcto, pendiente de segundo factor para usuario: {}", nifLog);
+                return ResponseEntity.ok(pendiente);
+            }
+
             String jwtToken = generarTokenConAuthorities(usuarioAutenticado);
-            
             LoginResponse loginResponse = construirLoginResponse(jwtToken);
-            
-            log.info("Autenticación exitosa para usuario: {}", 
-                    loginUsuarioDTO != null ? loginUsuarioDTO.getNif() : "unknown");
+
+            log.info("Autenticación exitosa para usuario: {}", nifLog);
             return ResponseEntity.ok(loginResponse);
         } catch (IncorrectCredentials e) {
-            log.warn("Intento de autenticación fallido para usuario: {} - Credenciales incorrectas", 
-                    loginUsuarioDTO != null ? loginUsuarioDTO.getNif() : "null");
+            log.warn("Intento de autenticación fallido para usuario: {} - Credenciales incorrectas", nifLog);
             throw e;
         } catch (InvalidLoginDataException e) {
-            log.warn("Error de validación en autenticación para usuario: {} - Error: {}", 
-                    loginUsuarioDTO != null ? loginUsuarioDTO.getNif() : "null", e.getMessage());
+            log.warn("Error de validación en autenticación para usuario: {} - Error: {}", nifLog, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado durante autenticación para usuario: {} - Error: {}", 
-                     loginUsuarioDTO != null ? loginUsuarioDTO.getNif() : "null", e.getMessage(), e);
+            log.error("Error inesperado durante autenticación para usuario: {} - Error: {}", nifLog, e.getMessage(), e);
             throw new AutenticacionOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
@@ -142,25 +148,22 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
      */
     @Override
     public ResponseEntity<UsuarioDTO> registrar(UsuarioDTO usuarioDTO) throws InvalidRegistrationDataException {
-        log.debug("Iniciando proceso de registro para usuario: {}", 
-                 usuarioDTO != null ? usuarioDTO.getNif() : "null");
-        
+        String nifLog = LogMaskUtil.enmascarar(usuarioDTO != null ? usuarioDTO.getNif() : null);
+        log.debug("Iniciando proceso de registro para usuario: {}", nifLog);
+
         try {
             validarDatosRegistro(usuarioDTO);
-            
+
             Usuario usuarioRegistrado = autenticacionService.registrar(usuarioDTO);
             UsuarioDTO usuarioResponse = usuarioMapper.toDto(usuarioRegistrado);
-            
-            log.info("Usuario registrado exitosamente: {}", 
-                    usuarioDTO != null ? usuarioDTO.getNif() : "unknown");
+
+            log.info("Usuario registrado exitosamente: {}", nifLog);
             return ResponseEntity.ok(usuarioResponse);
         } catch (InvalidRegistrationDataException e) {
-            log.warn("Error de validación en registro de usuario: {} - Error: {}", 
-                    usuarioDTO != null ? usuarioDTO.getNif() : "null", e.getMessage());
+            log.warn("Error de validación en registro de usuario: {} - Error: {}", nifLog, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado durante registro de usuario: {} - Error: {}", 
-                     usuarioDTO != null ? usuarioDTO.getNif() : "null", e.getMessage(), e);
+            log.error("Error inesperado durante registro de usuario: {} - Error: {}", nifLog, e.getMessage(), e);
             throw new AutenticacionOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
@@ -181,8 +184,16 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
     @Override
     public String procesarLoginGoogle(String email, boolean emailVerificado) {
         Usuario usuario = autenticacionService.autenticarConGoogle(email, emailVerificado);
+
+        if (usuario.isTotpEnabled()) {
+            String challengeId = autenticacionService.crearChallengeDosFactores(usuario);
+            log.info("Login con Google correcto, pendiente de segundo factor para usuario: {}",
+                    LogMaskUtil.enmascarar(usuario.getNif()));
+            return autenticacionService.generarCodigoLoginGoogleConDosFactores(challengeId);
+        }
+
         String jwtToken = generarTokenConAuthorities(usuario);
-        log.info("Login con Google completado para NIF: {}", usuario.getNif());
+        log.info("Login con Google completado para NIF: {}", LogMaskUtil.enmascarar(usuario.getNif()));
         return autenticacionService.generarCodigoLoginGoogle(jwtToken, jwtService.getExpirationTime());
     }
 
@@ -192,6 +203,21 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
     @Override
     public ResponseEntity<LoginResponse> canjearCodigoGoogle(String code) {
         LoginResponse loginResponse = autenticacionService.canjearCodigoLoginGoogle(code);
+        return ResponseEntity.ok(loginResponse);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public ResponseEntity<LoginResponse> autenticarSegundoFactor(String challengeId, String code) {
+        log.debug("Verificando segundo factor para reto: {}", challengeId);
+
+        Usuario usuario = autenticacionService.verificarCodigoDosFactores(challengeId, code);
+        String jwtToken = generarTokenConAuthorities(usuario);
+        LoginResponse loginResponse = construirLoginResponse(jwtToken);
+
+        log.info("Segundo factor verificado, login completado para usuario: {}", LogMaskUtil.enmascarar(usuario.getNif()));
         return ResponseEntity.ok(loginResponse);
     }
 

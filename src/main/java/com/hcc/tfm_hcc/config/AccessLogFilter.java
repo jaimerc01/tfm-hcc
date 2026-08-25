@@ -3,6 +3,8 @@ package com.hcc.tfm_hcc.config;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -13,6 +15,8 @@ import org.springframework.util.StopWatch;
 import com.hcc.tfm_hcc.model.AccessLog;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.AccessLogService;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -30,11 +34,23 @@ public class AccessLogFilter implements Filter {
 
     private final AccessLogService accessLogService;
     private final UsuarioRepository usuarioRepository;
+    private final HmacSearchIndexService hmacSearchIndexService;
     private static final String ZONE_ID = "Europe/Madrid";
 
-    public AccessLogFilter(AccessLogService accessLogService, UsuarioRepository usuarioRepository) {
+    /**
+     * Reconoce un NIF/NIE español (8 dígitos + letra, o letra X/Y/Z + 7 dígitos + letra)
+     * dentro de una ruta, p. ej. el {@code {nif}} de {@code /pacientes/{nif}/historial}.
+     * La propia ruta HTTP no debe guardarse con el identificador del paciente en claro:
+     * el resto de la aplicación cifra el NIF en todas partes (ver {@code Usuario.nif}), y
+     * el log de accesos no debía ser la única excepción.
+     */
+    private static final Pattern NIF_EN_RUTA = Pattern.compile("(?i)\\b(?:[0-9]{8}[A-Z]|[XYZ][0-9]{7}[A-Z])\\b");
+
+    public AccessLogFilter(AccessLogService accessLogService, UsuarioRepository usuarioRepository,
+            HmacSearchIndexService hmacSearchIndexService) {
         this.accessLogService = accessLogService;
         this.usuarioRepository = usuarioRepository;
+        this.hmacSearchIndexService = hmacSearchIndexService;
     }
 
     @Override
@@ -69,7 +85,7 @@ public class AccessLogFilter implements Filter {
                 && !(auth instanceof AnonymousAuthenticationToken)
                 && auth.getPrincipal() instanceof UserDetails userDetails) {
             String nif = userDetails.getUsername();
-                usuario = usuarioRepository.findByNif(nif)
+                usuario = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nif))
                     .map(u -> u.getId().toString())
                     .orElse(null);
             }
@@ -79,7 +95,7 @@ public class AccessLogFilter implements Filter {
                 log.setTimestamp(LocalDateTime.now(ZoneId.of(ZONE_ID)));
                 log.setUsuarioId(usuario);
                 log.setMetodo(httpReq.getMethod());
-                log.setRuta(httpReq.getRequestURI());
+                log.setRuta(enmascararNifEnRuta(httpReq.getRequestURI()));
                 log.setEstado(httpRes.getStatus());
                 log.setIp(getClientIp(httpReq));
                 log.setUserAgent(httpReq.getHeader("User-Agent"));
@@ -89,6 +105,24 @@ public class AccessLogFilter implements Filter {
                 // No propagar para no romper la petición
             }
         }
+    }
+
+    /**
+     * Sustituye cualquier NIF/NIE que aparezca dentro de una ruta por su forma enmascarada
+     * ({@link LogMaskUtil#enmascarar(String)}), para que el log de accesos no sea el único
+     * sitio de la aplicación donde ese identificador queda en claro.
+     */
+    private String enmascararNifEnRuta(String ruta) {
+        if (ruta == null) {
+            return null;
+        }
+        Matcher matcher = NIF_EN_RUTA.matcher(ruta);
+        StringBuilder resultado = new StringBuilder();
+        while (matcher.find()) {
+            matcher.appendReplacement(resultado, Matcher.quoteReplacement(LogMaskUtil.enmascarar(matcher.group())));
+        }
+        matcher.appendTail(resultado);
+        return resultado.toString();
     }
 
     private String getClientIp(HttpServletRequest request) {

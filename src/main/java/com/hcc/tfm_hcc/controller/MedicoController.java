@@ -3,8 +3,10 @@ package com.hcc.tfm_hcc.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
@@ -39,9 +41,18 @@ public interface MedicoController {
      * @return ResponseEntity con el PacienteDTO del paciente encontrado
      * @throws IllegalArgumentException si los datos de identificación no son válidos
      */
-    ResponseEntity<PacienteDTO> buscarPaciente(@RequestParam("dni") String dni, 
+    ResponseEntity<PacienteDTO> buscarPaciente(@RequestParam("dni") String dni,
                                                @RequestParam("fechaNacimiento") String fechaNacimiento);
-    
+
+    /**
+     * Obtiene el historial clínico de un paciente vinculado al médico autenticado.
+     * Solo permite el acceso si existe una relación médico-paciente con estado "ACTIVA".
+     *
+     * @param nif NIF del paciente cuyo historial se consulta
+     * @return ResponseEntity con el HistorialClinicoDTO del paciente
+     */
+    ResponseEntity<HistorialClinicoDTO> obtenerHistorialPaciente(@PathVariable("nif") String nif);
+
     /**
      * Crea una nueva solicitud de asignación entre el médico autenticado y un paciente.
      * La solicitud queda pendiente hasta que sea aprobada por el sistema o el paciente.

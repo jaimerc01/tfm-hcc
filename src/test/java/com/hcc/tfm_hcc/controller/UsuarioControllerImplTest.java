@@ -245,7 +245,7 @@ class UsuarioControllerImplTest {
     @Test
     void exportUsuario_devuelveOk() throws Exception {
         when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
-        when(usuarioFacade.exportUsuario()).thenReturn(null);
+        when(usuarioFacade.exportUsuario(any())).thenReturn(null);
 
         mvc.perform(get("/usuario/export")).andExpect(status().isOk());
     }
@@ -357,14 +357,35 @@ class UsuarioControllerImplTest {
     @Test
     void deleteCuenta_conUsuarioNoAutenticado_devuelve401() throws Exception {
         org.mockito.Mockito.doThrow(new com.hcc.tfm_hcc.exception.UsuarioNoAutenticadoException("no autenticado"))
-                .when(usuarioFacade).deleteCuentaActual();
+                .when(usuarioFacade).deleteCuentaActual(any());
 
         mvc.perform(delete("/usuario/me")).andExpect(status().isUnauthorized());
     }
 
     @Test
+    void deleteCuenta_sinContrasenaDeConfirmacion_devuelve401ConCabeceraReauth() throws Exception {
+        org.mockito.Mockito.doThrow(new com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException("reautenticación requerida"))
+                .when(usuarioFacade).deleteCuentaActual(any());
+
+        mvc.perform(delete("/usuario/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("X-Reauth-Required", "true"));
+    }
+
+    @Test
+    void exportUsuario_sinContrasenaDeConfirmacion_devuelve401ConCabeceraReauth() throws Exception {
+        when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
+        org.mockito.Mockito.doThrow(new com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException("reautenticación requerida"))
+                .when(usuarioFacade).exportUsuario(any());
+
+        mvc.perform(get("/usuario/export"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("X-Reauth-Required", "true"));
+    }
+
+    @Test
     void deleteCuenta_conErrorInesperado_devuelve500() throws Exception {
-        org.mockito.Mockito.doThrow(new RuntimeException("fallo")).when(usuarioFacade).deleteCuentaActual();
+        org.mockito.Mockito.doThrow(new RuntimeException("fallo")).when(usuarioFacade).deleteCuentaActual(any());
 
         mvc.perform(delete("/usuario/me")).andExpect(status().isInternalServerError());
     }

@@ -10,12 +10,20 @@
       <p>{{ $t('privacy_purpose_text') }}</p>
     </section>
     <section>
+      <h2>{{ $t('privacy_data_nature') }}</h2>
+      <p>{{ $t('privacy_data_nature_text') }}</p>
+    </section>
+    <section>
       <h2>{{ $t('privacy_legal_basis') }}</h2>
       <p>{{ $t('privacy_legal_basis_text') }}</p>
     </section>
     <section>
       <h2>{{ $t('privacy_recipients') }}</h2>
       <p>{{ $t('privacy_recipients_text') }}</p>
+    </section>
+    <section>
+      <h2>{{ $t('privacy_automated_decisions') }}</h2>
+      <p>{{ $t('privacy_automated_decisions_text') }}</p>
     </section>
     <section>
       <h2>{{ $t('privacy_rights') }}</h2>

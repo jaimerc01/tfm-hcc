@@ -25,6 +25,12 @@ public final class ErrorMessages {
     public static final String ERROR_CREDENCIALES_INVALIDAS = "Credenciales inválidas";
     public static final String ERROR_USUARIO_BLOQUEADO = "Usuario bloqueado";
     public static final String ERROR_PERMISOS_INSUFICIENTES = "Permisos insuficientes";
+    public static final String ERROR_TRATAMIENTO_LIMITADO =
+            "El paciente ha limitado el tratamiento de sus datos: su historial clínico no está disponible";
+    public static final String ERROR_CUENTA_ELIMINADA_NO_MODIFICABLE =
+            "No es posible modificar el estado de una cuenta ya eliminada";
+    public static final String ERROR_REAUTENTICACION_REQUERIDA =
+            "Debes confirmar tu contraseña actual para completar esta operación";
 
     // =====================================================
     // MENSAJES DE ERROR - LOGIN CON GOOGLE
@@ -40,6 +46,16 @@ public final class ErrorMessages {
     public static final String GOOGLE_ERROR_CODE_EMAIL_NOT_VERIFIED = "google_email_not_verified";
     public static final String GOOGLE_ERROR_CODE_INVALID_CODE = "google_code_invalid";
     public static final String GOOGLE_ERROR_CODE_AUTH_FAILED = "google_auth_failed";
+
+    // =====================================================
+    // MENSAJES DE ERROR - SEGUNDO FACTOR (TOTP)
+    // =====================================================
+
+    public static final String ERROR_TOTP_NO_CONFIGURADO = "No hay una configuración de segundo factor pendiente de confirmar";
+    public static final String ERROR_TOTP_YA_ACTIVO = "El segundo factor ya está activo";
+    public static final String ERROR_TOTP_NO_ACTIVO = "El segundo factor no está activo";
+    public static final String ERROR_TOTP_CODIGO_INVALIDO = "El código de verificación no es válido";
+    public static final String ERROR_TOTP_CHALLENGE_INVALIDO = "El proceso de verificación no es válido o ha caducado. Inicia sesión de nuevo.";
 
     // =====================================================
     // MENSAJES DE ERROR - GESTIÓN DE ARCHIVOS

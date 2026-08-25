@@ -57,12 +57,50 @@ public interface AutenticacionService {
     String generarCodigoLoginGoogle(String token, long expirationTime);
 
     /**
-     * Canjea un código de un solo uso emitido por {@link #generarCodigoLoginGoogle} por el
-     * token JWT que envuelve. El código se invalida tras el primer canje o al caducar.
+     * Genera un código de un solo uso y corta duración que envuelve un reto de segundo
+     * factor pendiente, para el caso en que el usuario autenticado con Google tenga
+     * activado el TOTP. El login con Google todavía no se completa: el frontend debe
+     * resolver el reto con el código de su aplicación autenticadora, igual que en el
+     * login normal.
+     *
+     * @param challengeId identificador del reto emitido por {@link #crearChallengeDosFactores}
+     * @return código de un solo uso
+     */
+    String generarCodigoLoginGoogleConDosFactores(String challengeId);
+
+    /**
+     * Canjea un código de un solo uso emitido por {@link #generarCodigoLoginGoogle} o por
+     * {@link #generarCodigoLoginGoogleConDosFactores}. El código se invalida tras el primer
+     * canje o al caducar.
      *
      * @param code código recibido del frontend
-     * @return respuesta de login con el token JWT y su expiración
+     * @return respuesta de login: con el token JWT si el login ya se completó, o con
+     *         {@code requiresTwoFactor=true} y el {@code challengeId} si queda pendiente
+     *         el segundo factor
      * @throws GoogleAuthenticationException si el código no existe, ya se usó o ha caducado
      */
     LoginResponse canjearCodigoLoginGoogle(String code) throws GoogleAuthenticationException;
+
+    /**
+     * Crea un reto de segundo factor (TOTP) pendiente para un usuario cuyo NIF y
+     * contraseña ya se han validado. El login no se completa hasta que el reto se
+     * resuelva con {@link #verificarCodigoDosFactores}.
+     *
+     * @param usuario usuario ya autenticado con NIF/contraseña, con 2FA activo
+     * @return identificador del reto, a presentar junto al código TOTP
+     */
+    String crearChallengeDosFactores(Usuario usuario);
+
+    /**
+     * Resuelve un reto de segundo factor: comprueba que no haya caducado, que no se
+     * hayan agotado los intentos, y que el código TOTP sea válido para el usuario
+     * asociado al reto. El reto se consume (deja de poder reutilizarse) tanto si
+     * la verificación tiene éxito como si se agotan los intentos.
+     *
+     * @param challengeId identificador del reto emitido por {@link #crearChallengeDosFactores}
+     * @param code código de 6 dígitos de la aplicación autenticadora
+     * @return el usuario autenticado, con sus authorities cargadas
+     * @throws IncorrectCredentials si el reto no existe, ha caducado o el código no es válido
+     */
+    Usuario verificarCodigoDosFactores(String challengeId, String code) throws IncorrectCredentials;
 }
