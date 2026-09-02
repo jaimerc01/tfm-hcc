@@ -17,8 +17,8 @@
 .app-footer {
   margin-top: 2.5rem;
   width: 100%;
-  border-top: 1px solid var(--primary-hover);
-  background: var(--primary-color);
+  border-top: 1px solid var(--footer-border);
+  background: var(--footer-bg);
   box-shadow: var(--shadow-sm);
 }
 

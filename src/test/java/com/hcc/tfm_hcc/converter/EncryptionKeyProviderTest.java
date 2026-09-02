@@ -39,6 +39,26 @@ class EncryptionKeyProviderTest {
     }
 
     @Test
+    void constructor_conClaveHexDe64Caracteres_creaClaveAes256() {
+        // 64 dígitos hex también son Base64 válido, pero decodifican a 48 bytes (longitud
+        // inválida): debe caer al análisis hexadecimal y quedarse con los 32 bytes.
+        String claveHex = "0123456789abcdef".repeat(4); // 64 chars -> 32 bytes
+
+        EncryptionKeyProvider provider = new EncryptionKeyProvider(claveHex);
+
+        assertEquals(32, provider.getSecretKey().getEncoded().length);
+    }
+
+    @Test
+    void constructor_conClaveHexDe48Caracteres_creaClaveAes192() {
+        String claveHex = "0123456789abcdef".repeat(3); // 48 chars -> 24 bytes
+
+        EncryptionKeyProvider provider = new EncryptionKeyProvider(claveHex);
+
+        assertEquals(24, provider.getSecretKey().getEncoded().length);
+    }
+
+    @Test
     void constructor_conClaveNula_lanzaExcepcion() {
         assertThrows(IllegalStateException.class, () -> new EncryptionKeyProvider(null));
     }

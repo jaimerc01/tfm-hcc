@@ -23,12 +23,16 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.hcc.tfm_hcc.converter.AlergiaConverter;
 import com.hcc.tfm_hcc.converter.AntecedenteClinicoConverter;
 import com.hcc.tfm_hcc.converter.HistorialClinicoConverter;
 import com.hcc.tfm_hcc.dto.AlergiaDTO;
 import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
@@ -76,6 +80,8 @@ class HistorialClinicoServiceImplTest {
     AntecedenteClinicoConverter antecedenteClinicoConverter;
     @Mock
     HmacSearchIndexService hmacSearchIndexService;
+    @Spy
+    ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     HistorialClinicoServiceImpl svc;
@@ -418,18 +424,31 @@ class HistorialClinicoServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> svc.borrarAlergia(alergiaId));
     }
 
-    // ---- actualizarAnalisisSangre: cubre en detalle procesarDatosClinicos ----
+    // ---- guardar mediciones cuantitativas: cubre en detalle procesarDatosClinicos ----
+
+    private static DatoClinicoEntradaDTO entrada(String label, String key, String value, String unit, String createdAt) {
+        DatoClinicoEntradaDTO d = new DatoClinicoEntradaDTO();
+        d.setLabel(label);
+        d.setKey(key);
+        d.setValue(value);
+        d.setUnit(unit);
+        d.setCreatedAt(createdAt);
+        return d;
+    }
+
+    private static DatoClinicoEntradaDTO conLabelYValor(String label, String value) {
+        return entrada(label, null, value, null, null);
+    }
 
     @Test
-    void actualizarAnalisisSangre_conJsonValido_creaElDatoClinicoConRangoExacto() {
+    void actualizarAnalisisSangre_conDatosValidos_creaElDatoClinicoConRangoExacto() {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
         Rango rango = new Rango();
         rango.setNombre("Glucosa");
         when(rangoRepository.findByNombreIgnoreCase("Glucosa")).thenReturn(Optional.of(rango));
 
-        String json = "[{\"label\":\"Glucosa\",\"unit\":\"mg/dL\",\"value\":\"95,5\"}]";
-        svc.actualizarAnalisisSangre(json);
+        svc.actualizarAnalisisSangre(List.of(entrada("Glucosa", null, "95,5", "mg/dL", null)));
 
         ArgumentCaptor<List<DatoClinico>> captor = ArgumentCaptor.forClass(List.class);
         verify(datoRepo).saveAll(captor.capture());
@@ -441,6 +460,24 @@ class HistorialClinicoServiceImplTest {
     }
 
     @Test
+    void actualizarAnalisisSangre_conValorDecimal_loGuardaSinPerderPrecision() {
+        mockUsuarioAutenticado();
+        when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
+
+        svc.actualizarAnalisisSangre(List.of(
+                conLabelYValor("Glucosa", "5.1"),
+                conLabelYValor("Colesterol", "180"),
+                conLabelYValor("Creatinina", " 0,89 ")));
+
+        ArgumentCaptor<List<DatoClinico>> captor = ArgumentCaptor.forClass(List.class);
+        verify(datoRepo).saveAll(captor.capture());
+        List<DatoClinico> guardados = captor.getValue();
+        assertEquals("5.1", guardados.get(0).getValor());
+        assertEquals("180", guardados.get(1).getValor());
+        assertEquals("0.89", guardados.get(2).getValor());
+    }
+
+    @Test
     void actualizarAnalisisSangre_sinRangoExacto_buscaPorCoincidenciaParcial() {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
@@ -449,7 +486,7 @@ class HistorialClinicoServiceImplTest {
         when(rangoRepository.findByNombreIgnoreCase("Colesterol")).thenReturn(Optional.empty());
         when(rangoRepository.findByNombreContainingIgnoreCase("Colesterol")).thenReturn(Optional.of(rango));
 
-        svc.actualizarAnalisisSangre("[{\"label\":\"Colesterol\",\"value\":\"180\"}]");
+        svc.actualizarAnalisisSangre(List.of(conLabelYValor("Colesterol", "180")));
 
         ArgumentCaptor<List<DatoClinico>> captor = ArgumentCaptor.forClass(List.class);
         verify(datoRepo).saveAll(captor.capture());
@@ -463,7 +500,7 @@ class HistorialClinicoServiceImplTest {
         when(rangoRepository.findByNombreIgnoreCase(anyString())).thenReturn(Optional.empty());
         when(rangoRepository.findByNombreContainingIgnoreCase(anyString())).thenReturn(Optional.empty());
 
-        svc.actualizarAnalisisSangre("[{\"label\":\"Desconocido\",\"value\":\"1\"}]");
+        svc.actualizarAnalisisSangre(List.of(conLabelYValor("Desconocido", "1")));
 
         ArgumentCaptor<List<DatoClinico>> captor = ArgumentCaptor.forClass(List.class);
         verify(datoRepo).saveAll(captor.capture());
@@ -475,7 +512,7 @@ class HistorialClinicoServiceImplTest {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
-        svc.actualizarAnalisisSangre("[{\"key\":\"Hemoglobina\",\"value\":\"14\"}]");
+        svc.actualizarAnalisisSangre(List.of(entrada(null, "Hemoglobina", "14", null, null)));
 
         ArgumentCaptor<List<DatoClinico>> captor = ArgumentCaptor.forClass(List.class);
         verify(datoRepo).saveAll(captor.capture());
@@ -487,7 +524,7 @@ class HistorialClinicoServiceImplTest {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
-        svc.actualizarAnalisisSangre("[{\"value\":\"14\"}]");
+        svc.actualizarAnalisisSangre(List.of(entrada(null, null, "14", null, null)));
 
         ArgumentCaptor<List<DatoClinico>> captor = ArgumentCaptor.forClass(List.class);
         verify(datoRepo).saveAll(captor.capture());
@@ -499,7 +536,7 @@ class HistorialClinicoServiceImplTest {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
-        svc.actualizarAnalisisSangre("[{\"value\":\"1\",\"createdAt\":\"2024-01-15T10:30:00+01:00\"}]");
+        svc.actualizarAnalisisSangre(List.of(entrada(null, null, "1", null, "2024-01-15T10:30:00+01:00")));
 
         ArgumentCaptor<List<DatoClinico>> captor = ArgumentCaptor.forClass(List.class);
         verify(datoRepo).saveAll(captor.capture());
@@ -511,7 +548,7 @@ class HistorialClinicoServiceImplTest {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
-        svc.actualizarAnalisisSangre("[{\"value\":\"1\",\"createdAt\":\"2024-01-15T10:30:00\"}]");
+        svc.actualizarAnalisisSangre(List.of(entrada(null, null, "1", null, "2024-01-15T10:30:00")));
 
         ArgumentCaptor<List<DatoClinico>> captor = ArgumentCaptor.forClass(List.class);
         verify(datoRepo).saveAll(captor.capture());
@@ -523,7 +560,7 @@ class HistorialClinicoServiceImplTest {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
-        svc.actualizarAnalisisSangre("[{\"value\":\"1\",\"createdAt\":\"no-es-una-fecha\"}]");
+        svc.actualizarAnalisisSangre(List.of(entrada(null, null, "1", null, "no-es-una-fecha")));
 
         ArgumentCaptor<List<DatoClinico>> captor = ArgumentCaptor.forClass(List.class);
         verify(datoRepo).saveAll(captor.capture());
@@ -537,7 +574,7 @@ class HistorialClinicoServiceImplTest {
         DatoClinico previo = new DatoClinico();
         when(datoRepo.findByHistorialClinicoAndTipoHashIn(eq(h), any())).thenReturn(List.of(previo));
 
-        svc.actualizarAnalisisSangre("[]");
+        svc.actualizarAnalisisSangre(List.of());
 
         verify(datoRepo).deleteAll(List.of(previo));
     }
@@ -547,7 +584,7 @@ class HistorialClinicoServiceImplTest {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
-        svc.añadirAnalisisSangre("[]");
+        svc.añadirAnalisisSangre(List.of());
 
         verify(datoRepo, never()).deleteAll(any());
         verify(auditoriaCambioService).registrarCambio(
@@ -555,17 +592,11 @@ class HistorialClinicoServiceImplTest {
     }
 
     @Test
-    void actualizarAnalisisSangre_conJsonQueNoEsArray_lanzaIllegalArgumentException() {
-        mockUsuarioAutenticado();
-
-        assertThrows(IllegalArgumentException.class, () -> svc.actualizarAnalisisSangre("{\"value\":\"1\"}"));
-    }
-
-    @Test
     void actualizarAnalisisSangre_conItemSinValue_lanzaIllegalArgumentException() {
         mockUsuarioAutenticado();
 
-        assertThrows(IllegalArgumentException.class, () -> svc.actualizarAnalisisSangre("[{\"label\":\"Glucosa\"}]"));
+        assertThrows(IllegalArgumentException.class,
+                () -> svc.actualizarAnalisisSangre(List.of(entrada("Glucosa", null, null, null, null))));
     }
 
     @Test
@@ -573,18 +604,11 @@ class HistorialClinicoServiceImplTest {
         mockUsuarioAutenticado();
 
         assertThrows(IllegalArgumentException.class,
-                () -> svc.actualizarAnalisisSangre("[{\"value\":\"no-es-un-numero\"}]"));
+                () -> svc.actualizarAnalisisSangre(List.of(entrada(null, null, "no-es-un-numero", null, null))));
     }
 
     @Test
-    void actualizarAnalisisSangre_conJsonMalformado_lanzaIllegalArgumentException() {
-        mockUsuarioAutenticado();
-
-        assertThrows(IllegalArgumentException.class, () -> svc.actualizarAnalisisSangre("{no-es-json"));
-    }
-
-    @Test
-    void actualizarAnalisisSangre_conJsonNuloOVacio_noProcesaNiGuardaDatos() {
+    void actualizarAnalisisSangre_conListaNulaOVacia_noProcesaNiGuardaDatos() {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
@@ -596,11 +620,11 @@ class HistorialClinicoServiceImplTest {
     // ---- variantes de signos vitales y análisis de orina (camino feliz) ----
 
     @Test
-    void actualizarSignosVitales_conJsonValido_guardaLosDatos() {
+    void actualizarSignosVitales_conDatosValidos_guardaLosDatos() {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
-        svc.actualizarSignosVitales("[{\"label\":\"Frecuencia Cardiaca\",\"value\":\"70\"}]");
+        svc.actualizarSignosVitales(List.of(conLabelYValor("Frecuencia Cardiaca", "70")));
 
         verify(datoRepo).saveAll(any());
         verify(auditoriaCambioService).registrarCambio(
@@ -608,31 +632,31 @@ class HistorialClinicoServiceImplTest {
     }
 
     @Test
-    void anadirSignosVitales_conJsonValido_guardaLosDatos() {
+    void anadirSignosVitales_conDatosValidos_guardaLosDatos() {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
-        svc.añadirSignosVitales("[{\"label\":\"IMC\",\"value\":\"22.5\"}]");
+        svc.añadirSignosVitales(List.of(conLabelYValor("IMC", "22.5")));
 
         verify(datoRepo).saveAll(any());
     }
 
     @Test
-    void actualizarAnalisisOrina_conJsonValido_guardaLosDatos() {
+    void actualizarAnalisisOrina_conDatosValidos_guardaLosDatos() {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
-        svc.actualizarAnalisisOrina("[{\"label\":\"PH Orina\",\"value\":\"6.5\"}]");
+        svc.actualizarAnalisisOrina(List.of(conLabelYValor("PH Orina", "6.5")));
 
         verify(datoRepo).saveAll(any());
     }
 
     @Test
-    void anadirAnalisisOrina_conJsonValido_guardaLosDatos() {
+    void anadirAnalisisOrina_conDatosValidos_guardaLosDatos() {
         mockUsuarioAutenticado();
         when(historialClinicoConverter.toDto(h)).thenReturn(new HistorialClinicoDTO());
 
-        svc.añadirAnalisisOrina("[{\"label\":\"PH Orina\",\"value\":\"6.5\"}]");
+        svc.añadirAnalisisOrina(List.of(conLabelYValor("PH Orina", "6.5")));
 
         verify(datoRepo).saveAll(any());
     }

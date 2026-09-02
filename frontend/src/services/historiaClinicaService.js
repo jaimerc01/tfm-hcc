@@ -13,15 +13,15 @@ export default {
   crearAlergia(alergia) { return api.post('/historia/alergias', alergia, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
   deleteAlergia(id) { return api.delete(`/historia/alergias/${id}`) },
   deleteDatoClinico(id) { return api.delete(`/historia/datos-clinicos/${id}`) },
-  // Analisis de sangre: Replace all (PUT) or add new (POST)
-  updateAnalisisSangre(text) { return api.put('/historia/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  añadirAnalisisSangre(text) { return api.post('/historia/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  // Analisis de sangre: Replace all (PUT) or add new (POST). El cuerpo es un array de mediciones (application/json).
+  updateAnalisisSangre(datos) { return api.put('/historia/analisis-sangre', datos) },
+  añadirAnalisisSangre(datos) { return api.post('/historia/analisis-sangre', datos) },
   // Signos vitales: Replace all (PUT) or add new (POST)
-  updateSignosVitales(text) { return api.put('/historia/signos-vitales', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  añadirSignosVitales(text) { return api.post('/historia/signos-vitales', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  updateSignosVitales(datos) { return api.put('/historia/signos-vitales', datos) },
+  añadirSignosVitales(datos) { return api.post('/historia/signos-vitales', datos) },
   // Analisis de orina: Replace all (PUT) or add new (POST)
-  updateAnalisisOrina(text) { return api.put('/historia/analisis-orina', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  añadirAnalisisOrina(text) { return api.post('/historia/analisis-orina', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
+  updateAnalisisOrina(datos) { return api.put('/historia/analisis-orina', datos) },
+  añadirAnalisisOrina(datos) { return api.post('/historia/analisis-orina', datos) },
   // getMine already returns the whole DTO, which may include analisisSangre, signosVitales and analisisOrina
 
   // Rangos de referencia

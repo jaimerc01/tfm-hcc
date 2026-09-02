@@ -117,7 +117,7 @@ class NotificacionServiceImplTest {
     @Test
     void listarNotificacionesUsuarioActual_devuelveLasDelUsuario() {
         Usuario usuario = usuarioActualMockeado();
-        when(notificacionRepository.findByUsuarioOrderByFechaCreacionDesc(usuario)).thenReturn(List.of(new Notificacion()));
+        when(notificacionRepository.findByUsuarioAndEliminadaFalseOrderByFechaCreacionDesc(usuario)).thenReturn(List.of(new Notificacion()));
 
         List<Notificacion> resultado = service.listarNotificacionesUsuarioActual();
 
@@ -154,7 +154,7 @@ class NotificacionServiceImplTest {
     void listarNotificacionesUsuarioActualPaginado_devuelveLaPagina() {
         Usuario usuario = usuarioActualMockeado();
         Page<Notificacion> pagina = new PageImpl<>(List.of(new Notificacion()));
-        when(notificacionRepository.findByUsuario(org.mockito.ArgumentMatchers.eq(usuario), any(Pageable.class)))
+        when(notificacionRepository.findByUsuarioAndEliminadaFalse(org.mockito.ArgumentMatchers.eq(usuario), any(Pageable.class)))
                 .thenReturn(pagina);
 
         Page<Notificacion> resultado = service.listarNotificacionesUsuarioActual(0, 10);
@@ -169,7 +169,7 @@ class NotificacionServiceImplTest {
         leida.setLeida(true);
         Notificacion noLeida = new Notificacion();
         noLeida.setLeida(false);
-        when(notificacionRepository.findByUsuarioOrderByFechaCreacionDesc(usuario))
+        when(notificacionRepository.findByUsuarioAndEliminadaFalseOrderByFechaCreacionDesc(usuario))
                 .thenReturn(List.of(leida, noLeida));
 
         List<Notificacion> resultado = service.marcarTodasComoLeidasUsuarioActual();
@@ -181,7 +181,7 @@ class NotificacionServiceImplTest {
     @Test
     void marcarTodasComoLeidasUsuarioActual_conListaVacia_noLlamaSaveAll() {
         Usuario usuario = usuarioActualMockeado();
-        when(notificacionRepository.findByUsuarioOrderByFechaCreacionDesc(usuario)).thenReturn(List.of());
+        when(notificacionRepository.findByUsuarioAndEliminadaFalseOrderByFechaCreacionDesc(usuario)).thenReturn(List.of());
 
         service.marcarTodasComoLeidasUsuarioActual();
 
@@ -250,26 +250,25 @@ class NotificacionServiceImplTest {
     }
 
     @Test
-    void eliminarNotificacionUsuarioActual_laMarcaComoLeidaYActualizaFecha() {
+    void eliminarNotificacionUsuarioActual_laMarcaComoEliminada() {
         Usuario usuario = usuarioActualMockeado();
         UUID notifId = UUID.randomUUID();
         Notificacion notificacion = new Notificacion();
         notificacion.setId(notifId);
         notificacion.setUsuario(usuario);
-        notificacion.setLeida(false);
         when(notificacionRepository.findById(notifId)).thenReturn(Optional.of(notificacion));
         when(notificacionRepository.save(any(Notificacion.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Notificacion resultado = service.eliminarNotificacionUsuarioActual(notifId.toString());
 
-        assertTrue(resultado.isLeida());
+        assertTrue(resultado.isEliminada());
         assertEquals(notificacion, resultado);
     }
 
     @Test
     void contarNoLeidasUsuarioActual_devuelveElConteoDelRepositorio() {
         Usuario usuario = usuarioActualMockeado();
-        when(notificacionRepository.countByUsuarioAndLeidaFalse(usuario)).thenReturn(3L);
+        when(notificacionRepository.countByUsuarioAndLeidaFalseAndEliminadaFalse(usuario)).thenReturn(3L);
 
         assertEquals(3L, service.contarNoLeidasUsuarioActual());
     }

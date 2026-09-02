@@ -162,10 +162,27 @@ class AutenticacionServiceImplTest {
     }
 
     @Test
-    void autenticar_conFalloDeAutenticacion_lanzaIncorrectCredentials() {
-        when(authenticationManager.authenticate(any())).thenThrow(new RuntimeException("credenciales invalidas"));
+    void autenticar_conCredencialesIncorrectas_lanzaIncorrectCredentials() {
+        when(authenticationManager.authenticate(any()))
+                .thenThrow(new org.springframework.security.authentication.BadCredentialsException("credenciales invalidas"));
 
         assertThrows(IncorrectCredentials.class, () -> service.autenticar(login("12345678A", "malacontrasena")));
+    }
+
+    @Test
+    void autenticar_conCuentaDeshabilitada_lanzaIncorrectCredentials() {
+        when(authenticationManager.authenticate(any()))
+                .thenThrow(new org.springframework.security.authentication.DisabledException("cuenta eliminada"));
+
+        assertThrows(IncorrectCredentials.class, () -> service.autenticar(login("12345678A", "password123")));
+    }
+
+    @Test
+    void autenticar_conFalloDeInfraestructura_lanzaAutenticacionOperacionException() {
+        when(authenticationManager.authenticate(any())).thenThrow(new RuntimeException("BD caída"));
+
+        assertThrows(com.hcc.tfm_hcc.exception.AutenticacionOperacionException.class,
+                () -> service.autenticar(login("12345678A", "password123")));
     }
 
     @Test

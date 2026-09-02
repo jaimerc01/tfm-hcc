@@ -7,7 +7,12 @@
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
     "lint:colors": "stylelint \"src/**/*.{css,vue}\" --allow-empty-input",
-    "check-styles": "node ./scripts/check-style-dup.js"
+    "check-styles": "node ./scripts/check-style-dup.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration"
   },
   "dependencies": {
     "axios": "^1.11.0",
@@ -21,9 +26,12 @@
   "devDependencies": {
     "@babel/core": "^7.12.16",
     "@babel/eslint-parser": "^7.12.16",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "@vitest/coverage-v8": "^2.1.9",
     "@vue/cli-plugin-babel": "~5.0.0",
     "@vue/cli-plugin-eslint": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
+    "@vue/test-utils": "^2.5.0",
     "assert": "^2.1.0",
     "browserify-zlib": "^0.2.0",
     "buffer": "^6.0.3",
@@ -31,13 +39,17 @@
     "eslint": "^7.32.0",
     "eslint-plugin-vue": "^8.0.3",
     "https-browserify": "^1.0.0",
+    "jsdom": "^25.0.1",
+    "msw": "^2.15.0",
     "postcss-html": "^1.8.0",
     "process": "^0.11.10",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "stylelint": "^16.8.2",
     "stylelint-config-standard": "^36.0.1",
-    "url": "^0.11.4"
+    "url": "^0.11.4",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9"
   },
   "eslintConfig": {
     "root": true,

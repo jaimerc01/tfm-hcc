@@ -372,6 +372,90 @@ class AuthService {
       throw new Error(tService('two_factor_setup_error'))
     }
   }
+
+  // Relación asistencial: médicos con acceso activo al historial del usuario.
+  async listarMisMedicos() {
+    try {
+      const resp = await this.apiClient.get('/relaciones/mis-medicos')
+      return Array.isArray(resp?.data) ? resp.data : []
+    } catch (e) {
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      throw new Error(tService('error_loading_my_doctors'))
+    }
+  }
+
+  // El paciente finaliza la relación asistencial con uno de sus médicos.
+  async desasignarMedico(nifMedico) {
+    try {
+      await this.apiClient.delete(`/relaciones/mis-medicos/${encodeURIComponent(nifMedico)}`)
+      return true
+    } catch (e) {
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      if (e.response?.status === 404) throw new Error(tService('error_relationship_not_found'))
+      throw new Error(tService('error_unassigning_doctor'))
+    }
+  }
+
+  // Anotaciones médicas recibidas: observaciones que un médico asignado registra
+  // sobre el usuario. Admite filtro opcional por médico y por rango de fechas.
+  async listarMisAnotaciones({ medicoNif, desde, hasta } = {}) {
+    try {
+      const params = {}
+      if (medicoNif) params.medicoNif = medicoNif
+      if (desde) params.desde = desde
+      if (hasta) params.hasta = hasta
+      const resp = await this.apiClient.get('/usuario/anotaciones', { params })
+      return Array.isArray(resp?.data) ? resp.data : []
+    } catch (e) {
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      throw new Error(tService('error_loading_annotations'))
+    }
+  }
+
+  // Registro de accesos a mis datos (trazabilidad, derecho de acceso RGPD). Admite
+  // filtro opcional por rango de fechas.
+  async misLogs({ desde, hasta } = {}) {
+    try {
+      const params = {}
+      if (desde) params.desde = desde
+      if (hasta) params.hasta = hasta
+      const resp = await this.apiClient.get('/usuario/logs', { params })
+      return Array.isArray(resp?.data) ? resp.data : []
+    } catch (e) {
+      if (e.response?.status === 401) throw new Error(tService('not_authenticated'))
+      throw new Error(tService('error_loading_access_log'))
+    }
+  }
+
+  // Restablecimiento de contraseña ("he olvidado mi contraseña"). Endpoints públicos.
+
+  // Solicita el enlace de restablecimiento. La respuesta del backend es siempre
+  // neutra (204), exista o no una cuenta con ese correo, así que este método
+  // resuelve sin distinguir ambos casos y solo propaga fallos de red/servidor.
+  async solicitarResetPassword(email) {
+    try {
+      await this.apiClient.post('/authentication/password-reset/request', { email })
+      return true
+    } catch (e) {
+      if (e.response?.status >= 500 || e.code === 'ECONNABORTED') {
+        throw new Error(tService('auth_generic_retry'))
+      }
+      // Un 4xx aquí (p. ej. cuerpo mal formado) tampoco debe revelar nada: se
+      // trata como enviado.
+      return true
+    }
+  }
+
+  // Canjea el token del enlace de correo por el cambio de contraseña efectivo.
+  async confirmarResetPassword(token, nuevaPassword) {
+    try {
+      await this.apiClient.post('/authentication/password-reset/confirm', { token, nuevaPassword })
+      return true
+    } catch (e) {
+      if (e.response?.status === 400) throw new Error(tService('reset_password_link_invalid'))
+      throw new Error(tService('auth_generic_retry'))
+    }
+  }
 }
 
 export default new AuthService()

@@ -13,14 +13,15 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcc.tfm_hcc.controller.impl.AdminControllerImpl;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException;
 import com.hcc.tfm_hcc.facade.AdminFacade;
 
 class AdminControllerImplTest {
@@ -37,8 +38,8 @@ class AdminControllerImplTest {
     }
 
     @Test
-    void listarMedicos_devuelveLaRespuestaDelFacade() throws Exception {
-        when(adminFacade.listarMedicos()).thenReturn(ResponseEntity.ok(List.of(new UsuarioDTO())));
+    void listarMedicos_devuelveLaListaDelFacade() throws Exception {
+        when(adminFacade.listarMedicos()).thenReturn(List.of(new UsuarioDTO()));
 
         mvc.perform(get("/admin/medicos")).andExpect(status().isOk());
     }
@@ -52,7 +53,7 @@ class AdminControllerImplTest {
 
     @Test
     void buscarUsuarioPorNif_conNifValido_devuelveElUsuario() throws Exception {
-        when(adminFacade.buscarUsuarioPorNif("12345678A")).thenReturn(ResponseEntity.ok(new UsuarioDTO()));
+        when(adminFacade.buscarUsuarioPorNif("12345678A")).thenReturn(new UsuarioDTO());
 
         mvc.perform(get("/admin/usuarios/by-nif").param("nif", "12345678A")).andExpect(status().isOk());
     }
@@ -63,35 +64,18 @@ class AdminControllerImplTest {
     }
 
     @Test
-    void buscarUsuarioPorNif_conCuerpoVacioDelFacade_devuelveNotFound() throws Exception {
-        when(adminFacade.buscarUsuarioPorNif("00000000Z")).thenReturn(ResponseEntity.ok(null));
+    void buscarUsuarioPorNif_conUsuarioInexistente_devuelveNotFound() throws Exception {
+        when(adminFacade.buscarUsuarioPorNif("00000000Z"))
+                .thenThrow(new UsuarioNoEncontradoException("Usuario con ID '***00Z' no encontrado"));
 
         mvc.perform(get("/admin/usuarios/by-nif").param("nif", "00000000Z")).andExpect(status().isNotFound());
-    }
-
-    /**
-     * Regresión: el mensaje de esta excepción se vuelve a loguear tal cual justo
-     * después de lanzarla, así que debe llevar el NIF enmascarado y no el valor en
-     * claro -- igual que el resto de logs de la aplicación.
-     */
-    @Test
-    void buscarUsuarioPorNif_conCuerpoVacioDelFacade_elMensajeDeLaExcepcionEnmascaraElNif() {
-        AdminControllerImpl controller = new AdminControllerImpl(adminFacade);
-        when(adminFacade.buscarUsuarioPorNif("00000000Z")).thenReturn(ResponseEntity.ok(null));
-
-        com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException ex = org.junit.jupiter.api.Assertions.assertThrows(
-                com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException.class,
-                () -> controller.buscarUsuarioPorNif("00000000Z"));
-
-        org.junit.jupiter.api.Assertions.assertFalse(ex.getMessage().contains("00000000Z"));
-        org.junit.jupiter.api.Assertions.assertTrue(ex.getMessage().contains("***00Z"));
     }
 
     @Test
     void crearMedico_conDatosValidos_devuelveElMedicoCreado() throws Exception {
         UsuarioDTO dto = new UsuarioDTO();
         dto.setNif("12345678A");
-        when(adminFacade.crearMedico(org.mockito.ArgumentMatchers.any())).thenReturn(ResponseEntity.ok(dto));
+        when(adminFacade.crearMedico(ArgumentMatchers.any())).thenReturn(dto);
 
         mvc.perform(post("/admin/medicos")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -113,8 +97,7 @@ class AdminControllerImplTest {
     void actualizarMedico_conDatosValidos_devuelveElMedicoActualizado() throws Exception {
         UUID id = UUID.randomUUID();
         UsuarioDTO dto = new UsuarioDTO();
-        when(adminFacade.actualizarMedico(org.mockito.ArgumentMatchers.eq(id), org.mockito.ArgumentMatchers.any()))
-                .thenReturn(ResponseEntity.ok(dto));
+        when(adminFacade.actualizarMedico(ArgumentMatchers.eq(id), ArgumentMatchers.any())).thenReturn(dto);
 
         mvc.perform(put("/admin/medicos/" + id)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -125,7 +108,7 @@ class AdminControllerImplTest {
     @Test
     void eliminarMedico_conIdValido_devuelveElIdEliminado() throws Exception {
         UUID id = UUID.randomUUID();
-        when(adminFacade.eliminarMedico(id)).thenReturn(ResponseEntity.ok(id));
+        when(adminFacade.eliminarMedico(id)).thenReturn(id);
 
         mvc.perform(delete("/admin/medicos/" + id)).andExpect(status().isOk());
     }
@@ -133,7 +116,7 @@ class AdminControllerImplTest {
     @Test
     void setPerfilMedico_conParametroAsignar_devuelveOk() throws Exception {
         UUID id = UUID.randomUUID();
-        when(adminFacade.setPerfilMedico(id, true)).thenReturn(ResponseEntity.ok(id));
+        when(adminFacade.setPerfilMedico(id, true)).thenReturn(id);
 
         mvc.perform(put("/admin/medicos/" + id + "/perfil-medico").param("asignar", "true"))
                 .andExpect(status().isOk());
@@ -159,7 +142,7 @@ class AdminControllerImplTest {
     void crearMedico_conErrorInesperado_devuelve500() throws Exception {
         UsuarioDTO dto = new UsuarioDTO();
         dto.setNif("12345678A");
-        when(adminFacade.crearMedico(org.mockito.ArgumentMatchers.any())).thenThrow(new RuntimeException("fallo"));
+        when(adminFacade.crearMedico(ArgumentMatchers.any())).thenThrow(new RuntimeException("fallo"));
 
         mvc.perform(post("/admin/medicos")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -181,7 +164,7 @@ class AdminControllerImplTest {
     void actualizarMedico_conErrorInesperado_devuelve500() throws Exception {
         UUID id = UUID.randomUUID();
         UsuarioDTO dto = new UsuarioDTO();
-        when(adminFacade.actualizarMedico(org.mockito.ArgumentMatchers.eq(id), org.mockito.ArgumentMatchers.any()))
+        when(adminFacade.actualizarMedico(ArgumentMatchers.eq(id), ArgumentMatchers.any()))
                 .thenThrow(new RuntimeException("fallo"));
 
         mvc.perform(put("/admin/medicos/" + id)

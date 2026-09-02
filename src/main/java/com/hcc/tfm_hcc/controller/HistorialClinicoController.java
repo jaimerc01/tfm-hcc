@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.hcc.tfm_hcc.dto.AlergiaDTO;
 import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 
@@ -121,10 +122,10 @@ public interface HistorialClinicoController {
     /**
      * Actualiza los análisis de sangre en el historial clínico.
      * 
-     * @param analisisJson Datos de análisis de sangre en formato JSON
+     * @param analisis Mediciones de análisis de sangre
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody String analisisJson);
+    ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody List<DatoClinicoEntradaDTO> analisis);
     
     /**
      * Crea nuevos análisis de sangre en el historial clínico.
@@ -134,42 +135,42 @@ public interface HistorialClinicoController {
      * y se asignan automáticamente los rangos de referencia correspondientes
      * cuando están disponibles en el sistema.</p>
      * 
-     * @param analisisJson Datos de análisis de sangre en formato JSON
+     * @param analisis Mediciones de análisis de sangre
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson);
+    ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody List<DatoClinicoEntradaDTO> analisis);
 
     /**
      * Actualiza los signos vitales en el historial clínico.
      *
-     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @param signosVitales Mediciones de signos vitales
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarSignosVitales(@RequestBody String signosVitalesJson);
+    ResponseEntity<HistorialClinicoDTO> actualizarSignosVitales(@RequestBody List<DatoClinicoEntradaDTO> signosVitales);
 
     /**
      * Crea nuevos signos vitales en el historial clínico sin eliminar los existentes.
      *
-     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @param signosVitales Mediciones de signos vitales
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> crearSignosVitales(@RequestBody String signosVitalesJson);
+    ResponseEntity<HistorialClinicoDTO> crearSignosVitales(@RequestBody List<DatoClinicoEntradaDTO> signosVitales);
 
     /**
      * Actualiza el análisis de orina en el historial clínico.
      *
-     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @param analisisOrina Mediciones de análisis de orina
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarAnalisisOrina(@RequestBody String analisisOrinaJson);
+    ResponseEntity<HistorialClinicoDTO> actualizarAnalisisOrina(@RequestBody List<DatoClinicoEntradaDTO> analisisOrina);
 
     /**
      * Crea nuevos datos de análisis de orina en el historial clínico sin eliminar los existentes.
      *
-     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @param analisisOrina Mediciones de análisis de orina
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> crearAnalisisOrina(@RequestBody String analisisOrinaJson);
+    ResponseEntity<HistorialClinicoDTO> crearAnalisisOrina(@RequestBody List<DatoClinicoEntradaDTO> analisisOrina);
 
     /**
      * Elimina un dato clínico específico del historial.

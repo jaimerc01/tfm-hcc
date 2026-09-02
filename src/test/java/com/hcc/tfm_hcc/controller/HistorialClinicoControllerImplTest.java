@@ -33,6 +33,7 @@ import com.hcc.tfm_hcc.controller.impl.HistorialClinicoControllerImpl;
 import com.hcc.tfm_hcc.dto.AlergiaDTO;
 import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.HistorialClinicoException;
@@ -50,6 +51,9 @@ class HistorialClinicoControllerImplTest {
     }
 
     private MockMvc mvc;
+    /** Igual que {@link #mvc} pero con el {@code GlobalExceptionHandler} real registrado,
+     *  para comprobar el código de estado HTTP que acaba viendo el cliente. */
+    private MockMvc mvcConAdvice;
     private HistorialClinicoFacade facade;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -58,6 +62,33 @@ class HistorialClinicoControllerImplTest {
         facade = mock(HistorialClinicoFacade.class);
         HistorialClinicoControllerImpl controller = new HistorialClinicoControllerImpl(facade);
         mvc = MockMvcBuilders.standaloneSetup(controller).build();
+        mvcConAdvice = MockMvcBuilders.standaloneSetup(controller)
+                .setControllerAdvice(new com.hcc.tfm_hcc.exception.GlobalExceptionHandler())
+                .build();
+    }
+
+    @Test
+    void editarAntecedente_conDatoNoPropio_devuelve400ConElMensajeReal() throws Exception {
+        UUID id = UUID.randomUUID();
+        // La fachada envuelve el IllegalArgumentException de la capa de servicio.
+        when(facade.editarAntecedente(eq(id), any())).thenThrow(new HistorialClinicoException(
+                "Error interno durante la edición del antecedente",
+                new IllegalArgumentException(com.hcc.tfm_hcc.constants.ErrorMessages.ERROR_NO_PERMITIDO)));
+
+        mvcConAdvice.perform(put("/historia/antecedentes/" + id)
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(com.hcc.tfm_hcc.constants.ErrorMessages.ERROR_NO_PERMITIDO));
+    }
+
+    @Test
+    void crearAntecedente_conFalloRealDelServidor_devuelve500() throws Exception {
+        when(facade.crearAntecedente(any())).thenThrow(new HistorialClinicoException(
+                "Error interno durante la creación del antecedente", new NullPointerException("bug")));
+
+        mvcConAdvice.perform(post("/historia/antecedentes")
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isInternalServerError());
     }
 
     @Test
@@ -206,70 +237,80 @@ class HistorialClinicoControllerImplTest {
                 .andExpect(content().json(objectMapper.writeValueAsString(dto)));
     }
 
+    private static final String CUERPO_MEDICIONES = "[{\"label\":\"Glucosa\",\"value\":\"90\"}]";
+
     @Test
-    void actualizarAnalisisSangre_conJsonPlano_reenviaElMismoContenidoAlFacade() throws Exception {
+    void actualizarAnalisisSangre_deserializaElArrayYLoReenviaAlFacade() throws Exception {
         HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        when(facade.actualizarAnalisisSangre("{\"glucosa\":90}")).thenReturn(dto);
+        when(facade.actualizarAnalisisSangre(any())).thenReturn(dto);
 
         mvc.perform(put("/historia/analisis-sangre")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"glucosa\":90}"))
+                        .content(CUERPO_MEDICIONES))
                 .andExpect(status().isOk());
     }
 
     @Test
     void crearAnalisisSangre_delegaEnAnadirAnalisisSangre() throws Exception {
         HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        when(facade.anadirAnalisisSangre("{\"glucosa\":90}")).thenReturn(dto);
+        when(facade.anadirAnalisisSangre(any())).thenReturn(dto);
 
         mvc.perform(post("/historia/analisis-sangre")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"glucosa\":90}"))
+                        .content(CUERPO_MEDICIONES))
                 .andExpect(status().isOk());
     }
 
     @Test
     void actualizarSignosVitales_devuelveElHistorialActualizado() throws Exception {
         HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        when(facade.actualizarSignosVitales("{\"pulso\":70}")).thenReturn(dto);
+        when(facade.actualizarSignosVitales(any())).thenReturn(dto);
 
         mvc.perform(put("/historia/signos-vitales")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"pulso\":70}"))
+                        .content(CUERPO_MEDICIONES))
                 .andExpect(status().isOk());
     }
 
     @Test
     void crearSignosVitales_devuelveElHistorialActualizado() throws Exception {
         HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        when(facade.anadirSignosVitales("{\"pulso\":70}")).thenReturn(dto);
+        when(facade.anadirSignosVitales(any())).thenReturn(dto);
 
         mvc.perform(post("/historia/signos-vitales")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"pulso\":70}"))
+                        .content(CUERPO_MEDICIONES))
                 .andExpect(status().isOk());
     }
 
     @Test
     void actualizarAnalisisOrina_devuelveElHistorialActualizado() throws Exception {
         HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        when(facade.actualizarAnalisisOrina("{\"ph\":6}")).thenReturn(dto);
+        when(facade.actualizarAnalisisOrina(any())).thenReturn(dto);
 
         mvc.perform(put("/historia/analisis-orina")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"ph\":6}"))
+                        .content(CUERPO_MEDICIONES))
                 .andExpect(status().isOk());
     }
 
     @Test
     void crearAnalisisOrina_devuelveElHistorialActualizado() throws Exception {
         HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        when(facade.anadirAnalisisOrina("{\"ph\":6}")).thenReturn(dto);
+        when(facade.anadirAnalisisOrina(any())).thenReturn(dto);
 
         mvc.perform(post("/historia/analisis-orina")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"ph\":6}"))
+                        .content(CUERPO_MEDICIONES))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void actualizarAnalisisSangre_conCuerpoQueNoEsUnArray_devuelve400() throws Exception {
+        mvc.perform(put("/historia/analisis-sangre")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"glucosa\":90}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -277,7 +318,7 @@ class HistorialClinicoControllerImplTest {
         when(facade.actualizarAnalisisSangre(any())).thenThrow(new RuntimeException("fallo"));
 
         jakarta.servlet.ServletException ex = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(
-                put("/historia/analisis-sangre").contentType(MediaType.APPLICATION_JSON).content("{}")));
+                put("/historia/analisis-sangre").contentType(MediaType.APPLICATION_JSON).content(CUERPO_MEDICIONES)));
         assertInstanceOf(HistorialClinicoException.class, causaReal(ex));
     }
 
@@ -436,7 +477,7 @@ class HistorialClinicoControllerImplTest {
         when(facade.actualizarSignosVitales(any())).thenThrow(new RuntimeException("fallo"));
 
         jakarta.servlet.ServletException ex = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(
-                put("/historia/signos-vitales").contentType(MediaType.APPLICATION_JSON).content("{}")));
+                put("/historia/signos-vitales").contentType(MediaType.APPLICATION_JSON).content(CUERPO_MEDICIONES)));
         assertInstanceOf(HistorialClinicoException.class, causaReal(ex));
     }
 
@@ -445,22 +486,27 @@ class HistorialClinicoControllerImplTest {
         when(facade.actualizarAnalisisOrina(any())).thenThrow(new RuntimeException("fallo"));
 
         jakarta.servlet.ServletException ex = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(
-                put("/historia/analisis-orina").contentType(MediaType.APPLICATION_JSON).content("{}")));
+                put("/historia/analisis-orina").contentType(MediaType.APPLICATION_JSON).content(CUERPO_MEDICIONES)));
         assertInstanceOf(HistorialClinicoException.class, causaReal(ex));
     }
 
-    // ---- procesarContenidoUrlEncoded: heurística de decodificación cuando el contenido contiene % o + ----
-
     @Test
-    void actualizarAnalisisSangre_conContenidoQueContienePorcentaje_loDecodificaAntesDeReenviarlo() throws Exception {
+    void actualizarAnalisisSangre_conValoresQueContienenMasOPorcentaje_noLosCorrompe() throws Exception {
+        // Antes, el controlador aplicaba una heurística de URL-decode que convertía "B+" en "B "
+        // y "98%" en un error de decodificación. Ahora el cuerpo es JSON tipado y llega intacto.
         HistorialClinicoDTO dto = new HistorialClinicoDTO();
-        // "a+b" con content-type JSON (no form-urlencoded) activa la heurística: se decodifica igualmente
-        // porque el contenido contiene un '+', y URLDecoder interpreta '+' como espacio.
-        when(facade.actualizarAnalisisSangre("{\"nota\":\"a b\"}")).thenReturn(dto);
+        java.util.List<DatoClinicoEntradaDTO> capturado = new java.util.ArrayList<>();
+        when(facade.actualizarAnalisisSangre(any())).thenAnswer(inv -> {
+            capturado.addAll(inv.getArgument(0));
+            return dto;
+        });
 
         mvc.perform(put("/historia/analisis-sangre")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nota\":\"a+b\"}"))
+                        .content("[{\"label\":\"Grupo sanguíneo\",\"value\":\"B+\",\"unit\":\"98%\"}]"))
                 .andExpect(status().isOk());
+
+        assertEquals("B+", capturado.get(0).getValue());
+        assertEquals("98%", capturado.get(0).getUnit());
     }
 }

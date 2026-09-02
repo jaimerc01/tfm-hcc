@@ -60,9 +60,9 @@ public class AdminControllerImpl implements AdminController {
     public ResponseEntity<List<UsuarioDTO>> listarMedicos() {
         log.info("Listando todos los médicos del sistema");
         try {
-            ResponseEntity<List<UsuarioDTO>> result = adminFacade.listarMedicos();
+            List<UsuarioDTO> medicos = adminFacade.listarMedicos();
             log.info("Médicos listados exitosamente");
-            return result;
+            return ResponseEntity.ok(medicos);
         } catch (Exception e) {
             log.error("Error al listar médicos: {}", e.getMessage(), e);
             throw new AdminOperacionException("Error al listar médicos", e);
@@ -83,14 +83,10 @@ public class AdminControllerImpl implements AdminController {
                 throw new AdminValidationException("El NIF es obligatorio");
             }
 
-            ResponseEntity<UsuarioDTO> result = adminFacade.buscarUsuarioPorNif(nif);
-            if (result.getBody() == null) {
-                log.warn("Usuario no encontrado con NIF: {}", nifLog);
-                throw new UsuarioNoEncontradoException("Usuario no encontrado con NIF: " + nifLog);
-            }
+            UsuarioDTO usuario = adminFacade.buscarUsuarioPorNif(nif);
 
             log.info("Usuario encontrado exitosamente: {}", nifLog);
-            return result;
+            return ResponseEntity.ok(usuario);
         } catch (AdminValidationException | UsuarioNoEncontradoException e) {
             log.warn("Error: {}", e.getMessage());
             throw e;
@@ -118,9 +114,9 @@ public class AdminControllerImpl implements AdminController {
             }
 
             log.info("Creando nuevo médico: {}", LogMaskUtil.enmascarar(medicoDTO.getNif()));
-            ResponseEntity<UsuarioDTO> result = adminFacade.crearMedico(medicoDTO);
+            UsuarioDTO creado = adminFacade.crearMedico(medicoDTO);
             log.info("Médico creado exitosamente: {}", LogMaskUtil.enmascarar(medicoDTO.getNif()));
-            return result;
+            return ResponseEntity.ok(creado);
         } catch (AdminValidationException e) {
             log.warn("Error de validación al crear médico: {}", e.getMessage());
             throw e;
@@ -148,9 +144,9 @@ public class AdminControllerImpl implements AdminController {
             }
 
             log.info("Actualizando médico con ID: {}", id);
-            ResponseEntity<UsuarioDTO> result = adminFacade.actualizarMedico(id, medicoDTO);
+            UsuarioDTO actualizado = adminFacade.actualizarMedico(id, medicoDTO);
             log.info("Médico actualizado exitosamente: {}", id);
-            return result;
+            return ResponseEntity.ok(actualizado);
         } catch (AdminValidationException e) {
             log.warn("Error de validación al actualizar médico: {}", e.getMessage());
             throw e;
@@ -173,9 +169,9 @@ public class AdminControllerImpl implements AdminController {
             }
 
             log.info("Eliminando médico con ID: {}", id);
-            ResponseEntity<UUID> result = adminFacade.eliminarMedico(id);
+            UUID idEliminado = adminFacade.eliminarMedico(id);
             log.info("Médico eliminado exitosamente: {}", id);
-            return result;
+            return ResponseEntity.ok(idEliminado);
         } catch (AdminValidationException e) {
             log.warn("Error de validación al eliminar médico: {}", e.getMessage());
             throw e;
@@ -198,9 +194,9 @@ public class AdminControllerImpl implements AdminController {
             }
 
             log.info("Modificando perfil médico para usuario ID: {}, asignar: {}", id, asignar);
-            ResponseEntity<UUID> result = adminFacade.setPerfilMedico(id, asignar);
+            UUID idAfectado = adminFacade.setPerfilMedico(id, asignar);
             log.info("Perfil médico modificado exitosamente: {} -> {}", id, asignar);
-            return result;
+            return ResponseEntity.ok(idAfectado);
         } catch (AdminValidationException e) {
             log.warn("Error de validación al modificar perfil: {}", e.getMessage());
             throw e;

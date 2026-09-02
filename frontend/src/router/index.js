@@ -7,12 +7,15 @@ import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/auth/LoginView.vue'
 import RegisterView from '@/views/auth/RegisterView.vue'
 import GoogleCallbackView from '@/views/auth/GoogleCallbackView.vue'
+import ForgotPasswordView from '@/views/auth/ForgotPasswordView.vue'
+import ResetPasswordView from '@/views/auth/ResetPasswordView.vue'
 import DashboardView from '@/views/dashboard/DashboardView.vue'
 import HistoriaClinicaView from '@/views/HistoriaClinicaView.vue'
 import PoliticaPrivacidadView from '@/views/PoliticaPrivacidadView.vue'
 import PoliticaCookiesView from '@/views/PoliticaCookiesView.vue'
 import DatosUsuarioView from '@/views/DatosUsuarioView.vue'
 import MedicoView from '@/views/MedicoView.vue'
+import PacienteHistorialView from '@/views/medico/PacienteHistorialView.vue'
 import AdminView from '@/views/AdminView.vue'
 import AdminMedicosView from '@/views/AdminMedicosView.vue'
 import MisSolicitudesView from '@/views/MisSolicitudesView.vue'
@@ -42,6 +45,18 @@ const routes = [
     component: GoogleCallbackView
   },
   {
+    path: '/recuperar-password',
+    name: 'RecuperarPassword',
+    component: ForgotPasswordView,
+    meta: { requiresGuest: true }
+  },
+  {
+    path: '/restablecer-password',
+    name: 'RestablecerPassword',
+    component: ResetPasswordView,
+    meta: { requiresGuest: true }
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     component: DashboardView,
@@ -69,6 +84,12 @@ const routes = [
     path: '/medico',
     name: 'Medico',
     component: MedicoView,
+    meta: { requiresAuth: true, requiresRole: ROLES.MEDICO }
+  },
+  {
+    path: '/medico/pacientes/:nif/historial',
+    name: 'MedicoPacienteHistorial',
+    component: PacienteHistorialView,
     meta: { requiresAuth: true, requiresRole: ROLES.MEDICO }
   },
   {

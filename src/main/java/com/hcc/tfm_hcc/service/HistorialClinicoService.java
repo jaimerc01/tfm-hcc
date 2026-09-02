@@ -1,9 +1,11 @@
 package com.hcc.tfm_hcc.service;
 
+import java.util.List;
 import java.util.UUID;
 
 import com.hcc.tfm_hcc.dto.AlergiaDTO;
 import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 
 /**
@@ -100,58 +102,58 @@ public interface HistorialClinicoService {
      * Actualiza los análisis de sangre del historial clínico.
      * Reemplaza todos los análisis existentes con los nuevos.
      *
-     * @param analisisJson los análisis de sangre en formato JSON
+     * @param analisis las mediciones de análisis de sangre
      * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si el JSON es inválido
+     * @throws IllegalArgumentException si alguna medición es inválida
      */
-    HistorialClinicoDTO actualizarAnalisisSangre(String analisisJson);
-    
+    HistorialClinicoDTO actualizarAnalisisSangre(List<DatoClinicoEntradaDTO> analisis);
+
     /**
      * Añade nuevos análisis de sangre al historial clínico sin eliminar los existentes.
      *
-     * @param analisisJson los nuevos análisis de sangre en formato JSON
+     * @param analisis las nuevas mediciones de análisis de sangre
      * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si el JSON es inválido
+     * @throws IllegalArgumentException si alguna medición es inválida
      */
-    HistorialClinicoDTO añadirAnalisisSangre(String analisisJson);
+    HistorialClinicoDTO añadirAnalisisSangre(List<DatoClinicoEntradaDTO> analisis);
 
     /**
      * Actualiza los signos vitales del historial clínico.
      * Reemplaza todos los signos vitales existentes con los nuevos.
      *
-     * @param signosVitalesJson los signos vitales en formato JSON
+     * @param signosVitales las mediciones de signos vitales
      * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si el JSON es inválido
+     * @throws IllegalArgumentException si alguna medición es inválida
      */
-    HistorialClinicoDTO actualizarSignosVitales(String signosVitalesJson);
+    HistorialClinicoDTO actualizarSignosVitales(List<DatoClinicoEntradaDTO> signosVitales);
 
     /**
      * Añade nuevos signos vitales al historial clínico sin eliminar los existentes.
      *
-     * @param signosVitalesJson los nuevos signos vitales en formato JSON
+     * @param signosVitales las nuevas mediciones de signos vitales
      * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si el JSON es inválido
+     * @throws IllegalArgumentException si alguna medición es inválida
      */
-    HistorialClinicoDTO añadirSignosVitales(String signosVitalesJson);
+    HistorialClinicoDTO añadirSignosVitales(List<DatoClinicoEntradaDTO> signosVitales);
 
     /**
      * Actualiza el análisis de orina del historial clínico.
      * Reemplaza todos los datos de orina existentes con los nuevos.
      *
-     * @param analisisOrinaJson los datos de análisis de orina en formato JSON
+     * @param analisisOrina las mediciones de análisis de orina
      * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si el JSON es inválido
+     * @throws IllegalArgumentException si alguna medición es inválida
      */
-    HistorialClinicoDTO actualizarAnalisisOrina(String analisisOrinaJson);
+    HistorialClinicoDTO actualizarAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina);
 
     /**
      * Añade nuevos datos de análisis de orina al historial clínico sin eliminar los existentes.
      *
-     * @param analisisOrinaJson los nuevos datos de análisis de orina en formato JSON
+     * @param analisisOrina las nuevas mediciones de análisis de orina
      * @return el DTO del historial clínico actualizado
-     * @throws IllegalArgumentException si el JSON es inválido
+     * @throws IllegalArgumentException si alguna medición es inválida
      */
-    HistorialClinicoDTO añadirAnalisisOrina(String analisisOrinaJson);
+    HistorialClinicoDTO añadirAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina);
 
     /**
      * Borra un dato clínico específico del historial.

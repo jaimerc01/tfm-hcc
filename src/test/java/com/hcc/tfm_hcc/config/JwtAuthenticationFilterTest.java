@@ -110,6 +110,24 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
+    void doFilter_conUsuarioDeshabilitado_noEstableceAutenticacionAunqueElTokenSeaValido() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer token-valido");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        UserDetails userDetails = User.withUsername("12345678A").password("x").disabled(true)
+                .authorities("ROLE_PACIENTE").build();
+        when(jwtService.extractUsername("token-valido")).thenReturn("12345678A");
+        when(userDetailsService.loadUserByUsername("12345678A")).thenReturn(userDetails);
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(jwtService, never()).isTokenValid(any(), any());
+        verify(filterChain, times(1)).doFilter(request, response);
+    }
+
+    @Test
     void doFilter_conAutenticacionYaPresente_noVuelveACargarElUsuario() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer token-valido");

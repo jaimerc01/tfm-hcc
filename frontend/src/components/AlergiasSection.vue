@@ -87,7 +87,7 @@
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            <h3>{{ a.descripcion }}</h3>
+            <h3 class="entry-title">{{ a.descripcion }}</h3>
           </div>
           <div class="allergy-body">
             <div class="allergy-meta">
@@ -311,15 +311,6 @@ export default {
   flex-shrink: 0;
 }
 
-.allergy-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  word-break: break-word;
-  white-space: pre-line;
-}
-
 .allergy-body {
   margin-bottom: 0.75rem;
 }
@@ -337,57 +328,12 @@ export default {
   border-top: 1px solid var(--border);
 }
 
-.modal-error {
-  color: var(--danger-color);
-  font-weight: 600;
-  margin-top: 0.75rem;
-}
-
 .form-input:focus-visible,
 .btn-primary:focus-visible,
 .btn-secondary:focus-visible,
 .btn-icon:focus-visible {
   outline: 3px solid var(--focus-color);
   outline-offset: 2px;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Empty state small variant */
-.empty-state-small {
-  text-align: center;
-  padding: 3rem 2rem;
-  background: var(--bg-light);
-  border-radius: 12px;
-  border: 1px dashed var(--border);
-}
-
-.empty-state-small svg {
-  color: var(--text-secondary);
-  opacity: 0.3;
-  margin-bottom: 1rem;
-}
-
-.empty-state-small p {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.empty-state-small span {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
 }
 
 @media (prefers-reduced-motion: reduce) {

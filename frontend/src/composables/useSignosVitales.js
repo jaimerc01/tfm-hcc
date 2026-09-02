@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { normalizarNombre, mapTipoToKey } from '@/utils/datosClinicos'
 
-const DEFAULT_ANALYTES = [
+export const DEFAULT_ANALYTES = [
   {
     key: 'Frecuencia Cardiaca',
     labelKey: 'heart_rate',
@@ -134,7 +134,7 @@ export function useSignosVitales() {
 
   async function addEntry(payload) {
     const svc = await import('@/services/historiaClinicaService').then(m => m.default)
-    const body = JSON.stringify([payload])
+    const body = [payload]
     saving.value = true
     try {
       await svc.añadirSignosVitales(body)

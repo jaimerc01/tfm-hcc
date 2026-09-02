@@ -19,21 +19,25 @@ import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException;
 import com.hcc.tfm_hcc.facade.impl.UsuarioFacadeImpl;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
+import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.service.AnotacionMedicaService;
 import com.hcc.tfm_hcc.service.UsuarioService;
 
 class UsuarioFacadeImplTest {
 
     private UsuarioService usuarioService;
     private UsuarioMapper usuarioMapper;
+    private AnotacionMedicaService anotacionMedicaService;
     private UsuarioFacadeImpl facade;
 
     @BeforeEach
     void setUp() {
         usuarioService = mock(UsuarioService.class);
         usuarioMapper = mock(UsuarioMapper.class);
-        facade = new UsuarioFacadeImpl(usuarioService, usuarioMapper);
+        anotacionMedicaService = mock(AnotacionMedicaService.class);
+        facade = new UsuarioFacadeImpl(usuarioService, usuarioMapper, anotacionMedicaService);
     }
 
     private UsuarioDTO usuarioDtoConNif(String nif) {
@@ -180,5 +184,32 @@ class UsuarioFacadeImplTest {
     @Test
     void actualizarEstadoSolicitud_conEstadoVacio_lanzaIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> facade.actualizarEstadoSolicitud("id-1", "  "));
+    }
+
+    // ---- anotaciones médicas ----
+
+    @Test
+    void listarMisAnotaciones_delegaEnElServicioConElNifDelUsuarioActual() {
+        when(usuarioService.getUsuarioActual()).thenReturn(usuarioDtoConNif("12345678A"));
+        when(anotacionMedicaService.listarAnotacionesPaciente("12345678A", null, null, null))
+                .thenReturn(List.of(new AnotacionMedica(), new AnotacionMedica()));
+
+        assertEquals(2, facade.listarMisAnotaciones(null, null, null).size());
+        verify(anotacionMedicaService, times(1)).listarAnotacionesPaciente("12345678A", null, null, null);
+    }
+
+    @Test
+    void listarMisAnotaciones_conRangoDeFechasInvertido_lanzaIllegalArgumentException() {
+        LocalDateTime desde = LocalDateTime.now();
+        LocalDateTime hasta = desde.minusDays(1);
+
+        assertThrows(IllegalArgumentException.class, () -> facade.listarMisAnotaciones(null, desde, hasta));
+    }
+
+    @Test
+    void listarMisAnotaciones_sinUsuarioAutenticado_lanzaIllegalStateException() {
+        when(usuarioService.getUsuarioActual()).thenReturn(null);
+
+        assertThrows(IllegalStateException.class, () -> facade.listarMisAnotaciones(null, null, null));
     }
 }

@@ -141,6 +141,26 @@ class AccessLogFilterTest {
     }
 
     @Test
+    void doFilter_conPrincipalUsuario_usaSuIdSinConsultarLaBaseDeDatos() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/historial");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        Usuario usuario = new Usuario();
+        UUID id = UUID.randomUUID();
+        usuario.setId(id);
+        usuario.setNif("12345678A");
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(usuario, null, AuthorityUtils.createAuthorityList("ROLE_PACIENTE")));
+
+        filter.doFilter(request, response, chain);
+
+        ArgumentCaptor<AccessLog> captor = ArgumentCaptor.forClass(AccessLog.class);
+        verify(accessLogService, times(1)).log(captor.capture());
+        assertEquals(id.toString(), captor.getValue().getUsuarioId());
+        verify(usuarioRepository, never()).findByNifHash(any());
+    }
+
+    @Test
     void doFilter_conUsuarioAutenticadoNoEncontradoEnBd_registraSinId() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/historial");
         MockHttpServletResponse response = new MockHttpServletResponse();

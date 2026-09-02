@@ -7,7 +7,7 @@ import java.net.URI;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
@@ -60,7 +60,7 @@ import lombok.extern.slf4j.Slf4j;
  * @see JwtService
  */
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class AutenticacionFacadeImpl implements AutenticacionFacade {
 

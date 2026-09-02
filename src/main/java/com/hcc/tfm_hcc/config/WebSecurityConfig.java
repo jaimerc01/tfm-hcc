@@ -92,6 +92,7 @@ public class WebSecurityConfig {
                 .requestMatchers("/authentication/signup").permitAll()
                 .requestMatchers("/authentication/google/login").permitAll()
                 .requestMatchers("/authentication/google/token").permitAll()
+                .requestMatchers("/authentication/password-reset/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/medico/**").hasRole("MEDICO")
                 .anyRequest().authenticated()

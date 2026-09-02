@@ -7,6 +7,7 @@ import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO.AccesoDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
 /**
@@ -178,4 +179,17 @@ public interface UsuarioFacade {
      * @return true si el segundo factor está activo
      */
     boolean isTotpEnabled();
+
+    /**
+     * Lista las anotaciones médicas recibidas por el usuario autenticado, de la más
+     * reciente a la más antigua, con filtro opcional por médico autor y por rango de fechas.
+     *
+     * @param nifMedicoFiltro NIF del médico por el que filtrar (opcional, puede ser {@code null})
+     * @param desde fecha de inicio del rango, inclusive (opcional, puede ser {@code null})
+     * @param hasta fecha de fin del rango, inclusive (opcional, puede ser {@code null})
+     * @return lista de AnotacionMedica recibidas por el usuario autenticado
+     * @throws IllegalArgumentException si el rango de fechas no es válido
+     * @throws IllegalStateException si no hay usuario autenticado
+     */
+    List<AnotacionMedica> listarMisAnotaciones(String nifMedicoFiltro, LocalDateTime desde, LocalDateTime hasta);
 }

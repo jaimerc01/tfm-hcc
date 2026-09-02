@@ -1,7 +1,6 @@
 package com.hcc.tfm_hcc.controller.impl;
 
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -20,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hcc.tfm_hcc.controller.HistorialClinicoController;
@@ -29,6 +26,7 @@ import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.dto.AlergiaDTO;
 import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
 import com.hcc.tfm_hcc.constants.ErrorMessages;
@@ -36,7 +34,6 @@ import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.HistorialClinicoException;
 import com.hcc.tfm_hcc.exception.DatosClinicosValidationException;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -380,12 +377,11 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PutMapping(RestUrls.HISTORIA_ANALISIS_SANGRE)
-    public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody String analisisJson) throws HistorialClinicoException, DatosClinicosValidationException {
+    public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody List<DatoClinicoEntradaDTO> analisis) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Actualizando análisis de sangre del usuario");
         
         try {
-            String payload = procesarContenidoUrlEncoded(analisisJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisSangre(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisSangre(analisis);
             log.info("Análisis de sangre actualizados exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (DatosClinicosValidationException e) {
@@ -398,21 +394,17 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
     }
 
     /**
-     * Añade nuevos análisis de sangre sin eliminar los existentes.
-     * 
-     * <p>Este endpoint permite añadir nuevos datos de análisis de sangre
-     * sin eliminar los análisis previos del historial clínico.</p>
-     * 
-     * @param analisisJson Datos de análisis de sangre en formato JSON
-     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     * {@inheritDoc}
+     *
+     * <p>Añade nuevos análisis de sangre sin eliminar los previos del historial clínico.</p>
      */
+    @Override
     @PostMapping(RestUrls.HISTORIA_ANALISIS_SANGRE)
-    public ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson) throws HistorialClinicoException, DatosClinicosValidationException {
+    public ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody List<DatoClinicoEntradaDTO> analisis) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Añadiendo nuevos análisis de sangre del usuario");
         
         try {
-            String payload = procesarContenidoUrlEncoded(analisisJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAnalisisSangre(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAnalisisSangre(analisis);
             log.info("Análisis de sangre añadidos exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (DatosClinicosValidationException e) {
@@ -435,12 +427,11 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PutMapping(RestUrls.HISTORIA_SIGNOS_VITALES)
-    public ResponseEntity<HistorialClinicoDTO> actualizarSignosVitales(@RequestBody String signosVitalesJson) throws HistorialClinicoException, DatosClinicosValidationException {
+    public ResponseEntity<HistorialClinicoDTO> actualizarSignosVitales(@RequestBody List<DatoClinicoEntradaDTO> signosVitales) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Actualizando signos vitales del usuario");
 
         try {
-            String payload = procesarContenidoUrlEncoded(signosVitalesJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarSignosVitales(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarSignosVitales(signosVitales);
             log.info("Signos vitales actualizados exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (DatosClinicosValidationException e) {
@@ -462,12 +453,11 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PostMapping(RestUrls.HISTORIA_SIGNOS_VITALES)
-    public ResponseEntity<HistorialClinicoDTO> crearSignosVitales(@RequestBody String signosVitalesJson) throws HistorialClinicoException, DatosClinicosValidationException {
+    public ResponseEntity<HistorialClinicoDTO> crearSignosVitales(@RequestBody List<DatoClinicoEntradaDTO> signosVitales) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Añadiendo nuevos signos vitales del usuario");
 
         try {
-            String payload = procesarContenidoUrlEncoded(signosVitalesJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.anadirSignosVitales(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirSignosVitales(signosVitales);
             log.info("Signos vitales añadidos exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (DatosClinicosValidationException e) {
@@ -490,12 +480,11 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PutMapping(RestUrls.HISTORIA_ANALISIS_ORINA)
-    public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisOrina(@RequestBody String analisisOrinaJson) throws HistorialClinicoException, DatosClinicosValidationException {
+    public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisOrina(@RequestBody List<DatoClinicoEntradaDTO> analisisOrina) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Actualizando análisis de orina del usuario");
 
         try {
-            String payload = procesarContenidoUrlEncoded(analisisOrinaJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisOrina(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisOrina(analisisOrina);
             log.info("Análisis de orina actualizado exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (DatosClinicosValidationException e) {
@@ -517,12 +506,11 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PostMapping(RestUrls.HISTORIA_ANALISIS_ORINA)
-    public ResponseEntity<HistorialClinicoDTO> crearAnalisisOrina(@RequestBody String analisisOrinaJson) throws HistorialClinicoException, DatosClinicosValidationException {
+    public ResponseEntity<HistorialClinicoDTO> crearAnalisisOrina(@RequestBody List<DatoClinicoEntradaDTO> analisisOrina) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Añadiendo nuevos datos de análisis de orina del usuario");
 
         try {
-            String payload = procesarContenidoUrlEncoded(analisisOrinaJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAnalisisOrina(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAnalisisOrina(analisisOrina);
             log.info("Análisis de orina añadido exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (DatosClinicosValidationException e) {
@@ -625,34 +613,5 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
             }
         }
         return mediaType;
-    }
-
-    /**
-     * Procesa contenido que puede estar URL-encoded.
-     * 
-     * @param contenido Contenido a procesar
-     * @return Contenido decodificado si corresponde
-     */
-    private String procesarContenidoUrlEncoded(String contenido) {
-        if (contenido == null) {
-            return null;
-        }
-        
-        String payload = contenido;
-        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        HttpServletRequest req = attrs != null ? attrs.getRequest() : null;
-        String contentType = req != null ? req.getContentType() : null;
-        
-        if (contentType != null && contentType.contains(MediaType.APPLICATION_FORM_URLENCODED_VALUE)) {
-            payload = URLDecoder.decode(contenido, StandardCharsets.UTF_8);
-        } else if (contenido.contains("%") || contenido.contains("+")) {
-            try {
-                payload = URLDecoder.decode(contenido, StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                log.debug("No se pudo decodificar contenido URL-encoded: {}", e.getMessage());
-            }
-        }
-        
-        return payload;
     }
 }

@@ -1,9 +1,16 @@
 package com.hcc.tfm_hcc.facade;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
+import org.springframework.core.io.Resource;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
+import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
 /**
@@ -38,6 +45,13 @@ public interface MedicoFacade {
     PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento) throws IllegalArgumentException;
 
     /**
+     * Lista los pacientes con una relación activa con el médico autenticado.
+     *
+     * @return Lista de PacienteDTO con los pacientes actualmente asignados
+     */
+    List<PacienteDTO> listarMisPacientes();
+
+    /**
      * Obtiene el historial clínico de un paciente vinculado al médico autenticado.
      *
      * @param nifPaciente NIF del paciente cuyo historial se consulta
@@ -68,8 +82,62 @@ public interface MedicoFacade {
     /**
      * Lista todas las solicitudes de asignación enviadas por el médico autenticado,
      * independientemente de su estado actual (pendiente, aprobada, rechazada).
-     * 
+     *
      * @return Lista de SolicitudAsignacion enviadas por el médico
      */
     List<SolicitudAsignacion> listarSolicitudesEnviadas();
+
+    /**
+     * Escribe una anotación médica sobre un paciente vinculado al médico autenticado.
+     * Solo se permite si existe una relación médico-paciente activa y el paciente no
+     * ha limitado el tratamiento de sus datos. El paciente recibe una notificación.
+     *
+     * @param nifPaciente NIF del paciente sobre el que se escribe la anotación
+     * @param mensaje contenido de la anotación
+     * @return AnotacionMedica creada
+     * @throws IllegalArgumentException si el mensaje está vacío
+     * @throws com.hcc.tfm_hcc.exception.PacienteNoEncontradoException si no existe un paciente con ese NIF
+     * @throws com.hcc.tfm_hcc.exception.UsuarioSinPermisoException si no hay relación activa con el
+     *         paciente, o el paciente ha limitado el tratamiento de sus datos
+     */
+    AnotacionMedica crearAnotacion(String nifPaciente, String mensaje);
+
+    /**
+     * Lista los documentos clínicos de un paciente vinculado al médico autenticado.
+     *
+     * @param nifPaciente NIF del paciente
+     * @return lista de ArchivoClinicoDTO del paciente
+     * @throws com.hcc.tfm_hcc.exception.UsuarioSinPermisoException si no hay relación activa con el paciente
+     */
+    List<ArchivoClinicoDTO> listarArchivosPaciente(String nifPaciente);
+
+    /**
+     * Sube un documento clínico al historial de un paciente vinculado al médico
+     * autenticado. El paciente recibe una notificación.
+     *
+     * @param nifPaciente NIF del paciente
+     * @param file documento a subir
+     * @return ArchivoClinicoDTO del documento creado
+     * @throws IOException si falla el cifrado del contenido
+     * @throws com.hcc.tfm_hcc.exception.UsuarioSinPermisoException si no hay relación activa con el paciente
+     */
+    ArchivoClinicoDTO subirArchivoPaciente(String nifPaciente, MultipartFile file) throws IOException;
+
+    /**
+     * Obtiene los metadatos de un documento clínico de un paciente vinculado al médico autenticado.
+     *
+     * @param nifPaciente NIF del paciente
+     * @param archivoId ID del documento
+     * @return ArchivoClinicoDTO con el nombre original y el tipo de contenido
+     */
+    ArchivoClinicoDTO obtenerArchivoPaciente(String nifPaciente, UUID archivoId);
+
+    /**
+     * Descarga el contenido de un documento clínico de un paciente vinculado al médico autenticado.
+     *
+     * @param nifPaciente NIF del paciente
+     * @param archivoId ID del documento
+     * @return recurso con el contenido descifrado del documento
+     */
+    Resource descargarArchivoPaciente(String nifPaciente, UUID archivoId);
 }

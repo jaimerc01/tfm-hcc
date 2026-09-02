@@ -1,9 +1,63 @@
-HELP.md
+# ─────────────────────────────────────────────────────────────────────────────
+# Build / compilados
+# ─────────────────────────────────────────────────────────────────────────────
 target/
-.mvn/wrapper/maven-wrapper.jar
+build/
+/dist/
 !**/src/main/**/target/
 !**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
+*.jar
+*.war
+*.ear
+*.class
+
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Dependencias
+# ─────────────────────────────────────────────────────────────────────────────
+/node_modules/
+/frontend/node_modules/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Frontend (build y cobertura; el resto en frontend/.gitignore)
+# ─────────────────────────────────────────────────────────────────────────────
+/frontend/dist/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Variables de entorno y secretos
+# ─────────────────────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+clave.txt
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Base de datos local
+# ─────────────────────────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Subidas de archivos clínicos (contenido de usuario, nunca al repositorio)
+# ─────────────────────────────────────────────────────────────────────────────
+/uploads/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Logs
+# ─────────────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# IDEs y editores
+# ─────────────────────────────────────────────────────────────────────────────
 ### STS ###
 .apt_generated
 .classpath
@@ -22,50 +76,18 @@ target/
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
-/dist/
 /nbdist/
 /.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
 
 ### VS Code ###
 .vscode/
-
-/frontend/node_modules/
-/frontend/dist/
-
-.github/
-
-/node_modules/
-
-/uploads/
-
-clave.txt
-
 workspace.code-workspace
 .code-workspace
 launch.json
 
-clave.txt
-workspace.code-workspace
-
-# Dependencies
-/node_modules/
-/frontend/node_modules/
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-.env.example
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# OS generated files
+# ─────────────────────────────────────────────────────────────────────────────
+# Sistema operativo
+# ─────────────────────────────────────────────────────────────────────────────
 .DS_Store
 .DS_Store?
 ._*
@@ -74,22 +96,11 @@ workspace.code-workspace
 ehthumbs.db
 Thumbs.db
 
-# Application specific
-*.jar
-*.war
-*.ear
-*.class
-
-# Logs
-*.log
-logs/
-
-# Carpeta uploads
-/uploads/*
-scripts/*
-
+# ─────────────────────────────────────────────────────────────────────────────
+# Instrucciones locales para asistentes de IA (no se publican)
+# ─────────────────────────────────────────────────────────────────────────────
 .github/copilot-instructions.md
-.github/agents
+.github/agents/
 .claude/skills/tfm-hcc-conventions/SKILL.md
 .claude/skills/tfm-hcc-frontend/SKILL.md
 .claude/skills/tfm-hcc-backend/SKILL.md

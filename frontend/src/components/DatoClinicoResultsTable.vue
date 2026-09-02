@@ -1,5 +1,5 @@
 <template>
-  <div v-if="entries.length" class="section results-section">
+  <div v-if="entries.length" class="section section-card results-section">
     <div class="section-title">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 11H3v2h6m-6-5h6m-6 8h6m4-7h8m-8-3h8m-8 6h8m-8 3h8"></path>
@@ -118,52 +118,17 @@ export default {
 </script>
 
 <style scoped>
-.results-section {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: var(--shadow-md);
-}
-
 .results-table-container {
   overflow-x: auto;
   margin-bottom: 1rem;
 }
 
-.results-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.results-table thead {
-  background: var(--bg-light);
-  border-bottom: 2px solid var(--border);
-}
-
-.results-table th {
-  padding: 0.75rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 .results-table tbody tr {
-  border-bottom: 1px solid var(--border);
   transition: background-color 0.15s ease;
 }
 
 .results-table tbody tr:hover {
   background: var(--bg-light);
-}
-
-.results-table td {
-  padding: 1rem;
-  color: var(--text-primary);
 }
 
 .param-cell {
@@ -182,47 +147,9 @@ export default {
   color: var(--text-primary);
 }
 
-.unit-small {
-  font-weight: 400;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-}
-
-.date-cell {
-  white-space: nowrap;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-}
-
 .actions-col {
   text-align: right;
   width: 80px;
-}
-
-.empty-state-small {
-  text-align: center;
-  padding: 3rem 2rem;
-  background: var(--bg-light);
-  border-radius: 12px;
-  border: 1px dashed var(--border);
-}
-
-.empty-state-small svg {
-  color: var(--text-secondary);
-  opacity: 0.3;
-  margin-bottom: 1rem;
-}
-
-.empty-state-small p {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.empty-state-small span {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
 }
 
 .btn-icon:focus-visible,

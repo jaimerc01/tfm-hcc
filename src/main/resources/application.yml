@@ -8,12 +8,46 @@ spring:
     driver-class-name: org.postgresql.Driver
   data:
     mongodb:
-      # Si usas Atlas o una conexión compartida desde la extensión, exporta aquí la URI completa.
-      # La contraseña debe ir por variable de entorno para no dejar secretos en el repositorio.
-      uri: ${MONGODB_URI:mongodb+srv://jaimerc01:${MONGODB_PASSWORD}@hcc.u68mkjv.mongodb.net/hcc_logs?appName=hcc&retryWrites=true&w=majority&authSource=admin}
+      # URI completa de MongoDB. En producción / Atlas se inyecta por la variable de entorno
+      # MONGODB_URI (con usuario y contraseña dentro de la propia URI); el repositorio no
+      # contiene ningún host ni credencial reales. El valor por defecto solo sirve para
+      # desarrollo local contra un mongod sin autenticación.
+      uri: ${MONGODB_URI:mongodb://localhost:27017/hcc_logs}
       auto-index-creation: true
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      # Desarrollo: Hibernate crea/actualiza el esquema a partir de las entidades
+      # sobre la base de datos desechable de compose.yaml (mismo enfoque que el
+      # perfil e2e, que usa create-drop). "update" nunca borra datos, así que la
+      # siembra de scripts/ persiste entre arranques. En producción se fuerza a
+      # "none" (el esquema se gestiona a mano; ver src/main/resources/db/manual-migrations/).
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+  docker:
+    compose:
+      # spring-boot-docker-compose arranca compose.yaml al lanzar la app en desarrollo.
+      # start-only: los contenedores se dejan en marcha al parar la app (arranques
+      # posteriores más rápidos y datos disponibles entre sesiones); se paran a mano
+      # con `docker compose down`. Durante los tests se omite automáticamente
+      # (spring.docker.compose.skip.in-tests=true por defecto).
+      lifecycle-management: start-only
+  mail:
+    # Servidor SMTP para el correo transaccional (por ahora, solo el enlace de
+    # restablecimiento de contraseña). En desarrollo apunta a un SMTP de captura
+    # local (MailHog/Mailpit en el puerto 1025); en producción se inyectan host,
+    # puerto y credenciales reales por variables de entorno. El envío efectivo se
+    # controla aparte con app.mail.enabled: mientras esté a false, EmailService
+    # se limita a registrar el enlace en el log y nunca abre una conexión SMTP.
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
   servlet:
     multipart:
       # Por defecto Spring Boot limita la subida a 1MB, muy por debajo del límite
@@ -53,6 +87,24 @@ tfm:
 app:
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:8080} # Origen del SPA, usado para las redirecciones del login con Google
+  mail:
+    # Interruptor de envío real de correo. A false (por defecto en desarrollo y en
+    # los tests), EmailService no contacta con ningún servidor SMTP: solo registra
+    # el contenido en el log. Poner a true en los entornos donde spring.mail esté
+    # configurado con un servidor real.
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_FROM:no-reply@historiaclinicacomun.local} # Remitente de los correos transaccionales
+  password-reset:
+    # Vida del enlace de restablecimiento de contraseña, en minutos. Pasado ese
+    # tiempo el token deja de ser válido (y MongoDB lo elimina por su índice TTL).
+    token-ttl-minutes: ${PASSWORD_RESET_TOKEN_TTL_MINUTES:30}
+  uploads:
+    max-size-bytes: ${UPLOADS_MAX_SIZE_BYTES:10485760} # 10 MB
+    # Lista blanca de tipos MIME y extensiones admitidos para los archivos clínicos.
+    # Un historial clínico solo necesita documentos e imágenes; restringirlo evita almacenar
+    # (y luego servir) contenido activo como HTML o SVG. Configurable por entorno.
+    allowed-types: ${UPLOADS_ALLOWED_TYPES:application/pdf,image/png,image/jpeg,image/webp}
+    allowed-extensions: ${UPLOADS_ALLOWED_EXTENSIONS:pdf,png,jpg,jpeg,webp}
 
 logging:
   level:
@@ -68,6 +120,11 @@ spring:
   config:
     activate:
       on-profile: prod
+  jpa:
+    hibernate:
+      # En producción el esquema NUNCA lo toca Hibernate: se gestiona con los
+      # scripts de src/main/resources/db/manual-migrations/.
+      ddl-auto: none
 logging:
   file:
     name: ${LOG_PATH:/var/log/tfm-hcc}/tfm-hcc.log

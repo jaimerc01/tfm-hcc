@@ -42,6 +42,7 @@ import io.jsonwebtoken.security.Keys;
 public class JwtServiceImpl implements JwtService {
     
     // Constantes para manejo de errores y configuración
+    private static final ZoneId ZONE_ID_EUROPA_MADRID = ZoneId.of("Europe/Madrid");
     private static final String TOKEN_FIELD = "token";
     private static final String USER_DETAILS_FIELD = "userDetails";
     private static final String CLAIMS_RESOLVER_FIELD = "claimsResolver";
@@ -207,8 +208,11 @@ public class JwtServiceImpl implements JwtService {
             return true; // Si no hay fecha de cambio de contraseña, permitir
         }
         
+        // lastPasswordChange se persiste como LocalDateTime en horario Europe/Madrid
+        // (ver UsuarioServiceImpl); hay que interpretarlo en esa misma zona, no en la del
+        // servidor, para que la ventana de invalidación de tokens no se desplace.
         Instant lastChangeInstant = usuario.getLastPasswordChange()
-                .atZone(ZoneId.systemDefault())
+                .atZone(ZONE_ID_EUROPA_MADRID)
                 .toInstant();
                 
         return !issuedAt.toInstant().isBefore(lastChangeInstant);

@@ -52,6 +52,45 @@ class AuditoriaCambioServiceImplTest {
     }
 
     @Test
+    void registrarCambio_conTransaccionActiva_aplazaLaEscrituraHastaDespuesDelCommit() {
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            when(repository.save(any(AuditoriaCambio.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            AuditoriaCambio auditoria = new AuditoriaCambio();
+            service.registrarCambio(auditoria);
+
+            // Todavía no se ha escrito nada: la escritura está pendiente del commit.
+            org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).save(any());
+
+            // Simular el commit de la transacción JPA.
+            org.springframework.transaction.support.TransactionSynchronizationManager.getSynchronizations()
+                    .forEach(org.springframework.transaction.support.TransactionSynchronization::afterCommit);
+
+            org.mockito.Mockito.verify(repository, org.mockito.Mockito.times(1)).save(any());
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    @Test
+    void registrarCambio_conTransaccionQueSeRevierte_noEscribeLaAuditoria() {
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.registrarCambio(new AuditoriaCambio());
+
+            // La transacción se revierte: afterCommit nunca se invoca.
+            org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+
+            org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).save(any());
+        } finally {
+            if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+                org.springframework.transaction.support.TransactionSynchronizationManager.clearSynchronization();
+            }
+        }
+    }
+
+    @Test
     void registrarCambio_conParametrosIndividuales_construyeLaAuditoria() {
         when(repository.save(any(AuditoriaCambio.class))).thenAnswer(inv -> inv.getArgument(0));
 

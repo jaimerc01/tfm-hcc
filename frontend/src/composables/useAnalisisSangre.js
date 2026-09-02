@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { normalizarNombre, mapTipoToKey } from '@/utils/datosClinicos'
 
-const DEFAULT_ANALYTES = [
+export const DEFAULT_ANALYTES = [
   {
     key: 'glucosa',
     labelKey: 'glucose',
@@ -181,7 +181,7 @@ export function useAnalisisSangre() {
 
   async function addEntry(payload) {
     const svc = await import('@/services/historiaClinicaService').then(m => m.default)
-    const body = JSON.stringify([payload])
+    const body = [payload]
     saving.value = true
     try {
       await svc.añadirAnalisisSangre(body)

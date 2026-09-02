@@ -4,15 +4,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
+import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
+import com.hcc.tfm_hcc.service.AnotacionMedicaService;
 import com.hcc.tfm_hcc.service.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
@@ -42,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0
  */
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class UsuarioFacadeImpl implements UsuarioFacade {
 
@@ -59,6 +62,11 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * Mapper para conversión entre entidades y DTOs de usuario.
      */
     private final UsuarioMapper usuarioMapper;
+
+    /**
+     * Servicio para la consulta de anotaciones médicas recibidas por el usuario.
+     */
+    private final AnotacionMedicaService anotacionMedicaService;
 
     // ===============================
     // MÉTODOS DE GESTIÓN DE USUARIOS
@@ -425,6 +433,47 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
     @PreAuthorize("isAuthenticated()")
     public boolean isTotpEnabled() {
         return usuarioService.isTotpEnabled();
+    }
+
+    // ===============================
+    // MÉTODOS DE ANOTACIONES MÉDICAS
+    // ===============================
+
+    /**
+     * Lista las anotaciones médicas recibidas por el usuario autenticado.
+     *
+     * @param nifMedicoFiltro NIF del médico por el que filtrar (opcional)
+     * @param desde fecha de inicio del rango (opcional)
+     * @param hasta fecha de fin del rango (opcional)
+     * @return List<AnotacionMedica> Anotaciones recibidas por el usuario actual
+     * @throws IllegalArgumentException Si el rango de fechas no es válido
+     * @throws RuntimeException Si ocurre un error durante la consulta
+     */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public List<AnotacionMedica> listarMisAnotaciones(String nifMedicoFiltro, LocalDateTime desde, LocalDateTime hasta) {
+        log.debug("Obteniendo anotaciones médicas del usuario autenticado");
+
+        try {
+            validarRangoFechas(desde, hasta);
+
+            UsuarioDTO usuarioActual = usuarioService.getUsuarioActual();
+            if (usuarioActual == null) {
+                throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
+            }
+
+            List<AnotacionMedica> anotaciones =
+                anotacionMedicaService.listarAnotacionesPaciente(usuarioActual.getNif(), nifMedicoFiltro, desde, hasta);
+
+            log.info("Anotaciones médicas obtenidas: {} registros", anotaciones != null ? anotaciones.size() : 0);
+            return anotaciones;
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("Error de validación al consultar anotaciones médicas: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al consultar anotaciones médicas: {}", e.getMessage(), e);
+            throw new RuntimeException("Error interno durante la consulta de anotaciones médicas", e);
+        }
     }
 
     // ===============================

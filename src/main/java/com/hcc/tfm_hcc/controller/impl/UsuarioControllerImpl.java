@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.controller.impl;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -20,14 +21,17 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.UsuarioController;
+import com.hcc.tfm_hcc.converter.AnotacionMedicaConverter;
+import com.hcc.tfm_hcc.converter.SolicitudAsignacionConverter;
+import com.hcc.tfm_hcc.dto.AnotacionMedicaDTO;
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
-import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.dto.SolicitudAsignacionDTO;
 import com.hcc.tfm_hcc.dto.TotpCodeRequestDTO;
 import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UpdateUsuarioRequest;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
-import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
+import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException;
 import com.hcc.tfm_hcc.exception.UsuarioNoAutenticadoException;
@@ -43,7 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Implementación del controlador REST para la gestión integral de usuarios.
  * Proporciona endpoints REST para operaciones de usuario incluyendo gestión de perfiles,
- * cambio de contraseñas, gestión de solicitudes y notificaciones.
+ * cambio de contraseñas y gestión de solicitudes.
  * 
  * <p>Características de seguridad:</p>
  * <ul>
@@ -65,9 +69,12 @@ public class UsuarioControllerImpl implements UsuarioController {
 
     /** Facade para operaciones de usuario */
     private final UsuarioFacade usuarioFacade;
-    
-    /** Facade para operaciones de notificaciones */
-    private final NotificacionFacade notificacionFacade;
+
+    /** Convierte las entidades de solicitud a DTO antes de exponerlas en la API */
+    private final SolicitudAsignacionConverter solicitudAsignacionConverter;
+
+    /** Convierte las entidades de anotación médica a DTO antes de exponerlas en la API */
+    private final AnotacionMedicaConverter anotacionMedicaConverter;
 
     /**
      * {@inheritDoc}
@@ -148,19 +155,19 @@ public class UsuarioControllerImpl implements UsuarioController {
      */
     @Override
     @GetMapping(RestUrls.USUARIO_SOLICITUDES)
-    public ResponseEntity<List<SolicitudAsignacion>> listarMisSolicitudes() {
+    public ResponseEntity<List<SolicitudAsignacionDTO>> listarMisSolicitudes() {
         log.info("Listando solicitudes para usuario autenticado");
-        
+
         try {
             UsuarioDTO dto = usuarioFacade.getUsuarioActual();
             if (dto == null) {
                 log.warn("Usuario no autenticado al listar solicitudes");
                 throw new UsuarioNoAutenticadoException("Usuario no autenticado");
             }
-            
+
             List<SolicitudAsignacion> solicitudes = usuarioFacade.listarMisSolicitudes();
             log.info("Se encontraron {} solicitudes para el usuario", solicitudes.size());
-            return ResponseEntity.ok(solicitudes);
+            return ResponseEntity.ok(solicitudAsignacionConverter.toDtoList(solicitudes));
 
         } catch (UsuarioNoAutenticadoException e) {
             log.warn("Usuario no autenticado al listar solicitudes");
@@ -177,8 +184,8 @@ public class UsuarioControllerImpl implements UsuarioController {
     @Override
     @PutMapping(RestUrls.USUARIO_SOLICITUD_ID)
     // TODO: CORREGIR ESE REQUESTBODY Y HACER UN DTO
-    public ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("idSolicitud") String idSolicitud, 
-                                                                          @RequestBody Map<String, String> body) {
+    public ResponseEntity<SolicitudAsignacionDTO> actualizarEstadoSolicitud(@PathVariable("idSolicitud") String idSolicitud,
+                                                                           @RequestBody Map<String, String> body) {
         log.info("Actualizando estado de solicitud: {}", idSolicitud);
         
         try {
@@ -196,7 +203,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             
             SolicitudAsignacion updated = usuarioFacade.actualizarEstadoSolicitud(idSolicitud, nuevoEstado);
             log.info("Estado de solicitud actualizado exitosamente: {} -> {}", idSolicitud, nuevoEstado);
-            return ResponseEntity.ok(updated);
+            return ResponseEntity.ok(solicitudAsignacionConverter.toDto(updated));
             
         } catch (UsuarioValidationException e) {
             log.warn("Error de validación al actualizar solicitud: {}", e.getMessage());
@@ -213,63 +220,6 @@ public class UsuarioControllerImpl implements UsuarioController {
         } catch (Exception e) {
             log.error("Error interno al actualizar solicitud: {}", e.getMessage(), e);
             throw new UsuarioOperacionException("Error interno al actualizar solicitud", e);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @GetMapping(RestUrls.USUARIO_NOTIFICACIONES)
-    public ResponseEntity<Map<String, NotificacionDTO>> listarMisNotificaciones(@RequestParam("page") int page,
-                                                                        @RequestParam("size") int size) {
-        log.info("Listando notificaciones para usuario autenticado - página: {}, tamaño: {}", page, size);
-        
-        try {
-            UsuarioDTO dto = usuarioFacade.getUsuarioActual();
-            if (dto == null) {
-                log.warn("Usuario no autenticado al listar notificaciones");
-                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
-            }
-            
-            Map<String, NotificacionDTO> resp = notificacionFacade.listarNotificacionesUsuarioActual(page, size);
-            log.info("Notificaciones listadas exitosamente");
-            return ResponseEntity.ok(resp);
-
-        } catch (UsuarioNoAutenticadoException e) {
-            log.warn("Usuario no autenticado al listar notificaciones");
-            throw e;
-        } catch (Exception e) {
-            log.error("Error al listar notificaciones: {}", e.getMessage(), e);
-            throw new UsuarioOperacionException("Error al listar notificaciones", e);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @PostMapping(RestUrls.USUARIO_NOTIFICACIONES_MARCAR_LEIDAS)
-    public ResponseEntity<String> marcarTodasNotificacionesLeidas() {
-        log.info("Marcando todas las notificaciones como leídas");
-        
-        try {
-            UsuarioDTO dto = usuarioFacade.getUsuarioActual();
-            if (dto == null) {
-                log.warn("Usuario no autenticado al marcar notificaciones");
-                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
-            }
-            
-            notificacionFacade.marcarTodasComoLeidasUsuarioActual();
-            log.info("Todas las notificaciones marcadas como leídas exitosamente");
-            return ResponseEntity.ok("Notificaciones marcadas como leídas");
-
-        } catch (UsuarioNoAutenticadoException e) {
-            log.warn("Usuario no autenticado al marcar notificaciones");
-            throw e;
-        } catch (Exception e) {
-            log.error("Error al marcar notificaciones como leídas: {}", e.getMessage(), e);
-            throw new UsuarioOperacionException("Error marcando notificaciones", e);
         }
     }
 
@@ -460,91 +410,6 @@ public class UsuarioControllerImpl implements UsuarioController {
     }
 
     /**
-     * Cuenta las notificaciones no leídas del usuario autenticado.
-     *
-     * @return ResponseEntity con el conteo de notificaciones no leídas
-     */
-    @GetMapping(RestUrls.USUARIO_NOTIFICACIONES_NO_LEIDAS)
-    public ResponseEntity<Map<String, Object>> contarNotificacionesNoLeidas() {
-        log.debug("Contando notificaciones no leídas");
-        
-        try {
-            UsuarioDTO dto = usuarioFacade.getUsuarioActual();
-            if (dto == null) {
-                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
-            }
-            
-            long count = notificacionFacade.contarNoLeidasUsuarioActual();
-            return ResponseEntity.ok(Map.of("noLeidas", count));
-
-        } catch (UsuarioNoAutenticadoException e) {
-            log.warn("Usuario no autenticado al contar notificaciones no leídas");
-            throw e;
-        } catch (Exception e) {
-            log.error("Error al contar notificaciones no leídas: {}", e.getMessage(), e);
-            throw new UsuarioOperacionException("Error al contar notificaciones no leídas", e);
-        }
-    }
-
-    /**
-     * Marca una notificación específica como leída.
-     *
-     * @param id ID de la notificación a marcar como leída
-     * @return ResponseEntity confirmando la operación
-     */
-    @PutMapping(RestUrls.USUARIO_NOTIFICACION_LEIDA)
-    public ResponseEntity<Void> marcarNotificacionLeida(@PathVariable("id") String id) {
-        log.info("Marcando notificación como leída: {}", id);
-        
-        try {
-            UsuarioDTO dto = usuarioFacade.getUsuarioActual();
-            if (dto == null) {
-                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
-            }
-            
-            notificacionFacade.marcarNotificacionComoLeida(id);
-            log.info("Notificación marcada como leída: {}", id);
-            return ResponseEntity.ok().build();
-
-        } catch (UsuarioNoAutenticadoException e) {
-            log.warn("Usuario no autenticado al marcar notificación como leída");
-            throw e;
-        } catch (Exception e) {
-            log.error("Error al marcar notificación como leída: {}", e.getMessage(), e);
-            throw new UsuarioOperacionException("Error al marcar notificación como leída", e);
-        }
-    }
-
-    /**
-     * Elimina una notificación específica del usuario.
-     *
-     * @param id ID de la notificación a eliminar
-     * @return ResponseEntity confirmando la eliminación
-     */
-    @DeleteMapping(RestUrls.USUARIO_NOTIFICACION_ID)
-    public ResponseEntity<Void> eliminarNotificacion(@PathVariable("id") String id) {
-        log.info("Eliminando notificación: {}", id);
-        
-        try {
-            UsuarioDTO dto = usuarioFacade.getUsuarioActual();
-            if (dto == null) {
-                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
-            }
-            
-            notificacionFacade.eliminarNotificacionUsuarioActual(id);
-            log.info("Notificación eliminada: {}", id);
-            return ResponseEntity.noContent().build();
-
-        } catch (UsuarioNoAutenticadoException e) {
-            log.warn("Usuario no autenticado al eliminar notificación");
-            throw e;
-        } catch (Exception e) {
-            log.error("Error al eliminar notificación: {}", e.getMessage(), e);
-            throw new UsuarioOperacionException("Error al eliminar notificación", e);
-        }
-    }
-
-    /**
      * Exporta todos los datos del usuario autenticado.
      * Funcionalidad para cumplimiento RGPD. Exige confirmar la contraseña actual
      * mediante la cabecera {@code X-Current-Password}.
@@ -650,5 +515,47 @@ public class UsuarioControllerImpl implements UsuarioController {
     public ResponseEntity<Boolean> getTotpStatus() {
         log.debug("Consultando estado del segundo factor");
         return ResponseEntity.ok(usuarioFacade.isTotpEnabled());
+    }
+
+    // ===============================
+    // ANOTACIONES MÉDICAS
+    // ===============================
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @GetMapping(RestUrls.USUARIO_ANOTACIONES)
+    public ResponseEntity<List<AnotacionMedicaDTO>> listarMisAnotaciones(@RequestParam(value = "medicoNif", required = false) String medicoNif,
+                                                                         @RequestParam(value = "desde", required = false) String desde,
+                                                                         @RequestParam(value = "hasta", required = false) String hasta) {
+        log.info("Consultando anotaciones médicas para usuario autenticado");
+
+        try {
+            UsuarioDTO dto = usuarioFacade.getUsuarioActual();
+            if (dto == null) {
+                throw new UsuarioNoAutenticadoException("Usuario no autenticado");
+            }
+
+            LocalDateTime desdeFecha = desde != null ? LocalDateTime.parse(desde) : null;
+            LocalDateTime hastaFecha = hasta != null ? LocalDateTime.parse(hasta) : null;
+
+            List<AnotacionMedica> anotaciones = usuarioFacade.listarMisAnotaciones(medicoNif, desdeFecha, hastaFecha);
+            log.info("Anotaciones médicas consultadas exitosamente: {} registros", anotaciones.size());
+            return ResponseEntity.ok(anotacionMedicaConverter.toDtoList(anotaciones));
+
+        } catch (UsuarioNoAutenticadoException e) {
+            log.warn("Usuario no autenticado al consultar anotaciones médicas");
+            throw e;
+        } catch (DateTimeParseException e) {
+            log.warn("Formato de fecha inválido al consultar anotaciones médicas: {}", e.getMessage());
+            throw new UsuarioValidationException(ErrorMessages.ERROR_FORMATO_FECHA_INVALIDO);
+        } catch (IllegalArgumentException e) {
+            log.warn("Error de validación al consultar anotaciones médicas: {}", e.getMessage());
+            throw new UsuarioValidationException(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error al consultar anotaciones médicas: {}", e.getMessage(), e);
+            throw new UsuarioOperacionException("Error al consultar anotaciones médicas", e);
+        }
     }
 }

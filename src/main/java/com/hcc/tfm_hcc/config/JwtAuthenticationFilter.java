@@ -53,7 +53,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (userNif != null && authentication == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userNif);
 
-                if (jwtService.isTokenValid(jwt, userDetails)) {
+                // Un JWT sigue siendo criptográficamente válido hasta que expira (1 h),
+                // así que hay que comprobar también el estado actual de la cuenta: si se
+                // eliminó después de emitir el token, isEnabled() es falso y no se debe
+                // restablecer la autenticación a partir de ese token.
+                if (userDetails.isEnabled() && jwtService.isTokenValid(jwt, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,

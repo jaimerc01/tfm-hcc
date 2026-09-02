@@ -48,8 +48,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     // Constantes
     private static final Log log = LogFactory.getLog(UsuarioServiceImpl.class);
     private static final String PERFIL_PACIENTE = "PACIENTE";
-    private static final String ESTADO_ACEPTADA = "ACEPTADA";
-    private static final String ESTADO_RECHAZADA = "RECHAZADA";
     private static final String SOLICITUD_ASIGNACION_TABLA = "solicitud_asignacion";
     private static final String TELEFONO_REGEX = "^[0-9+\\-() ]{0,20}$";
     private static final String NIF_REGEX = "^[0-9A-Za-z]{6,15}$";
@@ -494,7 +492,7 @@ public class UsuarioServiceImpl implements UsuarioService {
      * Valida el estado de la solicitud
      */
     private void validarEstadoSolicitud(String nuevoEstado) {
-        if (!nuevoEstado.equalsIgnoreCase(ESTADO_ACEPTADA) && !nuevoEstado.equalsIgnoreCase(ESTADO_RECHAZADA)) {
+        if (!nuevoEstado.equalsIgnoreCase(SolicitudAsignacion.ESTADO_ACEPTADA) && !nuevoEstado.equalsIgnoreCase(SolicitudAsignacion.ESTADO_RECHAZADA)) {
             throw new IllegalArgumentException(ErrorMessages.formatError("Estado inválido: {0}", nuevoEstado));
         }
     }
@@ -509,23 +507,39 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     /**
-     * Crea relación médico-paciente si la solicitud es aceptada
+     * Al aceptarse la solicitud, garantiza que exista una relación médico-paciente
+     * activa: si ya la hay no hace nada; si existe pero fue revocada (el paciente o el
+     * médico la habían finalizado antes) la reactiva en lugar de crear un duplicado; y
+     * si no existe ninguna, la crea.
      */
     private void procesarSolicitudAceptada(SolicitudAsignacion solicitud) {
-        if (ESTADO_ACEPTADA.equalsIgnoreCase(solicitud.getEstado())) {
-            var medico = solicitud.getMedico();
-            var paciente = solicitud.getPaciente();
-            
-            if (medico != null && paciente != null) {
-                boolean exists = medicoPacienteRepository.existsByMedicoIdAndPacienteId(
-                    medico.getId(), paciente.getId()
-                );
-                
-                if (!exists) {
-                    crearRelacionMedicoPaciente(medico, paciente);
-                }
-            }
+        if (!SolicitudAsignacion.ESTADO_ACEPTADA.equalsIgnoreCase(solicitud.getEstado())) {
+            return;
         }
+        var medico = solicitud.getMedico();
+        var paciente = solicitud.getPaciente();
+        if (medico == null || paciente == null) {
+            return;
+        }
+
+        List<MedicoPaciente> relaciones = medicoPacienteRepository.findByMedicoIdAndPacienteId(
+            medico.getId(), paciente.getId());
+
+        boolean yaActiva = relaciones.stream()
+            .anyMatch(relacion -> MedicoPaciente.ESTADO_ACTIVA.equals(relacion.getEstado()));
+        if (yaActiva) {
+            return;
+        }
+
+        Optional<MedicoPaciente> previa = relaciones.stream().findFirst();
+        if (previa.isPresent()) {
+            MedicoPaciente relacion = previa.get();
+            relacion.setEstado(MedicoPaciente.ESTADO_ACTIVA);
+            medicoPacienteRepository.save(relacion);
+            return;
+        }
+
+        crearRelacionMedicoPaciente(medico, paciente);
     }
 
     /**
@@ -534,7 +548,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     private void crearRelacionMedicoPaciente(Usuario medico, Usuario paciente) {
         MedicoPaciente relacion = new MedicoPaciente();
         relacion.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
-        relacion.setEstado("ACTIVA");
+        relacion.setEstado(MedicoPaciente.ESTADO_ACTIVA);
         relacion.setMedico(medico);
         relacion.setPaciente(paciente);
         medicoPacienteRepository.save(relacion);
@@ -554,7 +568,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                     ? paciente.getNombre() 
                     : "un paciente";
                     
-                String accion = ESTADO_ACEPTADA.equalsIgnoreCase(solicitud.getEstado()) 
+                String accion = SolicitudAsignacion.ESTADO_ACEPTADA.equalsIgnoreCase(solicitud.getEstado()) 
                     ? "aceptado" 
                     : solicitud.getEstado().toLowerCase();
                     

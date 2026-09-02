@@ -2,6 +2,7 @@ package com.hcc.tfm_hcc.service.impl;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
 
@@ -60,12 +61,25 @@ public class TotpServiceImpl implements TotpService {
         }
 
         long pasoActual = Instant.now().getEpochSecond() / PASO_SEGUNDOS;
+        boolean valido = false;
         for (int desfase = -VENTANA_TOLERANCIA_PASOS; desfase <= VENTANA_TOLERANCIA_PASOS; desfase++) {
-            if (codigo.equals(generarCodigoParaPaso(secretoBase32, pasoActual + desfase))) {
-                return true;
+            // Comparación en tiempo constante y sin cortocircuito: se recorren siempre todos
+            // los pasos de la ventana para no dar pistas de temporización sobre el código.
+            if (comparacionSegura(codigo, generarCodigoParaPaso(secretoBase32, pasoActual + desfase))) {
+                valido = true;
             }
         }
-        return false;
+        return valido;
+    }
+
+    /**
+     * Compara dos cadenas en tiempo constante (via {@link MessageDigest#isEqual}) para no
+     * filtrar por temporización cuántos dígitos iniciales del código eran correctos.
+     */
+    private boolean comparacionSegura(String a, String b) {
+        return MessageDigest.isEqual(
+                a.getBytes(StandardCharsets.UTF_8),
+                b.getBytes(StandardCharsets.UTF_8));
     }
 
     private String generarCodigoParaPaso(String secretoBase32, long paso) {

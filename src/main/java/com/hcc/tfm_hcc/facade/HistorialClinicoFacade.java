@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.hcc.tfm_hcc.dto.AlergiaDTO;
 import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 
 /**
@@ -120,52 +121,52 @@ public interface HistorialClinicoFacade {
     HistorialClinicoDTO borrarAlergia(UUID id);
 
     /**
-     * Actualiza los análisis de sangre en el historial clínico.
-     * 
-     * @param analisisJson Datos de análisis de sangre en formato JSON
+     * Actualiza los análisis de sangre en el historial clínico (reemplaza los existentes).
+     *
+     * @param analisis Mediciones de análisis de sangre
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarAnalisisSangre(String analisisJson);
-    
-    /**
-     * Añade nuevos análisis de sangre sin eliminar los existentes.
-     * 
-     * @param analisisJson Datos de análisis de sangre en formato JSON
-     * @return HistorialClinicoDTO actualizado
-     */
-    HistorialClinicoDTO anadirAnalisisSangre(String analisisJson);
+    HistorialClinicoDTO actualizarAnalisisSangre(List<DatoClinicoEntradaDTO> analisis);
 
     /**
-     * Actualiza los signos vitales en el historial clínico.
+     * Añade nuevos análisis de sangre sin eliminar los existentes.
      *
-     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @param analisis Mediciones de análisis de sangre
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarSignosVitales(String signosVitalesJson);
+    HistorialClinicoDTO anadirAnalisisSangre(List<DatoClinicoEntradaDTO> analisis);
+
+    /**
+     * Actualiza los signos vitales en el historial clínico (reemplaza los existentes).
+     *
+     * @param signosVitales Mediciones de signos vitales
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO actualizarSignosVitales(List<DatoClinicoEntradaDTO> signosVitales);
 
     /**
      * Añade nuevos signos vitales sin eliminar los existentes.
      *
-     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @param signosVitales Mediciones de signos vitales
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO anadirSignosVitales(String signosVitalesJson);
+    HistorialClinicoDTO anadirSignosVitales(List<DatoClinicoEntradaDTO> signosVitales);
 
     /**
-     * Actualiza el análisis de orina en el historial clínico.
+     * Actualiza el análisis de orina en el historial clínico (reemplaza los existentes).
      *
-     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @param analisisOrina Mediciones de análisis de orina
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarAnalisisOrina(String analisisOrinaJson);
+    HistorialClinicoDTO actualizarAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina);
 
     /**
      * Añade nuevos datos de análisis de orina sin eliminar los existentes.
      *
-     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @param analisisOrina Mediciones de análisis de orina
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO anadirAnalisisOrina(String analisisOrinaJson);
+    HistorialClinicoDTO anadirAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina);
 
     /**
      * Elimina un dato clínico específico del historial.

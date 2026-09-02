@@ -7,6 +7,7 @@ import java.util.Collections;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
 import com.hcc.tfm_hcc.converter.AESEncryptionLocalDateTimeConverter;
 
@@ -15,9 +16,10 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 /**
  * Entidad que representa un usuario del sistema HCC.
@@ -37,10 +39,11 @@ import lombok.NoArgsConstructor;
  * @version 1.0
  * @since 1.0
  */
-@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @Entity
-@Data
+@Getter
+@Setter
+@ToString
 @Table(name = "usuario")  
 public class Usuario extends BaseEntity implements UserDetails {
 
@@ -52,6 +55,7 @@ public class Usuario extends BaseEntity implements UserDetails {
      */
     @Column(name = "nombre", nullable = false)
     @Convert(converter = AESEncryptionConverter.class)
+    @ToString.Exclude
     private String nombre;
 
     /**
@@ -60,6 +64,7 @@ public class Usuario extends BaseEntity implements UserDetails {
      */
     @Column(name = "apellido1", nullable = false)
     @Convert(converter = AESEncryptionConverter.class)
+    @ToString.Exclude
     private String apellido1;
 
     /**
@@ -68,6 +73,7 @@ public class Usuario extends BaseEntity implements UserDetails {
      */
     @Column(name = "apellido2")
     @Convert(converter = AESEncryptionConverter.class)
+    @ToString.Exclude
     private String apellido2;
 
     /**
@@ -77,6 +83,7 @@ public class Usuario extends BaseEntity implements UserDetails {
      */
     @Column(name = "email", nullable = false)
     @Convert(converter = AESEncryptionConverter.class)
+    @ToString.Exclude
     private String email;
 
     /**
@@ -85,12 +92,18 @@ public class Usuario extends BaseEntity implements UserDetails {
      * sustituye a la antigua restricción de unicidad sobre la columna cifrada.
      */
     @Column(name = "email_hash", nullable = false, unique = true)
+    @JsonIgnore
+    @ToString.Exclude
     private String emailHash;
 
     /**
      * Contraseña del usuario almacenada únicamente como hash BCrypt.
+     * Nunca debe salir en respuestas JSON ({@link JsonIgnore}) ni en trazas de log
+     * ({@link ToString.Exclude}).
      */
     @Column(name = "password", nullable = false)
+    @JsonIgnore
+    @ToString.Exclude
     private String password;
 
     /**
@@ -102,6 +115,7 @@ public class Usuario extends BaseEntity implements UserDetails {
      */
     @Column(name = "fecha_nacimiento")
     @Convert(converter = AESEncryptionLocalDateTimeConverter.class)
+    @ToString.Exclude
     private LocalDateTime fechaNacimiento;
 
     /**
@@ -111,6 +125,7 @@ public class Usuario extends BaseEntity implements UserDetails {
      */
     @Column(name = "nif", nullable = false)
     @Convert(converter = AESEncryptionConverter.class)
+    @ToString.Exclude
     private String nif;
 
     /**
@@ -119,6 +134,8 @@ public class Usuario extends BaseEntity implements UserDetails {
      * sustituye a la antigua restricción de unicidad sobre la columna cifrada.
      */
     @Column(name = "nif_hash", nullable = false, unique = true)
+    @JsonIgnore
+    @ToString.Exclude
     private String nifHash;
 
     /**
@@ -127,6 +144,7 @@ public class Usuario extends BaseEntity implements UserDetails {
      */
     @Column(name = "telefono")
     @Convert(converter = AESEncryptionConverter.class)
+    @ToString.Exclude
     private String telefono;
 
     /**
@@ -180,6 +198,8 @@ public class Usuario extends BaseEntity implements UserDetails {
      */
     @Column(name = "totp_secret")
     @Convert(converter = AESEncryptionConverter.class)
+    @JsonIgnore
+    @ToString.Exclude
     private String totpSecret;
 
     /**
@@ -238,13 +258,20 @@ public class Usuario extends BaseEntity implements UserDetails {
     }   
 
     /**
-     * Indica si la cuenta del usuario está habilitada.
-     * 
-     * @return true si la cuenta está habilitada
+     * Indica si la cuenta del usuario está habilitada para autenticarse.
+     *
+     * <p>Una cuenta {@link #ESTADO_CUENTA_ELIMINADO} (borrado lógico) no puede iniciar
+     * sesión ni obtener un JWT: Spring Security rechaza la autenticación con
+     * {@code DisabledException}. El estado {@link #ESTADO_CUENTA_SUSPENDIDO} (limitación
+     * del tratamiento, art. 18 RGPD) se considera habilitado a propósito, porque su
+     * titular debe poder seguir accediendo para revertir la limitación; lo que se le
+     * bloquea es que un médico consulte su historial, no su propio acceso.</p>
+     *
+     * @return {@code false} solo si la cuenta está eliminada
      */
     @Override
     public boolean isEnabled() {
-        return true;
+        return !ESTADO_CUENTA_ELIMINADO.equals(estadoCuenta);
     }
 
     /**

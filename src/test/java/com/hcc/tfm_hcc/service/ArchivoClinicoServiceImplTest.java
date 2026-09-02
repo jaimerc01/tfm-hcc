@@ -76,6 +76,9 @@ class ArchivoClinicoServiceImplTest {
     @Mock
     private FieldEncryptionService fieldEncryptionService;
 
+    @Mock
+    private com.hcc.tfm_hcc.service.RelacionMedicoPacienteService relacionMedicoPacienteService;
+
     @InjectMocks
     private ArchivoClinicoServiceImpl service;
 
@@ -92,6 +95,7 @@ class ArchivoClinicoServiceImplTest {
 
         ReflectionTestUtils.setField(service, "maxSizeBytes", 1024L * 1024L);
         ReflectionTestUtils.setField(service, "allowedTypes", "");
+        ReflectionTestUtils.setField(service, "allowedExtensions", "");
 
         doAnswer(invocation -> {
             InputStream entrada = invocation.getArgument(0);
@@ -189,12 +193,39 @@ class ArchivoClinicoServiceImplTest {
         ReflectionTestUtils.setField(service, "allowedTypes", "application/pdf");
         when(usuarioRepository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
 
-        MultipartFile file = new MockMultipartFile("file", "nota.txt", "text/plain", "contenido".getBytes());
+        MultipartFile file = new MockMultipartFile("file", "nota.pdf", "text/plain", "contenido".getBytes());
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> service.uploadMine(file));
 
         assertEquals(ErrorMessages.ERROR_TIPO_NO_PERMITIDO, ex.getMessage());
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void uploadMine_throwsWhenExtensionIsNotAllowed() {
+        ReflectionTestUtils.setField(service, "allowedExtensions", "pdf,png,jpg");
+        when(usuarioRepository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
+
+        MultipartFile file = new MockMultipartFile("file", "malware.exe", "application/pdf", "contenido".getBytes());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.uploadMine(file));
+
+        assertEquals(ErrorMessages.ERROR_EXTENSION_NO_PERMITIDA, ex.getMessage());
+    }
+
+    @SuppressWarnings("null")
+    @Test
+    void uploadMine_conExtensionEnMayusculasPermitida_noFalla() throws IOException {
+        ReflectionTestUtils.setField(service, "allowedExtensions", "pdf,png");
+        when(usuarioRepository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
+        when(archivoClinicoRepository.save(org.mockito.ArgumentMatchers.any(ArchivoClinico.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        MultipartFile file = new MockMultipartFile("file", "Informe.PDF", "application/pdf", "contenido".getBytes());
+
+        assertEquals("Informe.PDF", service.uploadMine(file).getNombreOriginal());
     }
 
     @SuppressWarnings("null")
@@ -328,5 +359,80 @@ class ArchivoClinicoServiceImplTest {
                 () -> service.borrarArchivo(archivoId));
 
         assertEquals(ErrorMessages.ERROR_ARCHIVO_NO_EXISTE, ex.getMessage());
+    }
+
+    // ---- Documentos de un paciente asignado (acceso del médico) ----
+
+    private Usuario pacienteAsignado() {
+        usuario.setNif("11111111A");
+        when(usuarioRepository.findById(usuario.getId())).thenReturn(Optional.of(usuario));
+        Usuario paciente = new Usuario();
+        paciente.setId(UUID.randomUUID());
+        paciente.setNif("22222222B");
+        when(relacionMedicoPacienteService.verificarAccesoMedicoActivo("11111111A", "22222222B"))
+                .thenReturn(paciente);
+        return paciente;
+    }
+
+    @Test
+    void listForPaciente_conAccesoActivo_devuelveLosArchivosDelPaciente() {
+        Usuario paciente = pacienteAsignado();
+        ArchivoClinico archivo = new ArchivoClinico();
+        archivo.setId(UUID.randomUUID());
+        archivo.setNombreOriginal(PREFIJO_NOMBRE_FALSO + "analitica.pdf");
+        when(archivoClinicoRepository.findByUsuarioIdOrderByFechaCreacionDesc(paciente.getId()))
+                .thenReturn(List.of(archivo));
+
+        List<ArchivoClinico> result = service.listForPaciente("22222222B");
+
+        assertEquals(1, result.size());
+        assertEquals("analitica.pdf", result.get(0).getNombreOriginal());
+    }
+
+    @Test
+    void listForPaciente_sinAccesoActivo_propagaLaExcepcion() {
+        usuario.setNif("11111111A");
+        when(relacionMedicoPacienteService.verificarAccesoMedicoActivo("11111111A", "22222222B"))
+                .thenThrow(new com.hcc.tfm_hcc.exception.UsuarioSinPermisoException("acceso denegado"));
+
+        assertThrows(com.hcc.tfm_hcc.exception.UsuarioSinPermisoException.class,
+                () -> service.listForPaciente("22222222B"));
+    }
+
+    @Test
+    void uploadForPaciente_conAccesoActivo_guardaElArchivoConElPacienteComoPropietarioYAudita() throws IOException {
+        Usuario paciente = pacienteAsignado();
+        when(archivoClinicoRepository.save(any(ArchivoClinico.class))).thenAnswer(inv -> {
+            ArchivoClinico a = inv.getArgument(0);
+            if (a.getId() == null) a.setId(UUID.randomUUID());
+            return a;
+        });
+        MultipartFile file = new MockMultipartFile("file", "informe.pdf", "application/pdf", "contenido".getBytes());
+
+        ArchivoClinico guardado = service.uploadForPaciente("22222222B", file);
+
+        assertEquals(paciente.getId(), guardado.getUsuarioId());
+        verify(auditoriaCambioService).registrarCambio(
+                eq(usuario.getId().toString()),
+                eq(paciente.getId().toString()),
+                eq(usuario.getId().toString()),
+                eq("SUBIDA_ARCHIVO_CLINICO"),
+                eq("archivo_clinico"),
+                anyString(),
+                isNull(),
+                isNull(),
+                eq(AuditoriaCambio.TipoOperacion.CREATE),
+                any());
+    }
+
+    @Test
+    void getPacienteResource_conArchivoAjenoAlPaciente_lanzaIllegalArgumentException() {
+        Usuario paciente = pacienteAsignado();
+        UUID archivoId = UUID.randomUUID();
+        when(archivoClinicoRepository.findByIdAndUsuarioId(archivoId, paciente.getId()))
+                .thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.getPacienteResource("22222222B", archivoId));
     }
 }

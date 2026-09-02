@@ -79,4 +79,52 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_REQUEST, respuesta.getStatusCode());
         assertEquals(ErrorMessages.ERROR_TAMAÑO_EXCEDIDO, respuesta.getBody());
     }
+
+    @Test
+    void handleUsuarioNoEncontrado_devuelve404ConElMensajeDeLaExcepcion() {
+        UsuarioNoEncontradoException excepcion = new UsuarioNoEncontradoException("Usuario con ID 'X' no encontrado");
+
+        ResponseEntity<String> respuesta = handler.handleUsuarioNoEncontrado(excepcion);
+
+        assertEquals(HttpStatus.NOT_FOUND, respuesta.getStatusCode());
+        assertEquals("Usuario con ID 'X' no encontrado", respuesta.getBody());
+    }
+
+    @Test
+    void handleHistorialClinico_conCausaDeArgumentoInvalido_devuelve400ConElMensajeReal() {
+        // La cadena real: el controlador envuelve lo que envuelve la fachada, que envuelve
+        // el IllegalArgumentException de la capa de servicio.
+        HistorialClinicoException excepcion = new HistorialClinicoException(
+                ErrorMessages.ERROR_INTERNO_SERVIDOR,
+                new HistorialClinicoException("Error interno durante la edición del antecedente",
+                        new IllegalArgumentException(ErrorMessages.ERROR_NO_PERMITIDO)));
+
+        ResponseEntity<String> respuesta = handler.handleHistorialClinico(excepcion);
+
+        assertEquals(HttpStatus.BAD_REQUEST, respuesta.getStatusCode());
+        assertEquals(ErrorMessages.ERROR_NO_PERMITIDO, respuesta.getBody());
+    }
+
+    @Test
+    void handleHistorialClinico_conCausaDeFaltaDeAutenticacion_devuelve401() {
+        HistorialClinicoException excepcion = new HistorialClinicoException(
+                ErrorMessages.ERROR_INTERNO_SERVIDOR,
+                new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO));
+
+        ResponseEntity<String> respuesta = handler.handleHistorialClinico(excepcion);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, respuesta.getStatusCode());
+    }
+
+    @Test
+    void handleHistorialClinico_conFalloRealDelServidor_devuelve500Generico() {
+        HistorialClinicoException excepcion = new HistorialClinicoException(
+                "Error interno durante la consulta del historial clínico",
+                new NullPointerException("bug"));
+
+        ResponseEntity<String> respuesta = handler.handleHistorialClinico(excepcion);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, respuesta.getStatusCode());
+        assertEquals(ErrorMessages.ERROR_INTERNO_SERVIDOR, respuesta.getBody());
+    }
 }

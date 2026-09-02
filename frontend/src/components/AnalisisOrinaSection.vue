@@ -232,65 +232,8 @@ export default {
   gap: 2rem;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Toast notification */
-.toast-notification {
-  position: fixed;
-  right: 2rem;
-  bottom: 2rem;
-  background: var(--success-color);
-  color: var(--text-inverse);
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  box-shadow: var(--shadow-toast);
-  opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-weight: 500;
-  z-index: 10000;
-}
-
-.toast-notification.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.toast-notification svg {
-  flex-shrink: 0;
-}
-
 .modal button:focus-visible {
   outline: 2px solid var(--primary-color);
   outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .toast-notification {
-    transition: none;
-    animation: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .toast-notification {
-    right: 1rem;
-    bottom: 1rem;
-    left: 1rem;
-    width: auto;
-  }
 }
 </style>

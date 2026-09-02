@@ -9,11 +9,27 @@
   --primary-400: #4f8fd6;
   --on-primary: #ffffff;
   
-  /* Secondary Green - Balance & Positive Actions */
-  --secondary-color: #7DBA84;    /* Main green for secondary actions */
-  --secondary-hover: #66986d;    /* Darker green on hover */
-  --secondary-active: #3f6344;   /* Darkest green on click */
+  /* Secondary Green - the app's ACTION colour (60-30-10: blue frame, green actions, yellow alerts) */
+  --secondary-color: #7DBA84;    /* Light green for tints, highlights, borders */
+  --secondary-hover: #66986d;    /* Darker green */
+  --secondary-active: #3f6344;   /* Darkest green - text/icons on light backgrounds */
   --secondary-light: #d9eadb;    /* Light green for highlights */
+  --secondary-100: #eef7ef;      /* Very light green surface tint */
+  --secondary-400: #a6cfa9;      /* Mid green */
+  --on-secondary: #ffffff;       /* Text/icons on solid green fills */
+
+  /* Solid green buttons - every button in the app. Accessible: white text >= 4.5:1 */
+  --button-color: #2e7d46;
+  --button-hover: #256b3b;
+  --button-active: #1c5330;
+  --on-button: #ffffff;
+
+  /* Footer matches the blue navbar (blue = structural frame) */
+  --footer-bg: var(--primary-color);
+  --footer-border: var(--primary-hover);
+
+  /* Reusable brand gradient */
+  --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
 
   /* Success Green - Health & Positive Actions */
   --success-color: var(--secondary-color);
@@ -23,22 +39,23 @@
   --success-600: var(--secondary-active);
   --success-soft-bg: #eef7ef;
   
-  /* Tertiary Yellow - Attention & Accent */
-  --tertiary-color: #FFD23F;     /* Main yellow for accents and alerts */
+  /* Tertiary Yellow - reserved for warnings / attention / alerts (never decorative accents) */
+  --tertiary-color: #FFD23F;     /* Main yellow for warning states */
   --tertiary-hover: #d8b034;     /* Darker yellow on hover */
   --tertiary-active: #b38f27;    /* Darkest yellow on click */
   --tertiary-light: #ffe89a;     /* Light yellow for highlights */
   --tertiary-soft-bg: #fff8d6;
 
-  /* Danger Orange-Red - Alerts & Errors */
-  --danger-color: #f15946;
-  --danger-hover: #d94c3b;
-  --danger-active: #b83f31;
-  --danger-light: #f8b8b0;
-  --danger-100: #fde4e0;
-  --danger-400: #f48a7e;
-  --danger-600: #b83f31;
-  --danger-soft-bg: #fff2ef;
+  /* Danger / Error - Yellow family. ONLY for warnings and error messages (alerts, badges,
+     field errors, status dots). Never on buttons - destructive buttons are green like the rest. */
+  --danger-color: #846b00;       /* Deep gold - solid fills, carries white text (AA ~5:1) */
+  --danger-hover: #6b5600;
+  --danger-active: #524200;
+  --danger-light: #f5df9e;       /* Light gold border on light surfaces */
+  --danger-100: #fdf3d0;
+  --danger-400: #d9b64a;
+  --danger-600: #6b5600;
+  --danger-soft-bg: #fffbea;
   --error-color: var(--danger-color);
   
   /* Warning Orange - Caution & Attention */
@@ -123,7 +140,7 @@
 
   /* Focus rings */
   --focus-ring-info: 0 0 0 3px rgb(2 132 199 / 0.1);
-  --focus-ring-danger: 0 0 0 3px rgb(220 38 38 / 0.1);
+  --focus-ring-danger: 0 0 0 3px rgb(132 107 0 / 0.15);
   
   /* Button specific variables - no gradients for medical clarity */
   --button-shadow: var(--shadow-sm);
@@ -163,14 +180,22 @@
   --badge-info-bg: #dbeafe;
   --badge-info-text: var(--surface-info-text);
 
-  /* Chart specific colors */
+  /* Chart specific colors - primary series blue, emphasis/secondary series green */
   --chart-default: var(--primary-color);
-  --chart-emphasis: #c73333;
+  --chart-emphasis: #2e7d46;
   --metric-hematocrito: #7c3aed;
   --chart-recommended-band: #d2f0d9;
   --chart-gauge-bg: #e5e7eb;
   --chart-label-muted: #6b7280;
   --chart-label-strong: #374151;
+
+  /* Categorical series palette for multi-metric charts (yellow stays reserved for errors) */
+  --chart-series-blue: var(--primary-color);
+  --chart-series-green: #2e7d46;
+  --chart-series-purple: #7c3aed;
+  --chart-series-cyan: #0e7490;
+  --chart-series-magenta: #a21caf;
+  --chart-series-slate: #475569;
   
   /* Focus outline for accessibility */
   --focus-outline: 2px solid var(--primary-color);

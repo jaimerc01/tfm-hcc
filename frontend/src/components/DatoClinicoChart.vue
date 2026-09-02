@@ -72,7 +72,7 @@
 
     <!-- Chart info helper -->
     <div class="chart-info" v-if="chartType">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M12 16v-4"></path>
         <path d="M12 8h.01"></path>
@@ -250,7 +250,9 @@ export default {
   mounted() {
     this.drawChart()
   },
-  unmounted() {
+  beforeUnmount() {
+    // Se limpia en beforeUnmount (no en unmounted): Vue ya ha puesto a null las
+    // refs de plantilla cuando se ejecuta unmounted, así que allí no habría contenedor.
     const container = this.$refs.chart
     if (container) {
       container.innerHTML = ''
@@ -482,62 +484,17 @@ export default {
   line-height: 1.5;
 }
 
-.chart-info svg {
-  flex-shrink: 0;
-  margin-top: 0.125rem;
-  color: var(--primary-color);
-}
-
 .results-table-container {
   overflow-x: auto;
   margin-bottom: 1rem;
 }
 
-.results-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-}
-
-.results-table thead {
-  background: var(--bg-light);
-  border-bottom: 2px solid var(--border);
-}
-
-.results-table th {
-  padding: 0.75rem 1rem;
-  text-align: left;
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
 .results-table tbody tr {
-  border-bottom: 1px solid var(--border);
   transition: background-color 0.15s ease;
 }
 
 .results-table tbody tr:hover {
   background: var(--bg-light);
-}
-
-.results-table td {
-  padding: 1rem;
-  color: var(--text-primary);
-}
-
-.unit-small {
-  font-weight: 400;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
-}
-
-.date-cell {
-  white-space: nowrap;
-  color: var(--text-secondary);
-  font-size: 0.8125rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

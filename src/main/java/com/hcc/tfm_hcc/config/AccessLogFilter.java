@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.util.StopWatch;
 
 import com.hcc.tfm_hcc.model.AccessLog;
+import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.AccessLogService;
 import com.hcc.tfm_hcc.service.HmacSearchIndexService;
@@ -81,13 +82,8 @@ public class AccessLogFilter implements Filter {
         } finally {
             sw.stop();
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null 
-                && !(auth instanceof AnonymousAuthenticationToken)
-                && auth.getPrincipal() instanceof UserDetails userDetails) {
-            String nif = userDetails.getUsername();
-                usuario = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nif))
-                    .map(u -> u.getId().toString())
-                    .orElse(null);
+            if (auth != null && !(auth instanceof AnonymousAuthenticationToken)) {
+                usuario = resolverIdUsuario(auth.getPrincipal());
             }
 
             try {
@@ -123,6 +119,26 @@ public class AccessLogFilter implements Filter {
         }
         matcher.appendTail(resultado);
         return resultado.toString();
+    }
+
+    /**
+     * Devuelve el id del usuario autenticado para el registro de acceso.
+     *
+     * <p>En el flujo normal el {@code principal} ya es la entidad {@link Usuario} (la coloca
+     * {@code JwtAuthenticationFilter}), así que su id se lee directamente y no hace falta
+     * ninguna consulta a base de datos en cada petición. El {@code findByNifHash} se mantiene
+     * solo como respaldo defensivo para principals que no sean nuestra entidad.</p>
+     */
+    private String resolverIdUsuario(Object principal) {
+        if (principal instanceof Usuario usuarioAutenticado && usuarioAutenticado.getId() != null) {
+            return usuarioAutenticado.getId().toString();
+        }
+        if (principal instanceof UserDetails userDetails) {
+            return usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(userDetails.getUsername()))
+                    .map(u -> u.getId().toString())
+                    .orElse(null);
+        }
+        return null;
     }
 
     private String getClientIp(HttpServletRequest request) {

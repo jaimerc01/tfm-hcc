@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.AuditoriaCambio.TipoOperacion;
@@ -38,15 +40,23 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
     private final AuditoriaCambioRepository auditoriaCambioRepository;
     private final FieldEncryptionService fieldEncryptionService;
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>El registro de auditoría vive en MongoDB, mientras que el cambio clínico que lo
+     * origina se persiste en PostgreSQL dentro de una transacción JPA. Para que no queden
+     * registros de auditoría huérfanos (auditoría escrita pero cambio revertido), cuando
+     * hay una transacción activa la escritura en Mongo se aplaza a {@code afterCommit}: solo
+     * ocurre si la transacción de Postgres confirma. Fuera de transacción se escribe al
+     * momento.</p>
+     */
     @Override
-    @Transactional
     public AuditoriaCambio registrarCambio(AuditoriaCambio auditoria) {
         if (auditoria == null) {
             log.warn("Intento de registrar auditoría nula");
             throw new IllegalArgumentException("El registro de auditoría no puede ser nulo");
         }
 
-        // Asegurar que el ID y la fecha están establecidos
         if (auditoria.getId() == null) {
             auditoria.setId(java.util.UUID.randomUUID().toString());
         }
@@ -54,6 +64,33 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             auditoria.setFechaCambio(LocalDateTime.now(ZoneId.of(EUROPE_MADRID)));
         }
 
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        persistirAuditoria(auditoria);
+                    } catch (RuntimeException e) {
+                        // La transacción clínica ya está confirmada: no se puede revertir. Se
+                        // deja constancia a nivel ERROR para poder detectar el hueco de auditoría.
+                        log.error("No se pudo persistir el registro de auditoría tras confirmar el cambio "
+                                + "(usuario={}, recurso={}, operacion={}): {}",
+                                auditoria.getIdUsuario(), auditoria.getIdRecurso(),
+                                auditoria.getTipoOperacion(), e.getMessage(), e);
+                    }
+                }
+            });
+            return auditoria;
+        }
+
+        return persistirAuditoria(auditoria);
+    }
+
+    /**
+     * Cifra los valores sensibles y guarda el registro en MongoDB. Devuelve la entidad con
+     * los valores otra vez en claro (el cifrado es un detalle de persistencia).
+     */
+    private AuditoriaCambio persistirAuditoria(AuditoriaCambio auditoria) {
         String valorAnteriorPlano = auditoria.getValorAnterior();
         String valorNuevoPlano = auditoria.getValorNuevo();
         auditoria.setValorAnterior(fieldEncryptionService.cifrar(valorAnteriorPlano));
@@ -61,8 +98,6 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         AuditoriaCambio guardado = auditoriaCambioRepository.save(auditoria);
 
-        // Devolver la entidad con los valores en claro: el cifrado es un detalle
-        // de persistencia, no debe filtrarse a quien llama a este servicio.
         guardado.setValorAnterior(valorAnteriorPlano);
         guardado.setValorNuevo(valorNuevoPlano);
 
@@ -88,7 +123,6 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
     }
 
     @Override
-    @Transactional
     public AuditoriaCambio registrarCambio(
             String idUsuario,
             String idPaciente,

@@ -1,0 +1,152 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
+
+const svc = vi.hoisted(() => ({
+  list: vi.fn(),
+  upload: vi.fn(() => Promise.resolve()),
+  remove: vi.fn(() => Promise.resolve()),
+  download: vi.fn()
+}))
+vi.mock('@/services/archivoClinicoService', () => ({ default: svc }))
+
+// Las secciones tienen sus propios tests; aquí solo interesa la vista contenedora.
+vi.mock('@/components/AntecedentesSection.vue', () => ({ default: { template: '<div class="section-stub" />' } }))
+vi.mock('@/components/AlergiasSection.vue', () => ({ default: { template: '<div class="section-stub" />' } }))
+vi.mock('@/components/AnalisisSangreSection.vue', () => ({ default: { template: '<div class="section-stub" />' } }))
+vi.mock('@/components/SignosVitalesSection.vue', () => ({ default: { template: '<div class="section-stub" />' } }))
+vi.mock('@/components/AnalisisOrinaSection.vue', () => ({ default: { template: '<div class="section-stub" />' } }))
+vi.mock('@/components/AnotacionesMedicasSection.vue', () => ({ default: { template: '<div class="section-stub" />' } }))
+
+import HistoriaClinicaView from '@/views/HistoriaClinicaView.vue'
+
+const file = (name = 'a.pdf') => new File(['x'], name, { type: 'application/pdf' })
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  svc.list.mockResolvedValue([])
+})
+
+const factory = async () => {
+  const w = mount(HistoriaClinicaView, { attachTo: document.body })
+  await flushPromises()
+  return w
+}
+
+describe('HistoriaClinicaView', () => {
+  it('carga los archivos al crearse', async () => {
+    svc.list.mockResolvedValue([{ id: 1, nombreOriginal: 'informe.pdf', sizeBytes: 2048 }])
+    const w = await factory()
+    w.vm.activeSection = 'archivos'
+    await w.vm.$nextTick()
+    expect(w.text()).toContain('informe.pdf')
+    w.unmount()
+  })
+
+  it('muestra error si la carga de archivos falla', async () => {
+    svc.list.mockRejectedValueOnce(new Error('boom'))
+    const w = await factory()
+    expect(w.vm.error).toBeTruthy()
+    w.unmount()
+  })
+
+  it('onTabKeydown navega entre pestañas con las flechas', async () => {
+    const w = await factory()
+    w.vm.onTabKeydown({ key: 'ArrowRight', preventDefault: vi.fn() }, 'antecedentes')
+    expect(w.vm.activeSection).toBe('alergias')
+    w.vm.onTabKeydown({ key: 'ArrowLeft', preventDefault: vi.fn() }, 'alergias')
+    expect(w.vm.activeSection).toBe('antecedentes')
+    w.vm.onTabKeydown({ key: 'End', preventDefault: vi.fn() }, 'antecedentes')
+    expect(w.vm.activeSection).toBe('anotaciones')
+    w.vm.onTabKeydown({ key: 'Home', preventDefault: vi.fn() }, 'anotaciones')
+    expect(w.vm.activeSection).toBe('antecedentes')
+    w.unmount()
+  })
+
+  it('onDrop y onFileChange asignan el fichero seleccionado', async () => {
+    const w = await factory()
+    w.vm.onFileChange({ target: { files: [file()] } })
+    expect(w.vm.file.name).toBe('a.pdf')
+    w.vm.onDrop({ preventDefault: vi.fn(), stopPropagation: vi.fn(), dataTransfer: { files: [file('b.pdf')] } })
+    expect(w.vm.file.name).toBe('b.pdf')
+    w.unmount()
+  })
+
+  it('onDragOver / onDragLeave alternan isDragging', async () => {
+    const w = await factory()
+    w.vm.onDragOver({ preventDefault: vi.fn(), stopPropagation: vi.fn() })
+    expect(w.vm.isDragging).toBe(true)
+    w.vm.onDragLeave({ preventDefault: vi.fn(), stopPropagation: vi.fn() })
+    expect(w.vm.isDragging).toBe(false)
+    w.unmount()
+  })
+
+  it('onUpload sube el fichero y recarga la lista', async () => {
+    const w = await factory()
+    w.vm.file = file()
+    await w.vm.onUpload()
+    await flushPromises()
+    expect(svc.upload).toHaveBeenCalled()
+    expect(w.vm.file).toBeNull()
+    expect(svc.list).toHaveBeenCalledTimes(2)
+    w.unmount()
+  })
+
+  it('onUpload muestra error si falla', async () => {
+    svc.upload.mockRejectedValueOnce(new Error('500'))
+    const w = await factory()
+    w.vm.file = file()
+    await w.vm.onUpload()
+    await flushPromises()
+    expect(w.vm.error).toBeTruthy()
+    w.unmount()
+  })
+
+  it('remove elimina el archivo de la lista', async () => {
+    svc.list.mockResolvedValue([{ id: 1, nombreOriginal: 'a', sizeBytes: 1 }, { id: 2, nombreOriginal: 'b', sizeBytes: 1 }])
+    const w = await factory()
+    await w.vm.remove({ id: 1 })
+    await flushPromises()
+    expect(svc.remove).toHaveBeenCalledWith(1)
+    expect(w.vm.items).toHaveLength(1)
+    w.unmount()
+  })
+
+  it('download crea un enlace temporal con el blob', async () => {
+    svc.download.mockResolvedValue({ blob: new Blob(['x']), filename: 'informe.pdf' })
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const w = await factory()
+    await w.vm.download({ id: 5 })
+    await flushPromises()
+    expect(svc.download).toHaveBeenCalledWith(5)
+    expect(clickSpy).toHaveBeenCalled()
+    clickSpy.mockRestore()
+    w.unmount()
+  })
+
+  it('download muestra error si falla', async () => {
+    svc.download.mockRejectedValueOnce(new Error('boom'))
+    const w = await factory()
+    await w.vm.download({ id: 5 })
+    await flushPromises()
+    expect(w.vm.error).toBeTruthy()
+    w.unmount()
+  })
+
+  it('formatSize formatea bytes a unidades legibles', async () => {
+    const w = await factory()
+    expect(w.vm.formatSize(0)).toBe('0.0 B')
+    expect(w.vm.formatSize(2048)).toBe('2.0 KB')
+    expect(w.vm.formatSize(5 * 1024 * 1024)).toBe('5.0 MB')
+    expect(w.vm.formatSize(null)).toBe('')
+    w.unmount()
+  })
+
+  it('cambiar de sección mueve el foco al panel', async () => {
+    const w = await factory()
+    w.vm.activeSection = 'alergias'
+    await w.vm.$nextTick()
+    await flushPromises()
+    expect(w.find('#alergias-panel').exists()).toBe(true)
+    w.unmount()
+  })
+})

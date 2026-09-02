@@ -70,7 +70,16 @@ public interface MedicoService {
      * @throws RuntimeException si el paciente no es encontrado
      */
     PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento);
-    
+
+    /**
+     * Lista los pacientes con una relación médico-paciente activa para un médico dado.
+     *
+     * @param nifMedico NIF del médico del cual listar los pacientes asignados
+     * @return Lista de PacienteDTO con los pacientes actualmente asignados al médico
+     * @throws IllegalArgumentException si el médico no existe
+     */
+    List<PacienteDTO> listarMisPacientes(String nifMedico);
+
     /**
      * Asigna o revoca el perfil de médico a un usuario existente.
      * 

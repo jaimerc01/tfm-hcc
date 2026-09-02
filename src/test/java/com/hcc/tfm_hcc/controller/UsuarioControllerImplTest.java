@@ -6,7 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -14,7 +13,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcc.tfm_hcc.controller.impl.UsuarioControllerImpl;
 import com.hcc.tfm_hcc.dto.UpdateUsuarioRequest;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
-import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
@@ -34,14 +31,14 @@ class UsuarioControllerImplTest {
 
     private MockMvc mvc;
     private UsuarioFacade usuarioFacade;
-    private NotificacionFacade notificacionFacade;
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @BeforeEach
     void setUp() {
         usuarioFacade = mock(UsuarioFacade.class);
-        notificacionFacade = mock(NotificacionFacade.class);
-        UsuarioControllerImpl controller = new UsuarioControllerImpl(usuarioFacade, notificacionFacade);
+        UsuarioControllerImpl controller = new UsuarioControllerImpl(usuarioFacade,
+                new com.hcc.tfm_hcc.converter.SolicitudAsignacionConverter(),
+                new com.hcc.tfm_hcc.converter.AnotacionMedicaConverter());
         mvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
@@ -148,23 +145,6 @@ class UsuarioControllerImplTest {
     }
 
     @Test
-    void listarMisNotificaciones_conUsuarioAutenticado_delegaEnElFacadeDeNotificaciones() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
-        when(notificacionFacade.listarNotificacionesUsuarioActual(0, 10)).thenReturn(Map.of());
-
-        mvc.perform(get("/usuario/notificaciones").param("page", "0").param("size", "10"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    void marcarTodasNotificacionesLeidas_conUsuarioAutenticado_devuelveOk() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
-
-        mvc.perform(post("/usuario/notificaciones/marcar-leidas"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
     void updateUsuarioActual_conNifSinCambios_noIncluyeCabeceraDeReautenticacion() throws Exception {
         UsuarioDTO actual = usuarioDto();
         UsuarioDTO actualizado = usuarioDto();
@@ -219,30 +199,6 @@ class UsuarioControllerImplTest {
     }
 
     @Test
-    void contarNotificacionesNoLeidas_devuelveElConteo() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
-        when(notificacionFacade.contarNoLeidasUsuarioActual()).thenReturn(3L);
-
-        mvc.perform(get("/usuario/notificaciones/no-leidas"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.noLeidas").value(3));
-    }
-
-    @Test
-    void marcarNotificacionLeida_devuelveOk() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
-
-        mvc.perform(put("/usuario/notificaciones/id-1/leida")).andExpect(status().isOk());
-    }
-
-    @Test
-    void eliminarNotificacion_devuelveNoContent() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
-
-        mvc.perform(delete("/usuario/notificaciones/id-1")).andExpect(status().isNoContent());
-    }
-
-    @Test
     void exportUsuario_devuelveOk() throws Exception {
         when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
         when(usuarioFacade.exportUsuario(any())).thenReturn(null);
@@ -294,30 +250,6 @@ class UsuarioControllerImplTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"estado\":\"ACEPTADA\"}"))
                 .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void listarMisNotificaciones_sinUsuarioAutenticado_devuelve401() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(null);
-
-        mvc.perform(get("/usuario/notificaciones").param("page", "0").param("size", "10"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void listarMisNotificaciones_conErrorInesperado_devuelve500() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
-        when(notificacionFacade.listarNotificacionesUsuarioActual(0, 10)).thenThrow(new RuntimeException("fallo"));
-
-        mvc.perform(get("/usuario/notificaciones").param("page", "0").param("size", "10"))
-                .andExpect(status().isInternalServerError());
-    }
-
-    @Test
-    void marcarTodasNotificacionesLeidas_sinUsuarioAutenticado_devuelve401() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(null);
-
-        mvc.perform(post("/usuario/notificaciones/marcar-leidas")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -409,30 +341,49 @@ class UsuarioControllerImplTest {
     }
 
     @Test
-    void contarNotificacionesNoLeidas_sinUsuarioAutenticado_devuelve401() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(null);
-
-        mvc.perform(get("/usuario/notificaciones/no-leidas")).andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void marcarNotificacionLeida_sinUsuarioAutenticado_devuelve401() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(null);
-
-        mvc.perform(put("/usuario/notificaciones/id-1/leida")).andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    void eliminarNotificacion_sinUsuarioAutenticado_devuelve401() throws Exception {
-        when(usuarioFacade.getUsuarioActual()).thenReturn(null);
-
-        mvc.perform(delete("/usuario/notificaciones/id-1")).andExpect(status().isUnauthorized());
-    }
-
-    @Test
     void exportUsuario_sinUsuarioAutenticado_devuelve401() throws Exception {
         when(usuarioFacade.getUsuarioActual()).thenReturn(null);
 
         mvc.perform(get("/usuario/export")).andExpect(status().isUnauthorized());
+    }
+
+    // ---- anotaciones médicas ----
+
+    @Test
+    void listarMisAnotaciones_conUsuarioAutenticado_devuelveLaLista() throws Exception {
+        when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
+        when(usuarioFacade.listarMisAnotaciones(any(), any(), any()))
+                .thenReturn(List.of(new com.hcc.tfm_hcc.model.AnotacionMedica()));
+
+        mvc.perform(get("/usuario/anotaciones"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void listarMisAnotaciones_conFiltroDeMedicoYFechas_delegaEnElFacade() throws Exception {
+        when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
+        when(usuarioFacade.listarMisAnotaciones(eq("11111111A"), any(), any())).thenReturn(List.of());
+
+        mvc.perform(get("/usuario/anotaciones")
+                        .param("medicoNif", "11111111A")
+                        .param("desde", "2024-01-01T00:00:00")
+                        .param("hasta", "2024-12-31T23:59:59"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void listarMisAnotaciones_sinUsuarioAutenticado_devuelve401() throws Exception {
+        when(usuarioFacade.getUsuarioActual()).thenReturn(null);
+
+        mvc.perform(get("/usuario/anotaciones")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void listarMisAnotaciones_conFechaMalFormada_devuelveBadRequest() throws Exception {
+        when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
+
+        mvc.perform(get("/usuario/anotaciones").param("desde", "no-es-una-fecha"))
+                .andExpect(status().isBadRequest());
     }
 }

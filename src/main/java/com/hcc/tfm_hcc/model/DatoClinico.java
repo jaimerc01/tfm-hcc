@@ -8,8 +8,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.NoArgsConstructor;
 
 /**
@@ -29,11 +30,12 @@ import lombok.NoArgsConstructor;
  * @version 1.0
  * @since 1.0
  */
-@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @Entity
 @Table(name = "dato_clinico")
-@Data
+@Getter
+@Setter
+@ToString
 public class DatoClinico extends BaseEntity {
 
     private static final long serialVersionUID = 6L;

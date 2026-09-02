@@ -594,18 +594,6 @@ export default {
   flex-shrink: 0;
 }
 
-.alert-danger {
-  background: var(--alert-danger-bg);
-  color: var(--alert-danger-text);
-  border: 1px solid var(--alert-danger-border);
-}
-
-.alert-success {
-  background: var(--alert-success-bg);
-  color: var(--alert-success-text);
-  border: 1px solid var(--alert-success-border);
-}
-
 .register-form {
   padding: 2rem;
 }
@@ -722,54 +710,14 @@ export default {
   }
 }
 
+/* Layout only -- colour, hover and disabled come from the shared button
+   system in styles/shared.css (every button in the app is green). */
 .btn-primary,
 .btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
   padding: 0.875rem 1.5rem;
-  border: none;
   border-radius: 8px;
-  font-size: 0.875rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: var(--shadow-sm);
   flex: 1;
-}
-
-.btn-primary {
-  background: var(--primary-color);
-  color: var(--text-inverse);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
-}
-
-.btn-primary:active:not(:disabled) {
-  background: var(--primary-active);
-  transform: translateY(0);
-}
-
-.btn-primary:disabled,
-.btn-secondary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--card-bg);
-  color: var(--secondary-color);
-  border: 1.5px solid var(--border);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-light);
-  border-color: var(--secondary-color);
 }
 
 .btn-icon {

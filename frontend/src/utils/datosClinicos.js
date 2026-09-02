@@ -36,3 +36,53 @@ export function formatDate(iso) {
     return iso
   }
 }
+
+// Aplica los rangos de referencia del servidor sobre una lista de definiciones de
+// analitos, rellenando recommendedMin/recommendedMax por coincidencia de nombre.
+export function applyRangos(analytes, rangos) {
+  if (!Array.isArray(analytes) || !Array.isArray(rangos)) return analytes
+  rangos.forEach(rango => {
+    const nombreNormalizado = normalizarNombre(rango.nombre)
+    const analyte = analytes.find(a => {
+      const keyMatch = normalizarNombre(a.key) === nombreNormalizado
+      const aliasMatch = (a.aliases || []).some(alias => normalizarNombre(alias) === nombreNormalizado)
+      return keyMatch || aliasMatch
+    })
+    if (analyte && rango.valorInferiorNumerico !== null && rango.valorSuperiorNumerico !== null) {
+      analyte.recommendedMin = rango.valorInferiorNumerico
+      analyte.recommendedMax = rango.valorSuperiorNumerico
+    }
+  })
+  return analytes
+}
+
+// Normaliza el array crudo de un dominio del historial clínico (analisisSangre,
+// signosVitales o analisisOrina, que puede venir como string JSON) a la forma
+// que consumen DatoClinicoChart y DatoClinicoResultsTable.
+export function mapHistorialEntries(raw, analytes) {
+  let parsed = raw
+  if (typeof raw === 'string') {
+    try {
+      parsed = JSON.parse(raw)
+    } catch (e) {
+      return []
+    }
+  }
+  if (!Array.isArray(parsed)) return []
+
+  return parsed.map(p => {
+    const mappedKey = p.key || mapTipoToKey(p.tipo, analytes)
+    const analyte = (analytes || []).find(x => x.key === mappedKey)
+    return {
+      id: p.id || null,
+      key: mappedKey || p.key || null,
+      label: p.label || p.tipo || p.key || '',
+      value: (p.value !== undefined && p.value !== null)
+        ? String(p.value)
+        : (p.valor !== undefined && p.valor !== null) ? String(p.valor) : '',
+      unit: analyte ? analyte.unit : (p.unit || p.unidad || ''),
+      createdAt: p.createdAt || p.fechaCreacion || null,
+      rango: p.rango || null
+    }
+  })
+}

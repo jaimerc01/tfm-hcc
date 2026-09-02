@@ -72,6 +72,12 @@ public class AutenticacionControllerImpl implements AutenticacionController {
         } catch (InvalidLoginDataException e) {
             log.warn("Error de validación en autenticación: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
+        } catch (IncorrectCredentials e) {
+            // Credenciales bien formadas pero que no autentican (NIF inexistente,
+            // contraseña incorrecta, cuenta eliminada). Mismo tratamiento que en la
+            // verificación del segundo factor: 401 sin detallar el motivo.
+            log.warn("Autenticación rechazada para NIF: {} - credenciales incorrectas", nif);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
             log.error("Error interno en autenticación para NIF: {}, error: {}", nif, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

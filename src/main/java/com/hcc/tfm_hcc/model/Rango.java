@@ -3,8 +3,9 @@ package com.hcc.tfm_hcc.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.NoArgsConstructor;
 
 /**
@@ -38,9 +39,10 @@ import lombok.NoArgsConstructor;
  */
 @Entity
 @Table(name = "rangos")
-@Data
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = false)
 public class Rango extends BaseEntity {
 
     /**

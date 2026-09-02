@@ -57,6 +57,11 @@ public final class ErrorMessages {
     public static final String ERROR_TOTP_CODIGO_INVALIDO = "El código de verificación no es válido";
     public static final String ERROR_TOTP_CHALLENGE_INVALIDO = "El proceso de verificación no es válido o ha caducado. Inicia sesión de nuevo.";
 
+    public static final String ERROR_RESET_TOKEN_INVALIDO =
+            "El enlace de restablecimiento no es válido o ha caducado. Solicita uno nuevo.";
+    public static final String ERROR_RESET_PASSWORD_DEBIL =
+            "La nueva contraseña debe tener al menos 8 caracteres";
+
     // =====================================================
     // MENSAJES DE ERROR - GESTIÓN DE ARCHIVOS
     // =====================================================
@@ -147,6 +152,8 @@ public final class ErrorMessages {
     public static final String ERROR_LISTADO_MEDICOS = "Error al listar médicos: {0}";
     public static final String ERROR_CREAR_MEDICO = "Error al crear médico: {0}";
     public static final String PERFIL_NO_ENCONTRADO = "Perfil '{0}' no encontrado";
+    public static final String ERROR_SOLICITUD_YA_EXISTE = "Ya existe una solicitud pendiente para este médico y paciente";
+    public static final String ERROR_RELACION_MEDICO_PACIENTE_NO_ACTIVA = "No existe una relación asistencial activa con ese usuario";
 
     // =====================================================
     // MENSAJES DE ERROR - NOTIFICACIONES

@@ -1,5 +1,5 @@
 <template>
-  <div class="historia-page">
+  <div class="page-container historia-page">
     <div class="page-header">
       <div class="header-icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
@@ -137,6 +137,26 @@
             <polyline points="13 2 13 9 20 9"></polyline>
           </svg>
           {{$t('files')}}
+        </button>
+
+        <button
+          type="button"
+          id="anotaciones-tab"
+          ref="tabAnotaciones"
+          :class="['tab-btn', { active: activeSection === 'anotaciones' }]"
+          @click="activeSection = 'anotaciones'"
+          @keydown="onTabKeydown($event, 'anotaciones')"
+          role="tab"
+          :aria-selected="activeSection === 'anotaciones'"
+          aria-controls="anotaciones-panel"
+          :tabindex="activeSection === 'anotaciones' ? 0 : -1"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+            <path d="M4 5h11l5 5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"></path>
+            <path d="M14 5v6h6"></path>
+            <path d="M8 15h8M8 18h5"></path>
+          </svg>
+          {{$t('medical_annotations')}}
         </button>
       </div>
 
@@ -320,6 +340,24 @@
             </div>
           </div>
         </div>
+
+        <div
+          v-else-if="activeSection === 'anotaciones'"
+          key="anotaciones"
+          id="anotaciones-panel"
+          class="tab-panel"
+          role="tabpanel"
+          aria-labelledby="anotaciones-tab"
+          tabindex="-1"
+        >
+          <div class="panel-card">
+            <div class="panel-header">
+              <h2>{{$t('medical_annotations')}}</h2>
+              <p class="panel-subtitle">{{$t('medical_annotations_subtitle')}}</p>
+            </div>
+            <AnotacionesMedicasSection />
+          </div>
+        </div>
       </transition>
     </section>
   </div>
@@ -332,10 +370,11 @@ import AlergiasSection from '@/components/AlergiasSection.vue'
 import AnalisisSangreSection from '@/components/AnalisisSangreSection.vue'
 import SignosVitalesSection from '@/components/SignosVitalesSection.vue'
 import AnalisisOrinaSection from '@/components/AnalisisOrinaSection.vue'
+import AnotacionesMedicasSection from '@/components/AnotacionesMedicasSection.vue'
 
 export default {
   name: 'HistoriaClinicaView',
-  components: { AntecedentesSection, AlergiasSection, AnalisisSangreSection, SignosVitalesSection, AnalisisOrinaSection },
+  components: { AntecedentesSection, AlergiasSection, AnalisisSangreSection, SignosVitalesSection, AnalisisOrinaSection, AnotacionesMedicasSection },
   watch: {
     activeSection() {
       this.$nextTick(() => {
@@ -346,7 +385,7 @@ export default {
   },
   data() {
     return {
-      tabOrder: ['antecedentes', 'alergias', 'analisis', 'signos-vitales', 'analisis-orina', 'archivos'],
+      tabOrder: ['antecedentes', 'alergias', 'analisis', 'signos-vitales', 'analisis-orina', 'archivos', 'anotaciones'],
       items: [],
       file: null,
       uploading: false,
@@ -367,7 +406,8 @@ export default {
         analisis: 'tabAnalisis',
         'signos-vitales': 'tabSignosVitales',
         'analisis-orina': 'tabAnalisisOrina',
-        archivos: 'tabArchivos'
+        archivos: 'tabArchivos',
+        anotaciones: 'tabAnotaciones'
       }
       return map[section]
     },
@@ -492,46 +532,6 @@ export default {
 </script>
 
 <style scoped>
-.historia-page {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid var(--primary-color);
-}
-
-.header-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  border-radius: 12px;
-  color: var(--text-inverse);
-  flex-shrink: 0;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.subtitle {
-  margin: 0.25rem 0 0 0;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
 .tabs-section {
   margin-bottom: 2rem;
 }
@@ -595,14 +595,6 @@ export default {
   }
 }
 
-.panel-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: var(--shadow-md);
-}
-
 .panel-header {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
@@ -616,116 +608,12 @@ export default {
   color: var(--text-primary);
 }
 
-.panel-subtitle {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-@media (min-width: 768px) {
-  .form-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group.full-width {
-  grid-column: 1 / -1;
-}
-
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.required {
-  color: var(--danger-active);
-  font-size: 1.2em;
-  font-weight: 800;
-}
-
-.form-input {
-  padding: 0.75rem 1rem;
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.875rem;
-  transition: all 0.2s ease;
-  background: var(--card-bg);
-}
-
-.form-input:hover {
-  border-color: var(--primary-color);
-}
-
-.form-input:focus-visible {
-  outline: 3px solid var(--focus-color);
-  outline-offset: 2px;
-  border-color: var(--primary-color);
-  box-shadow: var(--focus-ring-info);
-}
-
-.info-box {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: var(--surface-info-bg);
-  border: 1px solid var(--surface-info-border);
-  border-radius: 8px;
-  margin-bottom: 2rem;
-}
-
-.info-box svg {
-  color: var(--primary-color);
-  flex-shrink: 0;
-  margin-top: 0.125rem;
-}
-
-.info-box span {
-  font-size: 0.875rem;
-  color: var(--surface-info-text);
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
+/* Layout only -- colour, hover and disabled come from the shared button
+   system in styles/shared.css (every button in the app is green). */
 .btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
   padding: 0.875rem 1.5rem;
-  background: var(--primary-color);
-  color: var(--text-inverse);
-  border: none;
   border-radius: 8px;
-  font-size: 0.875rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
 }
 
 .btn-primary:focus-visible,
@@ -733,11 +621,6 @@ export default {
 .file-drop-zone:focus-visible {
   outline: 3px solid var(--focus-color);
   outline-offset: 2px;
-}
-
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .spinner-small {
@@ -768,18 +651,6 @@ export default {
 
 .alert svg {
   flex-shrink: 0;
-}
-
-.alert-success {
-  background: var(--alert-success-bg);
-  color: var(--alert-success-text);
-  border: 1px solid var(--alert-success-border);
-}
-
-.alert-danger {
-  background: var(--alert-danger-bg);
-  color: var(--alert-danger-text);
-  border: 1px solid var(--alert-danger-border);
 }
 
 .upload-section {
@@ -961,16 +832,11 @@ export default {
   color: var(--text-secondary);
 }
 
-.btn-icon:hover:not(:disabled) {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: var(--text-inverse);
-}
-
+.btn-icon:hover:not(:disabled),
 .btn-icon.btn-danger:hover:not(:disabled) {
-  background: var(--danger-color);
-  border-color: var(--danger-color);
-  color: var(--text-inverse);
+  background: var(--button-color);
+  border-color: var(--button-color);
+  color: var(--on-button);
 }
 
 .btn-icon:disabled {
@@ -1004,21 +870,6 @@ export default {
 @media (max-width: 768px) {
   .historia-page {
     padding: 1.5rem 1rem;
-  }
-
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .header-icon {
-    width: 48px;
-    height: 48px;
-  }
-
-  .page-header h1 {
-    font-size: 1.5rem;
   }
 
   .panel-card {
@@ -1075,8 +926,7 @@ export default {
   .file-drop-zone,
   .file-card,
   .fade-slide-enter-active,
-  .fade-slide-leave-active,
-  .form-input {
+  .fade-slide-leave-active {
     transition: none;
   }
 }

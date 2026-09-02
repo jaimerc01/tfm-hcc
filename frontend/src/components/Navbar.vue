@@ -69,10 +69,10 @@
   <div class="nav__spacer" />
   <div v-if="open" class="nav__backdrop" @click="closeAll" />
 
-  <div v-if="showLogoutModal" class="logout-modal-overlay" @click="closeLogoutModal">
+  <div v-if="showLogoutModal" class="modal-overlay" @click="closeLogoutModal">
     <div
       ref="logoutDialog"
-      class="logout-modal"
+      class="modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="logout-modal-title"
@@ -80,7 +80,7 @@
       @keydown.esc.prevent="closeLogoutModal"
       tabindex="-1"
     >
-      <div class="logout-modal-header">
+      <div class="modal-header">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logout-icon" aria-hidden="true" focusable="false">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
           <polyline points="16 17 21 12 16 7"></polyline>
@@ -88,10 +88,10 @@
         </svg>
         <h3 id="logout-modal-title">{{ $t('logout') }}</h3>
       </div>
-      <p class="logout-modal-text">{{ $t('logout_confirm') }}</p>
-      <div class="logout-modal-actions">
-        <button type="button" @click="confirmLogout" class="btn-confirm">{{ $t('logout_yes') }}</button>
-        <button type="button" @click="closeLogoutModal" class="btn-cancel">{{ $t('cancel') }}</button>
+      <p class="modal-text">{{ $t('logout_confirm') }}</p>
+      <div class="modal-actions">
+        <button type="button" @click="confirmLogout" class="modal-btn modal-btn--confirm">{{ $t('logout_yes') }}</button>
+        <button type="button" @click="closeLogoutModal" class="modal-btn modal-btn--cancel">{{ $t('cancel') }}</button>
       </div>
     </div>
   </div>
@@ -273,8 +273,8 @@ export default {
 
 .nav__logout {
   margin-left: 0.5rem;
-  background: var(--danger-color);
-  color: var(--text-inverse);
+  background: var(--button-color);
+  color: var(--on-button);
   border: none;
   padding: 0.5rem 0.75rem;
   border-radius: 4px;
@@ -284,7 +284,7 @@ export default {
 }
 
 .nav__logout:hover {
-  background: var(--danger-hover);
+  background: var(--button-hover);
 }
 
 .nav__language-switch {
@@ -366,9 +366,7 @@ export default {
 .nav__link:focus-visible,
 .nav__logout:focus-visible,
 .nav__language-option:focus-visible,
-.nav__dropdown-toggle:focus-visible,
-.btn-confirm:focus-visible,
-.btn-cancel:focus-visible {
+.nav__dropdown-toggle:focus-visible {
   outline: 3px solid var(--focus-color);
   outline-offset: 2px;
 }
@@ -417,125 +415,11 @@ export default {
   }
 }
 
-.logout-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--surface-overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-.logout-modal {
-  background: var(--card-bg);
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 400px;
-  width: 90%;
-  box-shadow: var(--shadow-xl);
-  animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.logout-modal-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
 .logout-icon {
   color: var(--danger-color);
 }
 
-.logout-modal-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.logout-modal-text {
-  text-align: center;
-  color: var(--text-secondary);
-  margin-bottom: 2rem;
-  font-size: 1rem;
-}
-
-.logout-modal-actions {
-  display: flex;
-  gap: 0.75rem;
-  flex-direction: column;
-}
-
-@media (min-width: 400px) {
-  .logout-modal-actions {
-    flex-direction: row;
-  }
-}
-
-.btn-confirm,
-.btn-cancel {
-  flex: 1;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-confirm {
-  background: var(--danger-color);
-  color: var(--text-inverse);
-}
-
-.btn-confirm:hover {
-  background: var(--danger-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
-}
-
-.btn-cancel {
-  background: var(--bg-light);
-  color: var(--text-primary);
-  border: 1.5px solid var(--border);
-}
-
-.btn-cancel:hover {
-  background: var(--border);
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .logout-modal-overlay,
-  .logout-modal,
-  .btn-confirm,
-  .btn-cancel,
   .nav__link,
   .nav__toggle,
   .nav__logout,

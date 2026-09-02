@@ -8,6 +8,25 @@ Objetivo: usar un sistema consistente para que cualquier color nuevo se defina e
 - En componentes y vistas, usar siempre `var(--token)`.
 - Priorizar tokens semanticos (que expresan intencion) sobre tokens de paleta cruda.
 
+## Regla 60-30-10
+
+El reparto visual de color sigue la regla 60-30-10, por FUNCION:
+
+- **Azul (`--primary-*`) ~60% — el marco/estructura**: navbar, footer (`--footer-bg`
+  apunta a azul), cabeceras de pagina y sus iconos (`--gradient-primary`), iconos de
+  seccion, pestañas de navegacion, barras de acento lateral, foco, serie principal de
+  graficos.
+- **Verde (`--button-color` / `--secondary-*`) ~30% — las acciones**: TODOS los botones
+  son verdes solidos, incluidos los destructivos (Eliminar, Cerrar sesion) — se
+  distinguen por texto e icono, no por color. Botones secundarios = mismo verde en
+  outline. `--button-color` (#2e7d46) es un verde oscuro accesible (texto blanco
+  >= 4.5:1); `--secondary-color` (#7DBA84) es mas claro y solo vale para tintes, bordes
+  y textos de estado. Serie de enfasis de graficos = `--chart-emphasis` (verde).
+- **Amarillo (`--tertiary-*` y `--danger-*`) ~10% — solo avisos y errores**: alertas,
+  badges, errores de formulario, texto `.error`, iconos de advertencia, toasts de error,
+  contador de notificaciones. Nunca en botones. Nunca decorativo. La familia `--danger-*`
+  es una rampa de oro oscuro con contraste AA; la app no usa rojo.
+
 ## Convencion Recomendada
 
 Formato general: `--<categoria>-<uso>-<estado>`

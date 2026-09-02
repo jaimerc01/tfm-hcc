@@ -3,7 +3,6 @@ package com.hcc.tfm_hcc.service.impl;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -47,7 +46,7 @@ public class NotificacionServiceImpl implements NotificacionService {
     @Transactional
     public Notificacion crearNotificacionParaUsuario(String usuarioNif, String mensaje) {
         if (usuarioNif == null || usuarioNif.trim().isEmpty()) {
-            throw new IllegalArgumentException("El NIF del usuario no puede ser nulo o vacío");
+            throw new IllegalArgumentException(ErrorMessages.ERROR_DESTINATARIO_INVALIDO);
         }
         if (mensaje == null) {
             mensaje = "";
@@ -77,11 +76,19 @@ public class NotificacionServiceImpl implements NotificacionService {
         if (dto == null) {
             throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
         }
-        
+
+        return usuarioRepository.findById(parsearUuid(dto.getId()))
+                .orElseThrow(() -> new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
+    }
+
+    /**
+     * Convierte un identificador de texto a {@link UUID}, traduciendo un formato inválido a
+     * un error de argumento con mensaje estable (sin depender de comparar el texto de la
+     * excepción de {@code UUID.fromString}).
+     */
+    private UUID parsearUuid(String valor) {
         try {
-            UUID uid = UUID.fromString(dto.getId());
-            return usuarioRepository.findById(Objects.requireNonNull(uid, "UUID cannot be null"))
-                    .orElseThrow(() -> new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
+            return UUID.fromString(valor);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_FORMATO_INVALIDO, e);
         }
@@ -101,26 +108,18 @@ public class NotificacionServiceImpl implements NotificacionService {
      * Busca una notificación por ID y valida que pertenezca al usuario
      */
     private Notificacion buscarYValidarNotificacion(String notificacionId, Usuario usuario) {
-        try {
-            UUID nid = UUID.fromString(notificacionId);
-            Notificacion notificacion = notificacionRepository.findById(Objects.requireNonNull(nid, "UUID cannot be null"))
-                    .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ERROR_NOTIFICACION_NO_ENCONTRADA));
-            
-            validarPropietarioNotificacion(notificacion, usuario);
-            return notificacion;
-        } catch (IllegalArgumentException e) {
-            if (e.getMessage().equals(ErrorMessages.ERROR_NOTIFICACION_NO_ENCONTRADA)) {
-                throw e;
-            }
-            throw new IllegalArgumentException(ErrorMessages.ERROR_FORMATO_INVALIDO, e);
-        }
+        Notificacion notificacion = notificacionRepository.findById(parsearUuid(notificacionId))
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ERROR_NOTIFICACION_NO_ENCONTRADA));
+
+        validarPropietarioNotificacion(notificacion, usuario);
+        return notificacion;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Notificacion> listarNotificacionesUsuarioActual() {
         Usuario usuario = obtenerUsuarioActual();
-        return notificacionRepository.findByUsuarioOrderByFechaCreacionDesc(usuario);
+        return notificacionRepository.findByUsuarioAndEliminadaFalseOrderByFechaCreacionDesc(usuario);
     }
 
     @Override
@@ -131,7 +130,7 @@ public class NotificacionServiceImpl implements NotificacionService {
         Pageable pageable = PageRequest.of(page, size, 
             Sort.by("fechaCreacion").descending());
             
-        return notificacionRepository.findByUsuario(usuario, pageable);
+        return notificacionRepository.findByUsuarioAndEliminadaFalse(usuario, pageable);
     }
 
     /**
@@ -153,8 +152,8 @@ public class NotificacionServiceImpl implements NotificacionService {
     public List<Notificacion> marcarTodasComoLeidasUsuarioActual() {
         Usuario usuario = obtenerUsuarioActual();
         List<Notificacion> notificaciones = notificacionRepository
-                .findByUsuarioOrderByFechaCreacionDesc(usuario);
-        
+                .findByUsuarioAndEliminadaFalseOrderByFechaCreacionDesc(usuario);
+
         return actualizarNotificacionesALeidas(notificaciones);
     }
 
@@ -184,11 +183,11 @@ public class NotificacionServiceImpl implements NotificacionService {
     @Transactional(readOnly = true)
     public long contarNoLeidasUsuarioActual() {
         Usuario usuario = obtenerUsuarioActual();
-        return notificacionRepository.countByUsuarioAndLeidaFalse(usuario);
+        return notificacionRepository.countByUsuarioAndLeidaFalseAndEliminadaFalse(usuario);
     }
 
     private Notificacion softDeleteNotificacion(Notificacion notificacion) {
-        notificacion.setLeida(true);
+        notificacion.setEliminada(true);
         return notificacionRepository.save(notificacion);
     }
 

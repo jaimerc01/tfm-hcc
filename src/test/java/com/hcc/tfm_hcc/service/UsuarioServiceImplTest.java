@@ -32,6 +32,7 @@ import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.AccessLog;
 import com.hcc.tfm_hcc.model.AuditoriaCambio;
+import com.hcc.tfm_hcc.model.MedicoPaciente;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.AccessLogRepository;
@@ -497,8 +498,8 @@ class UsuarioServiceImplTest {
         SolicitudAsignacion solicitud = solicitudPendiente("12345678A");
         when(solicitudAsignacionRepository.findById(solicitud.getId())).thenReturn(Optional.of(solicitud));
         when(solicitudAsignacionRepository.save(solicitud)).thenReturn(solicitud);
-        when(medicoPacienteRepository.existsByMedicoIdAndPacienteId(solicitud.getMedico().getId(), solicitud.getPaciente().getId()))
-                .thenReturn(false);
+        when(medicoPacienteRepository.findByMedicoIdAndPacienteId(solicitud.getMedico().getId(), solicitud.getPaciente().getId()))
+                .thenReturn(List.of());
 
         SolicitudAsignacion resultado = service.actualizarEstadoSolicitud(solicitud.getId().toString(), "ACEPTADA");
 
@@ -519,17 +520,36 @@ class UsuarioServiceImplTest {
     }
 
     @Test
-    void actualizarEstadoSolicitud_aceptadaConRelacionExistente_noCreaOtraRelacion() {
+    void actualizarEstadoSolicitud_aceptadaConRelacionActivaExistente_noCreaNiGuardaOtraRelacion() {
         autenticarComo("12345678A");
         SolicitudAsignacion solicitud = solicitudPendiente("12345678A");
+        MedicoPaciente relacionActiva = new MedicoPaciente();
+        relacionActiva.setEstado(MedicoPaciente.ESTADO_ACTIVA);
         when(solicitudAsignacionRepository.findById(solicitud.getId())).thenReturn(Optional.of(solicitud));
         when(solicitudAsignacionRepository.save(solicitud)).thenReturn(solicitud);
-        when(medicoPacienteRepository.existsByMedicoIdAndPacienteId(solicitud.getMedico().getId(), solicitud.getPaciente().getId()))
-                .thenReturn(true);
+        when(medicoPacienteRepository.findByMedicoIdAndPacienteId(solicitud.getMedico().getId(), solicitud.getPaciente().getId()))
+                .thenReturn(List.of(relacionActiva));
 
         service.actualizarEstadoSolicitud(solicitud.getId().toString(), "ACEPTADA");
 
         verify(medicoPacienteRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizarEstadoSolicitud_aceptadaConRelacionRevocada_reactivaEsaRelacion() {
+        autenticarComo("12345678A");
+        SolicitudAsignacion solicitud = solicitudPendiente("12345678A");
+        MedicoPaciente relacionRevocada = new MedicoPaciente();
+        relacionRevocada.setEstado(MedicoPaciente.ESTADO_REVOCADA);
+        when(solicitudAsignacionRepository.findById(solicitud.getId())).thenReturn(Optional.of(solicitud));
+        when(solicitudAsignacionRepository.save(solicitud)).thenReturn(solicitud);
+        when(medicoPacienteRepository.findByMedicoIdAndPacienteId(solicitud.getMedico().getId(), solicitud.getPaciente().getId()))
+                .thenReturn(List.of(relacionRevocada));
+
+        service.actualizarEstadoSolicitud(solicitud.getId().toString(), "ACEPTADA");
+
+        assertEquals(MedicoPaciente.ESTADO_ACTIVA, relacionRevocada.getEstado());
+        verify(medicoPacienteRepository, times(1)).save(relacionRevocada);
     }
 
     @Test

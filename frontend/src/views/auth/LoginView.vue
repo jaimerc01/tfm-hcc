@@ -1,5 +1,5 @@
 <template>
-  <main class="login-container">
+  <main class="auth-viewport login-container">
     <section class="login-card" aria-labelledby="login-title">
       <h1 id="login-title">{{ step === 'twoFactor' ? $t('two_factor_title') : $t('login_title') }}</h1>
 
@@ -151,6 +151,7 @@
       </form>
 
       <div v-if="step === 'credentials'" class="alt-actions">
+        <router-link to="/recuperar-password">{{ $t('forgot_password_link') }}</router-link>
         <router-link to="/register"><strong>{{ $t('no_account') }}</strong></router-link>
       </div>
     </section>
@@ -382,14 +383,6 @@
 </script>
 
 <style scoped>
-  .login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: var(--bg-medium);
-  }
-
   .login-card {
     background: var(--card-bg);
     padding: 2rem;
@@ -436,7 +429,7 @@
   }
 
   .login-btn {
-    background-color: var(--brand-accent);
+    background-color: var(--button-color);
     color: var(--text-inverse);
     padding: 0.75rem;
     border: none;
@@ -462,6 +455,9 @@
 
   .alt-actions {
     margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     text-align: center;
   }
 
@@ -482,18 +478,6 @@
     outline-offset: 2px;
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    border: 0;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-  
   .google-login {
     display: flex;
     flex-direction: column;
@@ -564,7 +548,7 @@
     width: 18px;
     height: 18px;
     flex-shrink: 0;
-    color: var(--tertiary-color);
+    color: inherit;
   }
 
   .two-factor-help {

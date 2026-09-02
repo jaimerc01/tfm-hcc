@@ -1,7 +1,9 @@
--- Script para insertar rangos de referencia médicos comunes
--- Este script añade rangos normales para análisis de sangre típicos
+-- Script para insertar rangos de referencia médicos comunes.
+-- Añade rangos normales para análisis de sangre típicos en la tabla `rangos`
+-- (entidad Rango: columnas id, nombre, valor_inferior, valor_superior,
+--  fecha_creacion, fecha_ultima_modificacion -- heredadas de BaseEntity).
 
-INSERT INTO rangos (id, nombre, valor_inferior, valor_superior, fecha_creacion, fecha_actualizacion) VALUES
+INSERT INTO rangos (id, nombre, valor_inferior, valor_superior, fecha_creacion, fecha_ultima_modificacion) VALUES
 (gen_random_uuid(), 'Glucosa', '70', '140', NOW(), NOW()),
 (gen_random_uuid(), 'Hemoglobina', '12.0', '16.0', NOW(), NOW()),
 (gen_random_uuid(), 'Colesterol total', '100', '200', NOW(), NOW()),

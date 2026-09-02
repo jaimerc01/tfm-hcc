@@ -1,5 +1,5 @@
 <template>
-  <main class="callback-container">
+  <main class="auth-viewport callback-container">
     <section class="callback-card" aria-labelledby="callback-title">
       <h1 id="callback-title" class="sr-only">{{ $t('login_with_google') }}</h1>
       <div class="spinner" aria-hidden="true"></div>
@@ -48,14 +48,6 @@
 </script>
 
 <style scoped>
-  .callback-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: var(--bg-medium);
-  }
-
   .callback-card {
     display: flex;
     flex-direction: column;
@@ -91,17 +83,5 @@
     .spinner {
       animation: none;
     }
-  }
-
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    border: 0;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
   }
 </style>

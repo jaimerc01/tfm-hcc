@@ -1,9 +1,12 @@
 package com.hcc.tfm_hcc.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.converter.PacienteConverter;
@@ -14,6 +17,7 @@ import com.hcc.tfm_hcc.exception.MedicoValidationException;
 import com.hcc.tfm_hcc.exception.PerfilNotFoundException;
 import com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
+import com.hcc.tfm_hcc.model.MedicoPaciente;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.MedicoPacienteRepository;
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
@@ -42,16 +46,22 @@ import lombok.extern.slf4j.Slf4j;
 public class MedicoServiceImpl implements MedicoService {
 
     // Constantes
-    private static final String ESTADO_ACTIVO = "ACTIVO";
-    private static final String ESTADO_REVOCADA = "REVOCADA";
     private static final String PERFIL_MEDICO = "MEDICO";
     private static final String PERFIL_PACIENTE = "PACIENTE";
+    private static final String ZONE_ID_EUROPA_MADRID = "Europe/Madrid";
+
+    // Textos de las notificaciones enviadas al paciente cuando pierde a su médico
+    private static final String MENSAJE_MEDICO_PREFIJO = "Tu médico ";
+    private static final String MENSAJE_MEDICO_NO_DISPONIBLE = " ya no está disponible";
+    private static final String MENSAJE_MEDICO_DESASIGNADO = " ya no está asociado a tu cuenta";
 
     // Constantes de campos
     private static final String CAMPO_DNI = "DNI";
     private static final String CAMPO_NIF = "NIF";
     private static final String CAMPO_DATOS_MEDICO = "Datos del médico";
     private static final String CAMPO_FECHA_NACIMIENTO = "Fecha de nacimiento";
+    private static final String CAMPO_ID_MEDICO = "ID del médico";
+    private static final String CAMPO_ID_USUARIO = "ID del usuario";
     
     // Dependencies injection by constructor
     private final NotificacionFacade notificacionFacade;
@@ -132,6 +142,31 @@ public class MedicoServiceImpl implements MedicoService {
     }
 
     /**
+     * Lista los pacientes con una relación médico-paciente activa para un médico dado.
+     *
+     * @param nifMedico NIF del médico del cual listar los pacientes asignados
+     * @return lista de DTOs de los pacientes actualmente asignados al médico
+     * @throws UsuarioNoEncontradoException si no existe un usuario con ese NIF
+     */
+    @Override
+    public List<PacienteDTO> listarMisPacientes(String nifMedico) {
+        log.debug("Listando pacientes asignados al médico: {}", LogMaskUtil.enmascarar(nifMedico));
+
+        Usuario medico = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nifMedico))
+            .orElseThrow(() -> new UsuarioNoEncontradoException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
+
+        List<PacienteDTO> pacientes = medicoPacienteRepository
+            .findByMedicoIdAndEstado(medico.getId(), MedicoPaciente.ESTADO_ACTIVA)
+            .stream()
+            .map(MedicoPaciente::getPaciente)
+            .map(pacienteConverter::toDto)
+            .toList();
+
+        log.info("Se encontraron {} pacientes asignados al médico", pacientes.size());
+        return pacientes;
+    }
+
+    /**
      * Lista todos los médicos del sistema.
      *
      * @return lista de DTOs de usuarios médicos
@@ -172,12 +207,13 @@ public class MedicoServiceImpl implements MedicoService {
      * @throws PerfilNotFoundException si no se puede crear el médico por falta de perfil
      */
     @Override
+    @Transactional
     public UsuarioDTO crearMedico(UsuarioDTO medicoDTO) {
         validarDatosMedico(medicoDTO);
         log.debug("Creando nuevo médico con NIF: {}", LogMaskUtil.enmascarar(medicoDTO.getNif()));
 
         try {
-            medicoDTO.setEstadoCuenta(ESTADO_ACTIVO);
+            medicoDTO.setEstadoCuenta(Usuario.ESTADO_CUENTA_ACTIVO);
             UsuarioDTO usuarioDTO = usuarioFacade.altaUsuario(medicoDTO);
             perfilUsuarioService.asignarPerfil(UUID.fromString(usuarioDTO.getId()), PERFIL_MEDICO);
 
@@ -219,13 +255,11 @@ public class MedicoServiceImpl implements MedicoService {
     * @throws UsuarioNoEncontradoException si el médico no existe
      */
     @Override
+    @Transactional
     public UsuarioDTO actualizarMedico(UUID id, UsuarioDTO medicoDTO) {
         log.debug("Actualizando médico con ID: {}", id);
         
         Usuario usuario = buscarMedicoPorId(id);
-        if (usuario == null) {
-            throw new UsuarioNoEncontradoException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO);
-        }
         actualizarDatosUsuario(usuario, medicoDTO);
         Usuario usuarioActualizado = usuarioRepository.save(usuario);
         
@@ -243,8 +277,8 @@ public class MedicoServiceImpl implements MedicoService {
     * @throws MedicoValidationException si no se encuentra el médico
      */
     private Usuario buscarMedicoPorId(UUID id) {
-        if(id == null) {
-            String error = ErrorMessages.campoRequerido("ID del médico");
+        if (id == null) {
+            String error = ErrorMessages.campoRequerido(CAMPO_ID_MEDICO);
             log.error(error);
             throw new MedicoValidationException(error);
         }
@@ -285,35 +319,28 @@ public class MedicoServiceImpl implements MedicoService {
     }
 
     @Override
+    @Transactional
     public UUID eliminarMedico(UUID id) {
-        if(id == null) {
-            String error = ErrorMessages.campoRequerido("ID del médico");
-            log.error(error);
-            throw new MedicoValidationException(error);
-        }
-        var usuarioOpt = usuarioRepository.findById(id);
-        if (usuarioOpt.isEmpty()) throw new UsuarioNoEncontradoException("No existe el médico");
-        Usuario usuario = usuarioOpt.get();
-        // Notificar a pacientes asociados que el médico ha sido eliminado
-        var relacionesMP = medicoPacienteRepository.findByMedicoIdAndEstadoNot(id, ESTADO_REVOCADA);
-        if (relacionesMP != null && !relacionesMP.isEmpty()) {
-            for (var rel : relacionesMP) {
-                String mensaje = "Tu médico " + (usuario.getNombre()!=null?usuario.getNombre():usuario.getNif()) + " ya no está disponible";
-                notificacionFacade.crearNotificacionParaUsuario(rel.getPaciente().getNif(), mensaje);
-                
-            }
-        }
+        Usuario usuario = getUsuarioFromId(id);
+
+        // Cerrar las relaciones médico-paciente antes de dar de baja la cuenta: si no,
+        // quedarían en estado ACTIVA y el médico eliminado seguiría autorizado para
+        // consultar el historial de esos pacientes (ver HistorialClinicoServiceImpl).
+        revocarRelacionesMedicoPaciente(id, usuario, MENSAJE_MEDICO_NO_DISPONIBLE);
+
         perfilUsuarioService.revocarPerfil(id, PERFIL_MEDICO);
-        usuario.setEstadoCuenta("ELIMINADO");
+        usuario.setEstadoCuenta(Usuario.ESTADO_CUENTA_ELIMINADO);
+        usuario.setFechaEliminacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
         usuarioRepository.save(usuario);
         return id;
     }
 
     @Override
+    @Transactional
     public UUID setPerfilMedico(UUID id, boolean asignar) {
 
         if (perfilRepository.getPerfilByRol(PERFIL_MEDICO).isEmpty() || perfilRepository.getPerfilByRol(PERFIL_PACIENTE).isEmpty()) {
-            throw new PerfilNotFoundException("Perfiles requeridos no configurados");
+            throw new PerfilNotFoundException(ErrorMessages.ERROR_CONFIGURACION);
         }
         Usuario usuario = getUsuarioFromId(id);
 
@@ -326,16 +353,7 @@ public class MedicoServiceImpl implements MedicoService {
     }
 
     private void revocarPerfilMedico(UUID id, Usuario usuario) {
-        // Si tiene relaciones MedicoPaciente, marcarlas como REVOCADA
-        var relacionesMP = medicoPacienteRepository.findByMedicoIdAndEstadoNot(id, ESTADO_REVOCADA);
-        if (relacionesMP != null && !relacionesMP.isEmpty()) {
-            for (var rel : relacionesMP) {
-                rel.setEstado(ESTADO_REVOCADA);
-                String mensaje = "Tu médico " + (usuario.getNombre()!=null?usuario.getNombre():usuario.getNif()) + " ya no está asociado a tu cuenta";
-                notificacionFacade.crearNotificacionParaUsuario(rel.getPaciente().getNif(), mensaje);
-            }
-            medicoPacienteRepository.saveAll(relacionesMP);
-        }
+        revocarRelacionesMedicoPaciente(id, usuario, MENSAJE_MEDICO_DESASIGNADO);
         // revocar perfil MEDICO
         perfilUsuarioService.revocarPerfil(id, PERFIL_MEDICO);
         // garantizar que tenga perfil PACIENTE
@@ -344,16 +362,39 @@ public class MedicoServiceImpl implements MedicoService {
         }
     }
 
+    /**
+     * Marca como {@code REVOCADA} todas las relaciones médico-paciente vigentes del médico
+     * indicado y notifica a cada paciente afectado. Compartido por la baja de la cuenta
+     * ({@link #eliminarMedico(UUID)}) y la retirada del perfil médico
+     * ({@link #revocarPerfilMedico(UUID, Usuario)}) para no duplicar la lógica.
+     *
+     * @param medicoId identificador del médico
+     * @param medico   entidad del médico, para componer el nombre en la notificación
+     * @param motivo   sufijo del mensaje enviado al paciente (p. ej. {@link #MENSAJE_MEDICO_NO_DISPONIBLE})
+     */
+    private void revocarRelacionesMedicoPaciente(UUID medicoId, Usuario medico, String motivo) {
+        List<MedicoPaciente> relaciones = medicoPacienteRepository.findByMedicoIdAndEstadoNot(medicoId, MedicoPaciente.ESTADO_REVOCADA);
+        if (relaciones == null || relaciones.isEmpty()) {
+            return;
+        }
+
+        String nombreMedico = medico.getNombre() != null ? medico.getNombre() : medico.getNif();
+        String mensaje = MENSAJE_MEDICO_PREFIJO + nombreMedico + motivo;
+
+        for (MedicoPaciente relacion : relaciones) {
+            relacion.setEstado(MedicoPaciente.ESTADO_REVOCADA);
+            notificacionFacade.crearNotificacionParaUsuario(relacion.getPaciente().getNif(), mensaje);
+        }
+        medicoPacienteRepository.saveAll(relaciones);
+    }
+
     private Usuario getUsuarioFromId(UUID id) {
         if (id == null) {
-            String error = ErrorMessages.campoRequerido("ID del usuario");
+            String error = ErrorMessages.campoRequerido(CAMPO_ID_USUARIO);
             log.error(error);
             throw new MedicoValidationException(error);
         }
-        var usuarioOpt = usuarioRepository.findById(id);
-        if (usuarioOpt.isEmpty()) {
-            throw new UsuarioNoEncontradoException("Usuario no encontrado");
-        }
-        return usuarioOpt.get();
+        return usuarioRepository.findById(id)
+            .orElseThrow(() -> new UsuarioNoEncontradoException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
     }
 }

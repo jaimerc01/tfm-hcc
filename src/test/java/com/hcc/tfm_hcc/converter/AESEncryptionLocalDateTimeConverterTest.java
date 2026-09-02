@@ -74,4 +74,13 @@ class AESEncryptionLocalDateTimeConverterTest {
 
         assertEquals(LocalDateTime.of(1990, 5, 14, 0, 0, 0, 123_456_000), descifrado);
     }
+
+    @Test
+    void convertToEntityAttribute_conFechaSinHoraDeColumnaDateSinCifrar_seParseaAMedianoche() {
+        // Formato que produce Postgres al convertir una columna DATE a texto
+        // (ALTER TABLE ... USING fecha_nacimiento::text): solo fecha, sin hora.
+        LocalDateTime descifrado = converter.convertToEntityAttribute("1990-01-01");
+
+        assertEquals(LocalDateTime.of(1990, 1, 1, 0, 0, 0), descifrado);
+    }
 }

@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -213,6 +214,9 @@ class MedicoServiceImplTest {
 
         assertEquals(id, resultado);
         assertEquals("ELIMINADO", medico.getEstadoCuenta());
+        assertNotNull(medico.getFechaEliminacion());
+        assertEquals("REVOCADA", relacion.getEstado());
+        verify(medicoPacienteRepository, times(1)).saveAll(List.of(relacion));
         verify(notificacionFacade, times(1)).crearNotificacionParaUsuario(eq("87654321B"), anyString());
         verify(perfilUsuarioService, times(1)).revocarPerfil(id, "MEDICO");
         verify(usuarioRepository, times(1)).save(medico);

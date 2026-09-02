@@ -13,12 +13,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.constants.TiposDatoClinico;
 import com.hcc.tfm_hcc.dto.AlergiaDTO;
 import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.converter.AlergiaConverter;
@@ -30,6 +30,7 @@ import com.hcc.tfm_hcc.model.AntecedenteClinico;
 import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.DatoClinico;
 import com.hcc.tfm_hcc.model.HistorialClinico;
+import com.hcc.tfm_hcc.model.MedicoPaciente;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.AlergiaRepository;
 import com.hcc.tfm_hcc.repository.AntecedenteClinicoRepository;
@@ -42,10 +43,12 @@ import com.hcc.tfm_hcc.service.AuditoriaCambioService;
 import com.hcc.tfm_hcc.service.HistorialClinicoService;
 import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class HistorialClinicoServiceImpl implements HistorialClinicoService {
 
-    private static final String CREATED_AT = "createdAt";
     private static final String DATO_CLINICO = "dato_clinico";
     private static final String ALERGIA = "ALERGIA";
     private static final String ALERGIA_TABLA = "alergia";
@@ -56,7 +59,6 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     private static final String TIPO_CAMBIO_SIGNOS_VITALES = "SIGNOS_VITALES";
     private static final String TIPO_CAMBIO_ANALISIS_ORINA = "ANALISIS_ORINA";
     private static final String ZONE_ID_EUROPA_MADRID = "Europe/Madrid";
-    private static final String ESTADO_MEDICO_PACIENTE_ACTIVA = "ACTIVA";
 
     private final HistorialClinicoRepository historiaRepo;
     private final UsuarioFacade usuarioFacade;
@@ -86,7 +88,8 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             HistorialClinicoConverter historialClinicoConverter,
             AlergiaConverter alergiaConverter,
             AntecedenteClinicoConverter antecedenteClinicoConverter,
-            HmacSearchIndexService hmacSearchIndexService) {
+            HmacSearchIndexService hmacSearchIndexService,
+            ObjectMapper objectMapper) {
         this.historiaRepo = historiaRepo;
         this.usuarioFacade = usuarioFacade;
         this.usuarioRepository = usuarioRepository;
@@ -99,7 +102,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         this.historialClinicoConverter = historialClinicoConverter;
         this.alergiaConverter = alergiaConverter;
         this.antecedenteClinicoConverter = antecedenteClinicoConverter;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
         this.hmacSearchIndexService = hmacSearchIndexService;
     }
 
@@ -186,7 +189,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         }
 
         boolean autorizado = medicoPacienteRepository.existsByMedicoIdAndPacienteIdAndEstado(
-                medico.getId(), paciente.getId(), ESTADO_MEDICO_PACIENTE_ACTIVA);
+                medico.getId(), paciente.getId(), MedicoPaciente.ESTADO_ACTIVA);
         if (!autorizado) {
             throw new IllegalStateException(ErrorMessages.ERROR_ACCESO_DENEGADO);
         }
@@ -378,235 +381,103 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
 
     @Override
     @Transactional
-    public HistorialClinicoDTO actualizarAnalisisSangre(String analisisJson) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-        
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-        
-        procesarAnalisisSangre(analisisJson, historial, true);
-
-        historiaRepo.save(historial);
-
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            TIPO_CAMBIO_ANALISIS_SANGRE,
-            DATO_CLINICO,
-            historial.getId().toString(),
-            "",
-            analisisJson,
-            AuditoriaCambio.TipoOperacion.UPDATE,
-            "Reemplazo completo de análisis de sangre"
-        );
-
-        return historialClinicoConverter.toDto(historial);
+    public HistorialClinicoDTO actualizarAnalisisSangre(List<DatoClinicoEntradaDTO> analisis) {
+        return guardarDatosClinicos(analisis, TiposDatoClinico.ANALISIS_SANGRE, true,
+                TIPO_CAMBIO_ANALISIS_SANGRE, AuditoriaCambio.TipoOperacion.UPDATE,
+                "Reemplazo completo de análisis de sangre");
     }
 
     @Override
     @Transactional
-    public HistorialClinicoDTO añadirAnalisisSangre(String analisisJson) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-
-        procesarAnalisisSangre(analisisJson, historial, false);
-
-        historiaRepo.save(historial);
-
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            TIPO_CAMBIO_ANALISIS_SANGRE,
-            DATO_CLINICO,
-            historial.getId().toString(),
-            "",
-            analisisJson,
-            AuditoriaCambio.TipoOperacion.CREATE,
-            "Adición de nuevos análisis de sangre"
-        );
-
-        return historialClinicoConverter.toDto(historial);
+    public HistorialClinicoDTO añadirAnalisisSangre(List<DatoClinicoEntradaDTO> analisis) {
+        return guardarDatosClinicos(analisis, TiposDatoClinico.ANALISIS_SANGRE, false,
+                TIPO_CAMBIO_ANALISIS_SANGRE, AuditoriaCambio.TipoOperacion.CREATE,
+                "Adición de nuevos análisis de sangre");
     }
 
     @Override
     @Transactional
-    public HistorialClinicoDTO actualizarSignosVitales(String signosVitalesJson) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-
-        procesarSignosVitales(signosVitalesJson, historial, true);
-
-        historiaRepo.save(historial);
-
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            TIPO_CAMBIO_SIGNOS_VITALES,
-            DATO_CLINICO,
-            historial.getId().toString(),
-            "",
-            signosVitalesJson,
-            AuditoriaCambio.TipoOperacion.UPDATE,
-            "Reemplazo completo de signos vitales"
-        );
-
-        return historialClinicoConverter.toDto(historial);
+    public HistorialClinicoDTO actualizarSignosVitales(List<DatoClinicoEntradaDTO> signosVitales) {
+        return guardarDatosClinicos(signosVitales, TiposDatoClinico.SIGNOS_VITALES, true,
+                TIPO_CAMBIO_SIGNOS_VITALES, AuditoriaCambio.TipoOperacion.UPDATE,
+                "Reemplazo completo de signos vitales");
     }
 
     @Override
     @Transactional
-    public HistorialClinicoDTO añadirSignosVitales(String signosVitalesJson) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-
-        procesarSignosVitales(signosVitalesJson, historial, false);
-
-        historiaRepo.save(historial);
-
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            TIPO_CAMBIO_SIGNOS_VITALES,
-            DATO_CLINICO,
-            historial.getId().toString(),
-            "",
-            signosVitalesJson,
-            AuditoriaCambio.TipoOperacion.CREATE,
-            "Adición de nuevos signos vitales"
-        );
-
-        return historialClinicoConverter.toDto(historial);
+    public HistorialClinicoDTO añadirSignosVitales(List<DatoClinicoEntradaDTO> signosVitales) {
+        return guardarDatosClinicos(signosVitales, TiposDatoClinico.SIGNOS_VITALES, false,
+                TIPO_CAMBIO_SIGNOS_VITALES, AuditoriaCambio.TipoOperacion.CREATE,
+                "Adición de nuevos signos vitales");
     }
 
     @Override
     @Transactional
-    public HistorialClinicoDTO actualizarAnalisisOrina(String analisisOrinaJson) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-
-        procesarAnalisisOrina(analisisOrinaJson, historial, true);
-
-        historiaRepo.save(historial);
-
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            TIPO_CAMBIO_ANALISIS_ORINA,
-            DATO_CLINICO,
-            historial.getId().toString(),
-            "",
-            analisisOrinaJson,
-            AuditoriaCambio.TipoOperacion.UPDATE,
-            "Reemplazo completo de análisis de orina"
-        );
-
-        return historialClinicoConverter.toDto(historial);
+    public HistorialClinicoDTO actualizarAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina) {
+        return guardarDatosClinicos(analisisOrina, TiposDatoClinico.ANALISIS_ORINA, true,
+                TIPO_CAMBIO_ANALISIS_ORINA, AuditoriaCambio.TipoOperacion.UPDATE,
+                "Reemplazo completo de análisis de orina");
     }
 
     @Override
     @Transactional
-    public HistorialClinicoDTO añadirAnalisisOrina(String analisisOrinaJson) {
-        Usuario usuario = obtenerUsuarioAutenticado();
-        HistorialClinico historial = ensureForUsuario(usuario);
-
-        if (historial == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_HISTORIAL_NO_EXISTE);
-        }
-
-        procesarAnalisisOrina(analisisOrinaJson, historial, false);
-
-        historiaRepo.save(historial);
-
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            TIPO_CAMBIO_ANALISIS_ORINA,
-            DATO_CLINICO,
-            historial.getId().toString(),
-            "",
-            analisisOrinaJson,
-            AuditoriaCambio.TipoOperacion.CREATE,
-            "Adición de nuevos datos de análisis de orina"
-        );
-
-        return historialClinicoConverter.toDto(historial);
+    public HistorialClinicoDTO añadirAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina) {
+        return guardarDatosClinicos(analisisOrina, TiposDatoClinico.ANALISIS_ORINA, false,
+                TIPO_CAMBIO_ANALISIS_ORINA, AuditoriaCambio.TipoOperacion.CREATE,
+                "Adición de nuevos datos de análisis de orina");
     }
 
     /**
-     * Procesa los análisis de sangre del JSON y los almacena como datos clínicos.
+     * Flujo común de los seis endpoints de datos clínicos cuantitativos (análisis de
+     * sangre, signos vitales, análisis de orina; en variante "reemplazar todo" o "añadir"):
+     * asegura el historial del usuario autenticado, persiste las mediciones y registra el
+     * cambio en la auditoría.
      *
-     * @param analisisJson JSON con los análisis de sangre
-     * @param historial Historial clínico al que pertenecen
-     * @param eliminarExistentes Si true, elimina todos los análisis existentes antes de guardar los nuevos (reemplazo completo).
-     *                           Si false, solo añade los nuevos análisis sin eliminar los existentes.
+     * @param entradas             mediciones recibidas del cliente (ya deserializadas por Jackson)
+     * @param tiposDominio         tipos que delimitan el dominio afectado (p. ej. {@link TiposDatoClinico#ANALISIS_SANGRE})
+     * @param eliminarExistentes   {@code true} para reemplazar todo el dominio, {@code false} para añadir
+     * @param tipoCambioAuditoria  etiqueta de auditoría (p. ej. {@code ANALISIS_SANGRE})
+     * @param operacion            operación de auditoría (UPDATE al reemplazar, CREATE al añadir)
+     * @param razonCambio          descripción legible del cambio para la auditoría
      */
-    // TODO Revisar esto, no tiene mucho sentido lo de eliminar todo para guardar una nueva
-    private void procesarAnalisisSangre(String analisisJson, HistorialClinico historial, boolean eliminarExistentes) {
-        procesarDatosClinicos(analisisJson, historial, eliminarExistentes, TiposDatoClinico.ANALISIS_SANGRE);
+    private HistorialClinicoDTO guardarDatosClinicos(List<DatoClinicoEntradaDTO> entradas,
+            List<String> tiposDominio, boolean eliminarExistentes, String tipoCambioAuditoria,
+            AuditoriaCambio.TipoOperacion operacion, String razonCambio) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = ensureForUsuario(usuario);
+
+        procesarDatosClinicos(entradas, historial, eliminarExistentes, tiposDominio);
+
+        historiaRepo.save(historial);
+
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            tipoCambioAuditoria,
+            DATO_CLINICO,
+            historial.getId().toString(),
+            "",
+            serializarParaAuditoria(entradas),
+            operacion,
+            razonCambio
+        );
+
+        return historialClinicoConverter.toDto(historial);
     }
 
     /**
-     * Procesa los signos vitales del JSON y los almacena como datos clínicos.
+     * Almacena una tanda de mediciones cuantitativas, opcionalmente reemplazando primero
+     * todas las existentes cuyo tipo pertenezca al dominio indicado.
      *
-     * @param signosVitalesJson JSON con los signos vitales
-     * @param historial Historial clínico al que pertenecen
-     * @param eliminarExistentes Si true, elimina todos los signos vitales existentes antes de guardar los nuevos.
-     *                           Si false, solo añade los nuevos sin eliminar los existentes.
-     */
-    private void procesarSignosVitales(String signosVitalesJson, HistorialClinico historial, boolean eliminarExistentes) {
-        procesarDatosClinicos(signosVitalesJson, historial, eliminarExistentes, TiposDatoClinico.SIGNOS_VITALES);
-    }
-
-    /**
-     * Procesa el análisis de orina del JSON y lo almacena como datos clínicos.
-     *
-     * @param analisisOrinaJson JSON con los datos de análisis de orina
-     * @param historial Historial clínico al que pertenecen
-     * @param eliminarExistentes Si true, elimina todos los datos de orina existentes antes de guardar los nuevos.
-     *                           Si false, solo añade los nuevos sin eliminar los existentes.
-     */
-    private void procesarAnalisisOrina(String analisisOrinaJson, HistorialClinico historial, boolean eliminarExistentes) {
-        procesarDatosClinicos(analisisOrinaJson, historial, eliminarExistentes, TiposDatoClinico.ANALISIS_ORINA);
-    }
-
-    /**
-     * Procesa un JSON de datos clínicos cuantitativos (análisis de sangre, signos vitales
-     * o análisis de orina) y los almacena, opcionalmente reemplazando los existentes del
-     * mismo dominio.
-     *
-     * @param datosJson JSON con los datos clínicos a añadir
+     * @param entradas Mediciones a añadir
      * @param historial Historial clínico al que pertenecen
      * @param eliminarExistentes Si true, elimina los datos existentes cuyo tipo esté en {@code tiposConocidos}
      *                           antes de guardar los nuevos (reemplazo completo).
-     *                           Si false, solo añade los nuevos sin eliminar los existentes.
      * @param tiposConocidos Tipos de dato clínico que delimitan el dominio (p. ej. {@link TiposDatoClinico#ANALISIS_SANGRE})
      */
-    // TODO Revisar esto, no tiene mucho sentido lo de eliminar todo para guardar una nueva
-    private void procesarDatosClinicos(String datosJson, HistorialClinico historial, boolean eliminarExistentes, List<String> tiposConocidos) {
+    private void procesarDatosClinicos(List<DatoClinicoEntradaDTO> entradas, HistorialClinico historial,
+                                       boolean eliminarExistentes, List<String> tiposConocidos) {
         if (eliminarExistentes) {
             List<String> tiposConocidosHash = tiposConocidos.stream().map(hmacSearchIndexService::indexar).toList();
             List<DatoClinico> datosExistentes = datoClinicoRepository.findByHistorialClinicoAndTipoHashIn(historial, tiposConocidosHash);
@@ -616,71 +487,57 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             }
         }
 
-        // Procesar y guardar los nuevos datos si existen
-        if (datosJson == null || datosJson.trim().isEmpty()) {
+        if (entradas == null || entradas.isEmpty()) {
             return;
         }
 
+        List<DatoClinico> nuevosDatos = new ArrayList<>();
+        for (DatoClinicoEntradaDTO entrada : entradas) {
+            validarEntradaAnalisis(entrada);
+            nuevosDatos.add(crearDatoClinicoAnalisis(entrada, historial));
+        }
+
+        if (!nuevosDatos.isEmpty()) {
+            datoClinicoRepository.saveAll(nuevosDatos);
+        }
+    }
+
+    /**
+     * Serializa las mediciones a JSON para dejarlas registradas en la auditoría de cambios.
+     * Si la serialización fallara (no debería, son POJOs planos), cae a la representación
+     * por defecto en vez de abortar la operación clínica.
+     */
+    private String serializarParaAuditoria(List<DatoClinicoEntradaDTO> entradas) {
         try {
-            JsonNode nodoJson = objectMapper.readTree(datosJson);
-            validarJsonAnalisis(nodoJson);
-
-            List<DatoClinico> nuevosDatos = procesarElementosAnalisis(nodoJson, historial);
-
-            if (!nuevosDatos.isEmpty()) {
-                datoClinicoRepository.saveAll(nuevosDatos);
-            }
+            return objectMapper.writeValueAsString(entradas);
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(ErrorMessages.ERROR_JSON_INVALIDO, e);
+            log.warn("No se pudo serializar la entrada de datos clínicos para auditoría: {}", e.getMessage());
+            return String.valueOf(entradas);
         }
     }
 
     /**
-     * Valida que el JSON de análisis tenga el formato correcto
+     * Valida que una medición traiga el valor obligatorio.
      */
-    private void validarJsonAnalisis(JsonNode nodoJson) {
-        if (!nodoJson.isArray()) {
-            throw new IllegalArgumentException(ErrorMessages.ERROR_ANALISIS_JSON_ARRAY_ESPERADO);
-        }
-    }
-
-    /**
-     * Procesa cada elemento del array JSON de análisis
-     */
-    private List<DatoClinico> procesarElementosAnalisis(JsonNode nodoJson, HistorialClinico historial) {
-        List<DatoClinico> nuevosAnalisis = new ArrayList<>();
-        
-        for (JsonNode item : nodoJson) {
-            validarItemAnalisis(item);
-            DatoClinico datoClinico = crearDatoClinicoAnalisis(item, historial);
-            nuevosAnalisis.add(datoClinico);
-        }
-        
-        return nuevosAnalisis;
-    }
-
-    /**
-     * Valida que un item de análisis tenga los campos requeridos
-     */
-    private void validarItemAnalisis(JsonNode item) {
-        if (!item.has("value")) {
+    private void validarEntradaAnalisis(DatoClinicoEntradaDTO entrada) {
+        if (entrada == null || entrada.getValue() == null || entrada.getValue().isBlank()) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_ANALISIS_VALUE_REQUERIDO);
         }
     }
 
     /**
-     * Crea un dato clínico a partir de un item de análisis JSON
+     * Crea un dato clínico a partir de una medición recibida del cliente.
      */
-    private DatoClinico crearDatoClinicoAnalisis(JsonNode item, HistorialClinico historial) {
+    private DatoClinico crearDatoClinicoAnalisis(DatoClinicoEntradaDTO item, HistorialClinico historial) {
         String tipo = obtenerTipoAnalisis(item);
         String unidad = obtenerUnidadAnalisis(item);
-        float valor = obtenerValorAnalisis(item);
+        String valor = obtenerValorAnalisis(item);
         LocalDateTime fechaCreacion = obtenerFechaCreacionAnalisis(item);
 
         DatoClinico datoClinico = new DatoClinico();
         datoClinico.setTipo(tipo);
         datoClinico.setTipoHash(hmacSearchIndexService.indexar(tipo));
-        datoClinico.setValor(String.valueOf(valor));
+        datoClinico.setValor(valor);
         datoClinico.setUnidad(unidad);
         datoClinico.setObservacion(null);
         datoClinico.setHistorialClinico(historial);
@@ -715,47 +572,50 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     }
 
     /**
-     * Obtiene el tipo de análisis del JSON
+     * Nombre del parámetro: {@code label} si viene, si no {@code key}, si no un tipo genérico.
      */
-    private String obtenerTipoAnalisis(JsonNode item) {
-        if (item.has("label")) {
-            return item.get("label").asText();
-        } else if (item.has("key")) {
-            return item.get("key").asText();
-        } else {
-            return TIPO_ANALISIS_DEFAULT;
+    private String obtenerTipoAnalisis(DatoClinicoEntradaDTO item) {
+        if (item.getLabel() != null && !item.getLabel().isBlank()) {
+            return item.getLabel();
         }
+        if (item.getKey() != null && !item.getKey().isBlank()) {
+            return item.getKey();
+        }
+        return TIPO_ANALISIS_DEFAULT;
     }
 
     /**
-     * Obtiene la unidad del análisis del JSON
+     * Unidad de medida, o cadena vacía si no se indica.
      */
-    private String obtenerUnidadAnalisis(JsonNode item) {
-        String unidad = item.has("unit") ? item.get("unit").asText() : "";
-        return unidad != null ? unidad : "";
+    private String obtenerUnidadAnalisis(DatoClinicoEntradaDTO item) {
+        return item.getUnit() != null ? item.getUnit() : "";
     }
 
     /**
-     * Obtiene y valida el valor numérico del análisis
+     * Valida que el valor de la medición sea numérico y lo devuelve normalizado (coma
+     * decimal a punto, sin espacios). Se conserva como texto para no perder precisión:
+     * convertir a {@code float} y de vuelta a {@code String} redondeaba valores como
+     * {@code "5.1"} a {@code "5.0999999"}.
      */
-    private float obtenerValorAnalisis(JsonNode item) {
-        String valorTexto = item.get("value").asText();
+    private String obtenerValorAnalisis(DatoClinicoEntradaDTO item) {
+        String valorNormalizado = item.getValue().trim().replace(',', '.');
         try {
-            return Float.parseFloat(valorTexto.replace(',', '.'));
+            Double.parseDouble(valorNormalizado);
+            return valorNormalizado;
         } catch (NumberFormatException _) {
-            throw new IllegalArgumentException(ErrorMessages.ERROR_VALOR_NUMERICO_INVALIDO + ": " + valorTexto);
+            throw new IllegalArgumentException(ErrorMessages.ERROR_VALOR_NUMERICO_INVALIDO + ": " + item.getValue());
         }
     }
 
     /**
-     * Obtiene la fecha de creación del análisis, o la actual si no se proporciona
+     * Obtiene la fecha real de la medición, o la actual si no se proporciona.
      */
-    private LocalDateTime obtenerFechaCreacionAnalisis(JsonNode item) {
-        if (!item.has(CREATED_AT) || item.get(CREATED_AT).isNull()) {
+    private LocalDateTime obtenerFechaCreacionAnalisis(DatoClinicoEntradaDTO item) {
+        String fechaTexto = item.getCreatedAt();
+        if (fechaTexto == null || fechaTexto.isBlank()) {
             return LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID));
         }
 
-        String fechaTexto = item.get(CREATED_AT).asText();
         try {
             OffsetDateTime offsetDateTime = OffsetDateTime.parse(fechaTexto);
             return offsetDateTime.toLocalDateTime();
@@ -775,9 +635,6 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         HistorialClinico historial = obtenerHistorialUsuario(usuario);
         
         DatoClinico datoClinico = obtenerDatoClinico(id);
-        if (datoClinico == null) {
-            throw new IllegalStateException(ErrorMessages.ERROR_DATO_NO_ENCONTRADO);
-        }
         validarPropiedadDatoClinico(datoClinico, historial);
         
         String valorAnterior = datoClinico.getTipo() + ": " + datoClinico.getValor() + " " + datoClinico.getUnidad();

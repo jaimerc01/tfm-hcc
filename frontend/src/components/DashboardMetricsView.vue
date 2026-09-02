@@ -94,12 +94,12 @@ export default {
 
   data() {
     const metricColors = {
-      glucosa: getThemeColor('--chart-emphasis'),
-      hemoglobina: getThemeColor('--danger-color'),
-      colesterol: getThemeColor('--warning-hover'),
-      trigliceridos: getThemeColor('--warning-color'),
-      creatinina: getThemeColor('--primary-color'),
-      hematocrito: getThemeColor('--metric-hematocrito')
+      glucosa: getThemeColor('--chart-series-green'),
+      hemoglobina: getThemeColor('--chart-series-magenta'),
+      colesterol: getThemeColor('--chart-series-cyan'),
+      trigliceridos: getThemeColor('--chart-series-slate'),
+      creatinina: getThemeColor('--chart-series-blue'),
+      hematocrito: getThemeColor('--chart-series-purple')
     }
 
     return {

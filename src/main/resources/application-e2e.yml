@@ -1,0 +1,54 @@
+# Perfil "e2e": arranca el backend contra las bases de datos de usar y tirar que
+# levanta e2e/docker-compose.test.yml (Postgres y MongoDB en puertos no estándar
+# para no chocar con instalaciones locales). No contiene secretos reales: son
+# valores fijos solo para los tests de extremo a extremo.
+#
+#   mvn spring-boot:run -Dspring-boot.run.profiles=e2e
+#
+spring:
+  docker:
+    compose:
+      # Los tests E2E gestionan sus propias bases de datos (e2e/docker-compose.test.yml,
+      # puertos 5433/27018). Sin esto, spring-boot-docker-compose intentaría además
+      # levantar el compose.yaml de desarrollo y sobrescribir la conexión.
+      enabled: false
+  datasource:
+    url: jdbc:postgresql://localhost:5433/hcc_e2e
+    username: hcc
+    password: hcc
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      # Base de datos limpia en cada arranque: Hibernate crea el esquema completo
+      # a partir de las entidades y lo elimina al parar.
+      ddl-auto: create-drop
+  data:
+    mongodb:
+      uri: mongodb://localhost:27018/hcc_e2e_logs
+      auto-index-creation: true
+
+server:
+  port: 8081
+
+security:
+  jwt:
+    # Base64 de una clave de 32 bytes (HS256 necesita >= 256 bits).
+    secret-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+    expiration-time: 3600000
+  cors:
+    allowed-origins: http://localhost:8080
+
+tfm:
+  hcc:
+    encryption:
+      key: 0123456789abcdef0123456789abcdef
+
+app:
+  frontend:
+    base-url: http://localhost:8080
+
+logging:
+  level:
+    root: WARN
+    com.hcc.tfm_hcc: INFO

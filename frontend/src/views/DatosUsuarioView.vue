@@ -564,6 +564,17 @@
         </div>
       </div>
 
+      <!-- Access Log Section (derecho de acceso / trazabilidad, RGPD) -->
+      <div class="section">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2>{{ $t('access_log_section_title') }}</h2>
+            <p class="panel-subtitle">{{ $t('access_log_section_subtitle') }}</p>
+          </div>
+          <AccessLogSection />
+        </div>
+      </div>
+
       <!-- Delete Account Modal -->
       <div v-if="showDelete" class="modal-overlay" role="dialog" aria-modal="true" @click.self="closeDelete">
         <div
@@ -668,6 +679,7 @@ import { useI18n } from 'vue-i18n'
 import QRCode from 'qrcode'
 import authService from '@/services/authService'
 import { validateNIF } from '@/utils/validateNIF'
+import AccessLogSection from '@/components/AccessLogSection.vue'
 
 
 const ESTADO_CUENTA_SUSPENDIDO = 'SUSPENDIDO'
@@ -675,6 +687,7 @@ const ESTADO_CUENTA_ACTIVO = 'ACTIVO'
 
 export default {
   name: 'DatosUsuarioView',
+  components: { AccessLogSection },
   setup() {
     const router = useRouter()
     const { t } = useI18n()

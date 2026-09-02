@@ -76,6 +76,17 @@ class AutenticacionControllerImplTest {
                 .andExpect(status().isInternalServerError());
     }
 
+    @Test
+    void autenticar_conCredencialesIncorrectas_devuelve401() throws Exception {
+        when(autenticacionFacade.autenticar(org.mockito.ArgumentMatchers.any()))
+                .thenThrow(new com.hcc.tfm_hcc.exception.IncorrectCredentials("credenciales inválidas"));
+
+        mvc.perform(post("/authentication/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(login("12345678A", "password123"))))
+                .andExpect(status().isUnauthorized());
+    }
+
     private UsuarioDTO registroValido() {
         UsuarioDTO dto = new UsuarioDTO();
         dto.setNif("12345678A");

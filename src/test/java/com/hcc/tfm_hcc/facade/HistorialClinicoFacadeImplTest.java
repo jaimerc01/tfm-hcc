@@ -21,6 +21,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import com.hcc.tfm_hcc.dto.AlergiaDTO;
 import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.DatosClinicosValidationException;
@@ -296,96 +297,110 @@ class HistorialClinicoFacadeImplTest {
         assertThrows(DatosClinicosValidationException.class, () -> facade.borrarAlergia(null));
     }
 
-    // ---- análisis y signos, en formato JSON ----
+    // ---- mediciones cuantitativas (análisis, signos vitales) ----
+
+    private static List<DatoClinicoEntradaDTO> unaMedicion(String label, String value) {
+        DatoClinicoEntradaDTO d = new DatoClinicoEntradaDTO();
+        d.setLabel(label);
+        d.setValue(value);
+        return List.of(d);
+    }
 
     @Test
-    void actualizarAnalisisSangre_conJsonValido_devuelveElHistorialActualizado() {
+    void actualizarAnalisisSangre_conDatosValidos_devuelveElHistorialActualizado() {
         HistorialClinicoDTO resultado = new HistorialClinicoDTO();
-        when(historiaClinicaService.actualizarAnalisisSangre("{\"glucosa\":90}")).thenReturn(resultado);
+        List<DatoClinicoEntradaDTO> datos = unaMedicion("Glucosa", "90");
+        when(historiaClinicaService.actualizarAnalisisSangre(datos)).thenReturn(resultado);
 
-        assertEquals(resultado, facade.actualizarAnalisisSangre("{\"glucosa\":90}"));
+        assertEquals(resultado, facade.actualizarAnalisisSangre(datos));
     }
 
     @Test
-    void actualizarAnalisisSangre_conJsonVacio_lanzaDatosClinicosValidationException() {
-        assertThrows(DatosClinicosValidationException.class, () -> facade.actualizarAnalisisSangre("  "));
+    void actualizarAnalisisSangre_conListaVacia_lanzaDatosClinicosValidationException() {
+        assertThrows(DatosClinicosValidationException.class, () -> facade.actualizarAnalisisSangre(List.of()));
     }
 
     @Test
-    void actualizarAnalisisSangre_conFormatoNoJson_lanzaDatosClinicosValidationException() {
-        assertThrows(DatosClinicosValidationException.class, () -> facade.actualizarAnalisisSangre("no es json"));
+    void actualizarAnalisisSangre_conListaNula_lanzaDatosClinicosValidationException() {
+        assertThrows(DatosClinicosValidationException.class, () -> facade.actualizarAnalisisSangre(null));
     }
 
     @Test
-    void anadirAnalisisSangre_conJsonValido_devuelveElHistorialActualizado() {
+    void anadirAnalisisSangre_conDatosValidos_devuelveElHistorialActualizado() {
         HistorialClinicoDTO resultado = new HistorialClinicoDTO();
-        when(historiaClinicaService.añadirAnalisisSangre("{\"glucosa\":90}")).thenReturn(resultado);
+        List<DatoClinicoEntradaDTO> datos = unaMedicion("Glucosa", "90");
+        when(historiaClinicaService.añadirAnalisisSangre(datos)).thenReturn(resultado);
 
-        assertEquals(resultado, facade.anadirAnalisisSangre("{\"glucosa\":90}"));
+        assertEquals(resultado, facade.anadirAnalisisSangre(datos));
     }
 
     @Test
-    void anadirAnalisisSangre_conJsonInvalido_lanzaDatosClinicosValidationException() {
+    void anadirAnalisisSangre_conListaNula_lanzaDatosClinicosValidationException() {
         assertThrows(DatosClinicosValidationException.class, () -> facade.anadirAnalisisSangre(null));
     }
 
     @Test
-    void actualizarSignosVitales_conJsonValido_devuelveElHistorialActualizado() {
+    void actualizarSignosVitales_conDatosValidos_devuelveElHistorialActualizado() {
         HistorialClinicoDTO resultado = new HistorialClinicoDTO();
-        when(historiaClinicaService.actualizarSignosVitales("{\"pulso\":70}")).thenReturn(resultado);
+        List<DatoClinicoEntradaDTO> datos = unaMedicion("Pulso", "70");
+        when(historiaClinicaService.actualizarSignosVitales(datos)).thenReturn(resultado);
 
-        assertEquals(resultado, facade.actualizarSignosVitales("{\"pulso\":70}"));
+        assertEquals(resultado, facade.actualizarSignosVitales(datos));
     }
 
     @Test
-    void actualizarSignosVitales_conJsonInvalido_lanzaDatosClinicosValidationException() {
-        assertThrows(DatosClinicosValidationException.class, () -> facade.actualizarSignosVitales("x"));
+    void actualizarSignosVitales_conListaVacia_lanzaDatosClinicosValidationException() {
+        assertThrows(DatosClinicosValidationException.class, () -> facade.actualizarSignosVitales(List.of()));
     }
 
     @Test
-    void anadirSignosVitales_conJsonValido_devuelveElHistorialActualizado() {
+    void anadirSignosVitales_conDatosValidos_devuelveElHistorialActualizado() {
         HistorialClinicoDTO resultado = new HistorialClinicoDTO();
-        when(historiaClinicaService.añadirSignosVitales("{\"pulso\":70}")).thenReturn(resultado);
+        List<DatoClinicoEntradaDTO> datos = unaMedicion("Pulso", "70");
+        when(historiaClinicaService.añadirSignosVitales(datos)).thenReturn(resultado);
 
-        assertEquals(resultado, facade.anadirSignosVitales("{\"pulso\":70}"));
+        assertEquals(resultado, facade.anadirSignosVitales(datos));
     }
 
     @Test
-    void anadirSignosVitales_conJsonInvalido_lanzaDatosClinicosValidationException() {
-        assertThrows(DatosClinicosValidationException.class, () -> facade.anadirSignosVitales(""));
+    void anadirSignosVitales_conListaVacia_lanzaDatosClinicosValidationException() {
+        assertThrows(DatosClinicosValidationException.class, () -> facade.anadirSignosVitales(List.of()));
     }
 
     @Test
-    void actualizarAnalisisOrina_conJsonValido_devuelveElHistorialActualizado() {
+    void actualizarAnalisisOrina_conDatosValidos_devuelveElHistorialActualizado() {
         HistorialClinicoDTO resultado = new HistorialClinicoDTO();
-        when(historiaClinicaService.actualizarAnalisisOrina("{\"ph\":6}")).thenReturn(resultado);
+        List<DatoClinicoEntradaDTO> datos = unaMedicion("PH", "6");
+        when(historiaClinicaService.actualizarAnalisisOrina(datos)).thenReturn(resultado);
 
-        assertEquals(resultado, facade.actualizarAnalisisOrina("{\"ph\":6}"));
+        assertEquals(resultado, facade.actualizarAnalisisOrina(datos));
     }
 
     @Test
-    void actualizarAnalisisOrina_conJsonInvalido_lanzaDatosClinicosValidationException() {
-        assertThrows(DatosClinicosValidationException.class, () -> facade.actualizarAnalisisOrina("x"));
+    void actualizarAnalisisOrina_conListaVacia_lanzaDatosClinicosValidationException() {
+        assertThrows(DatosClinicosValidationException.class, () -> facade.actualizarAnalisisOrina(List.of()));
     }
 
     @Test
-    void anadirAnalisisOrina_conJsonValido_devuelveElHistorialActualizado() {
+    void anadirAnalisisOrina_conDatosValidos_devuelveElHistorialActualizado() {
         HistorialClinicoDTO resultado = new HistorialClinicoDTO();
-        when(historiaClinicaService.añadirAnalisisOrina("[1,2]")).thenReturn(resultado);
+        List<DatoClinicoEntradaDTO> datos = unaMedicion("PH", "6");
+        when(historiaClinicaService.añadirAnalisisOrina(datos)).thenReturn(resultado);
 
-        assertEquals(resultado, facade.anadirAnalisisOrina("[1,2]"));
+        assertEquals(resultado, facade.anadirAnalisisOrina(datos));
     }
 
     @Test
-    void anadirAnalisisOrina_conJsonInvalido_lanzaDatosClinicosValidationException() {
+    void anadirAnalisisOrina_conListaNula_lanzaDatosClinicosValidationException() {
         assertThrows(DatosClinicosValidationException.class, () -> facade.anadirAnalisisOrina(null));
     }
 
     @Test
     void actualizarAnalisisSangre_conErrorInesperado_lanzaHistorialClinicoException() {
-        when(historiaClinicaService.actualizarAnalisisSangre("{\"glucosa\":90}")).thenThrow(new RuntimeException("fallo"));
+        List<DatoClinicoEntradaDTO> datos = unaMedicion("Glucosa", "90");
+        when(historiaClinicaService.actualizarAnalisisSangre(datos)).thenThrow(new RuntimeException("fallo"));
 
-        assertThrows(HistorialClinicoException.class, () -> facade.actualizarAnalisisSangre("{\"glucosa\":90}"));
+        assertThrows(HistorialClinicoException.class, () -> facade.actualizarAnalisisSangre(datos));
     }
 
     // ---- datos clínicos ----

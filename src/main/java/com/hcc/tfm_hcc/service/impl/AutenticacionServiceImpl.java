@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
@@ -17,9 +18,11 @@ import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.converter.UsuarioConverter;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.exception.AutenticacionOperacionException;
 import com.hcc.tfm_hcc.exception.GoogleAuthenticationException;
 import com.hcc.tfm_hcc.exception.IncorrectCredentials;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 import com.hcc.tfm_hcc.model.GoogleLoginCode;
 import com.hcc.tfm_hcc.model.LoginResponse;
 import com.hcc.tfm_hcc.model.TwoFactorChallenge;
@@ -32,14 +35,16 @@ import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.TotpService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Implementación del servicio de autenticación.
  * Proporciona funcionalidades para registro y autenticación de usuarios.
- * 
+ *
  * @author Sistema HCC
  * @version 1.0
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AutenticacionServiceImpl implements AutenticacionService {
@@ -140,15 +145,27 @@ public class AutenticacionServiceImpl implements AutenticacionService {
     @Override
     public Usuario autenticar(LoginUsuarioDTO loginUsuarioDTO) {
         validarLoginDTO(loginUsuarioDTO);
-        
+
+        String nifLog = LogMaskUtil.enmascarar(loginUsuarioDTO.getNif());
         try {
             var token = crearTokenAutenticacion(loginUsuarioDTO);
             var authentication = authenticationManager.authenticate(token);
 
             return extraerUsuarioDelPrincipal(authentication.getPrincipal(), loginUsuarioDTO.getNif());
 
-        } catch (Exception _) {
+        } catch (AuthenticationException e) {
+            // Credenciales bien formadas pero que no autentican (usuario inexistente,
+            // contraseña incorrecta, cuenta deshabilitada...). No se detalla el motivo
+            // al cliente para no filtrar el estado de la cuenta.
+            log.warn("Autenticación fallida para el NIF {}: {}", nifLog, e.getClass().getSimpleName());
             throw new IncorrectCredentials(ErrorMessages.ERROR_CREDENCIALES_INVALIDAS);
+        } catch (IncorrectCredentials e) {
+            throw e;
+        } catch (RuntimeException e) {
+            // Fallo de infraestructura (BD caída, error de configuración...): no es un
+            // problema de credenciales, así que no debe enmascararse como un 401.
+            log.error("Error inesperado durante la autenticación del NIF {}: {}", nifLog, e.getMessage(), e);
+            throw new AutenticacionOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 

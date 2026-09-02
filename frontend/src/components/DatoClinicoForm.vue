@@ -1,5 +1,5 @@
 <template>
-  <div class="add-entry-section">
+  <div class="section-card add-entry-section">
     <h3 class="section-subtitle">
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 5v14"></path>
@@ -186,14 +186,6 @@ export default {
 </script>
 
 <style scoped>
-.add-entry-section {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: var(--shadow-md);
-}
-
 .section-subtitle {
   display: flex;
   align-items: center;

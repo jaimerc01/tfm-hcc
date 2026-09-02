@@ -8,24 +8,23 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.hcc.tfm_hcc.dto.AnotacionMedicaDTO;
 import com.hcc.tfm_hcc.dto.ChangePasswordRequest;
-import com.hcc.tfm_hcc.dto.NotificacionDTO;
 import com.hcc.tfm_hcc.dto.TotpCodeRequestDTO;
+import com.hcc.tfm_hcc.dto.SolicitudAsignacionDTO;
 import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
-import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
 /**
  * Controlador REST para la gestión integral de usuarios en el sistema HCC.
  * Proporciona endpoints para operaciones de usuario incluyendo gestión de perfiles,
- * cambio de contraseñas, gestión de solicitudes de asignación y notificaciones.
- * 
+ * cambio de contraseñas y gestión de solicitudes de asignación.
+ *
  * <p>Funcionalidades principales:</p>
  * <ul>
  *   <li>Consulta y actualización de datos de usuario autenticado</li>
  *   <li>Gestión segura de contraseñas</li>
  *   <li>Gestión de solicitudes de asignación médico-paciente</li>
- *   <li>Administración de notificaciones del usuario</li>
  * </ul>
  * 
  * <p>Todos los endpoints requieren autenticación de usuario.</p>
@@ -64,9 +63,9 @@ public interface UsuarioController {
      * Lista todas las solicitudes de asignación relacionadas con el usuario autenticado.
      * Incluye solicitudes recibidas y enviadas según el rol del usuario.
      *
-     * @return ResponseEntity con lista de SolicitudAsignacion del usuario
+     * @return ResponseEntity con lista de SolicitudAsignacionDTO del usuario
      */
-    ResponseEntity<List<SolicitudAsignacion>> listarMisSolicitudes();
+    ResponseEntity<List<SolicitudAsignacionDTO>> listarMisSolicitudes();
 
     /**
      * Actualiza el estado de una solicitud de asignación específica.
@@ -74,29 +73,10 @@ public interface UsuarioController {
      *
      * @param idSolicitud ID único de la solicitud a actualizar
      * @param body Map con el nuevo estado de la solicitud
-     * @return ResponseEntity con la SolicitudAsignacion actualizada
+     * @return ResponseEntity con la SolicitudAsignacionDTO actualizada
      */
-    ResponseEntity<SolicitudAsignacion> actualizarEstadoSolicitud(@PathVariable("idSolicitud") String idSolicitud, 
-                                                                  @RequestBody Map<String, String> body);
-
-    /**
-     * Lista las notificaciones del usuario autenticado con paginación.
-     * Permite consultar notificaciones de forma eficiente mediante páginas.
-     *
-     * @param page Número de página a consultar (comenzando desde 0)
-     * @param size Tamaño de la página (número de notificaciones por página)
-     * @return ResponseEntity con Map de notificaciones paginadas
-     */
-    ResponseEntity<Map<String, NotificacionDTO>> listarMisNotificaciones(@RequestParam("page") int page, 
-                                                                 @RequestParam("size") int size);
-
-    /**
-     * Marca todas las notificaciones del usuario autenticado como leídas.
-     * Esta operación actualiza el estado de todas las notificaciones pendientes.
-     *
-     * @return ResponseEntity con mensaje de confirmación
-     */
-    ResponseEntity<String> marcarTodasNotificacionesLeidas();
+    ResponseEntity<SolicitudAsignacionDTO> actualizarEstadoSolicitud(@PathVariable("idSolicitud") String idSolicitud,
+                                                                     @RequestBody Map<String, String> body);
 
     /**
      * Inicia la configuración del segundo factor (TOTP) para el usuario autenticado.
@@ -129,4 +109,17 @@ public interface UsuarioController {
      * @return ResponseEntity con un booleano: true si está activo
      */
     ResponseEntity<Boolean> getTotpStatus();
+
+    /**
+     * Lista las anotaciones médicas recibidas por el usuario autenticado, de la más
+     * reciente a la más antigua, con filtro opcional por médico y por rango de fechas.
+     *
+     * @param medicoNif NIF del médico por el que filtrar (opcional)
+     * @param desde fecha de inicio del rango en formato ISO-8601 (opcional)
+     * @param hasta fecha de fin del rango en formato ISO-8601 (opcional)
+     * @return ResponseEntity con la lista de AnotacionMedicaDTO recibidas
+     */
+    ResponseEntity<List<AnotacionMedicaDTO>> listarMisAnotaciones(@RequestParam(value = "medicoNif", required = false) String medicoNif,
+                                                                  @RequestParam(value = "desde", required = false) String desde,
+                                                                  @RequestParam(value = "hasta", required = false) String hasta);
 }

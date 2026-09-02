@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,6 +29,8 @@ import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.ArchivoCifradoService;
 import com.hcc.tfm_hcc.service.AuditoriaCambioService;
 import com.hcc.tfm_hcc.service.FieldEncryptionService;
+import com.hcc.tfm_hcc.service.RelacionMedicoPacienteService;
+import com.hcc.tfm_hcc.util.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,6 +80,7 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     private static final String BORRADO_ARCHIVO_CLINICO = "BORRADO_ARCHIVO_CLINICO";
     private static final String SUBIDA_ARCHIVO_CLINICO = "SUBIDA_ARCHIVO_CLINICO";
     private static final String ARCHIVO_CLINICO = "archivo_clinico";
+    private static final String SUBIDA_ARCHIVO_POR_MEDICO = "Subida de archivo clínico por el médico";
 
     // Dependencias inyectadas por constructor
     private final ArchivoClinicoRepository archivoClinicoRepository;
@@ -84,13 +88,18 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     private final AuditoriaCambioService auditoriaCambioService;
     private final ArchivoCifradoService archivoCifradoService;
     private final FieldEncryptionService fieldEncryptionService;
+    private final RelacionMedicoPacienteService relacionMedicoPacienteService;
 
     @Value("${app.uploads.max-size-bytes:10485760}") // 10 MB por defecto
     private long maxSizeBytes;
 
-    // TODO: ESTABLECER CONFIGURACIÓN DE TIPOS PERMITIDOS DESDE PROPERTIES
-    @Value("${app.uploads.allowed-types:}") // vacío = sin restricción
+    /** Tipos MIME admitidos, separados por comas (vacío = sin restricción). */
+    @Value("${app.uploads.allowed-types:}")
     private String allowedTypes;
+
+    /** Extensiones admitidas, separadas por comas y sin punto (vacío = sin restricción). */
+    @Value("${app.uploads.allowed-extensions:}")
+    private String allowedExtensions;
 
     /**
      * Obtiene el ID del usuario autenticado actualmente
@@ -152,6 +161,7 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
 
         log.debug(LOG_SUBIENDO_ARCHIVO, nombreOriginal, usuario.getId());
 
+        validarExtensionArchivo(nombreOriginal);
         validarTipoArchivo(file.getContentType());
 
         byte[] contenidoCifrado = cifrarContenido(file);
@@ -215,6 +225,32 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
         return nombre.contains(PATH_SEPARATOR) ||
                nombre.startsWith(FORWARD_SLASH) ||
                nombre.startsWith(BACKSLASH);
+    }
+
+    /**
+     * Valida la extensión del archivo contra la lista blanca configurada
+     * ({@code app.uploads.allowed-extensions}). Complementa a {@link #validarTipoArchivo(String)}:
+     * el {@code Content-Type} lo controla el cliente, la extensión al menos limita lo que
+     * quedará almacenado y se servirá después.
+     */
+    private void validarExtensionArchivo(String nombre) {
+        if (this.allowedExtensions == null || this.allowedExtensions.isBlank()) {
+            return; // Sin restricciones
+        }
+
+        int punto = nombre.lastIndexOf('.');
+        String extension = (punto >= 0 && punto < nombre.length() - 1)
+                ? nombre.substring(punto + 1).toLowerCase()
+                : "";
+
+        boolean permitida = Arrays.stream(this.allowedExtensions.split(ALLOWED_TYPES_SEPARATOR))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .anyMatch(extension::equals);
+
+        if (!permitida) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_EXTENSION_NO_PERMITIDA);
+        }
     }
 
     /**
@@ -360,5 +396,79 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
         );
 
         log.info(LOG_ARCHIVO_ELIMINADO, nombreOriginal, userId);
+    }
+
+    // ===============================
+    // ARCHIVOS DE UN PACIENTE ASIGNADO (acceso del médico)
+    // ===============================
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<ArchivoClinico> listForPaciente(String nifPaciente) {
+        Usuario paciente = verificarAccesoMedico(nifPaciente);
+        List<ArchivoClinico> archivos = archivoClinicoRepository.findByUsuarioIdOrderByFechaCreacionDesc(paciente.getId());
+        archivos.forEach(this::descifrarNombre);
+        return archivos;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public ArchivoClinico uploadForPaciente(String nifPaciente, MultipartFile file) throws IOException {
+        Usuario paciente = verificarAccesoMedico(nifPaciente);
+        Usuario medico = getCurrentUser();
+
+        validarArchivoSubida(file);
+        String nombreOriginal = procesarNombreArchivo(file.getOriginalFilename());
+        validarExtensionArchivo(nombreOriginal);
+        validarTipoArchivo(file.getContentType());
+
+        byte[] contenidoCifrado = cifrarContenido(file);
+        ArchivoClinico archivo = crearRegistroArchivo(file, paciente, nombreOriginal, contenidoCifrado);
+        log.info("Archivo clínico subido para el paciente {} por el médico {}", paciente.getId(), medico.getId());
+
+        auditoriaCambioService.registrarCambio(
+            medico.getId().toString(),
+            paciente.getId().toString(),
+            medico.getId().toString(),
+            SUBIDA_ARCHIVO_CLINICO,
+            ARCHIVO_CLINICO,
+            archivo.getId().toString(),
+            null,
+            null,
+            AuditoriaCambio.TipoOperacion.CREATE,
+            SUBIDA_ARCHIVO_POR_MEDICO
+        );
+
+        descifrarNombre(archivo);
+        return archivo;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Resource getPacienteResource(String nifPaciente, UUID id) {
+        Usuario paciente = verificarAccesoMedico(nifPaciente);
+        ArchivoClinico archivo = obtenerArchivoUsuario(id, paciente.getId());
+        return crearResourceDesdeArchivo(archivo);
+    }
+
+    /**
+     * Comprueba que el médico autenticado tiene acceso asistencial activo sobre el
+     * paciente y devuelve la entidad del paciente.
+     */
+    private Usuario verificarAccesoMedico(String nifPaciente) {
+        String nifMedico = SecurityUtils.getCurrentUserNif();
+        if (nifMedico == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
+        }
+        return relacionMedicoPacienteService.verificarAccesoMedicoActivo(nifMedico, nifPaciente);
     }
 }

@@ -107,7 +107,7 @@ export default {
       try {
         this.medicos = await medicoService.listar();
       } catch (e) {
-        this.error = 'Error cargando médicos';
+        this.error = this.$t('error_loading_doctors');
       }
     },
   edit(m) {
@@ -123,12 +123,12 @@ export default {
       this.error = '';
     },
     async eliminar(id) {
-      if (!confirm('¿Eliminar este médico?')) return;
+      if (!confirm(this.$t('confirm_delete_doctor'))) return;
       try {
         await medicoService.eliminar(id);
         await this.cargar();
       } catch (e) {
-        this.error = 'Error eliminando médico';
+        this.error = this.$t('error_deleting_doctor');
       }
     },
     startAdd() {
@@ -140,7 +140,7 @@ export default {
     },
     async checkNif() {
       if (!validateNIF(this.form.nif)) {
-        this.error = 'El NIF introducido no es válido';
+        this.error = this.$t('invalid_nif');
         return;
       }
       try {
@@ -161,16 +161,16 @@ export default {
           this.error = ''
           return
         }
-        this.error = 'Error comprobando NIF'
+        this.error = this.$t('error_checking_nif')
       }
     },
     async quitarPerfil(id) {
-      if (!confirm('¿Quitar el perfil MEDICO de este usuario?')) return;
+      if (!confirm(this.$t('confirm_remove_doctor_profile'))) return;
       try {
         await medicoService.setPerfilMedico(id, false);
         await this.cargar();
       } catch (e) {
-        this.error = 'Error quitando perfil';
+        this.error = this.$t('error_removing_profile');
       }
     },
     cancelar() {
@@ -182,22 +182,28 @@ export default {
     async guardar() {
       // Validar NIF antes de enviar
       if (!validateNIF(this.form.nif)) {
-        this.error = 'El NIF introducido no es válido';
+        this.error = this.$t('invalid_nif');
         return;
       }
 
       try {
-  if (this.editMedico) {
-          await medicoService.actualizar(this.editMedico.id, this.form);
+        // El <input type="date"> da solo la parte de fecha (YYYY-MM-DD); el backend
+        // espera un LocalDateTime, así que se completa con la hora (igual que en
+        // RegisterView y DatosUsuarioView).
+        const payload = {
+          ...this.form,
+          fechaNacimiento: this.form.fechaNacimiento ? `${this.form.fechaNacimiento}T00:00:00` : null
+        };
+        if (this.editMedico) {
+          await medicoService.actualizar(this.editMedico.id, payload);
         } else {
           // Forzar estadoCuenta ACTIVO al crear
-          const medico = { ...this.form, estadoCuenta: 'ACTIVO' };
-          await medicoService.crear(medico);
+          await medicoService.crear({ ...payload, estadoCuenta: 'ACTIVO' });
         }
         await this.cargar();
         this.cancelar();
       } catch (e) {
-        this.error = 'Error guardando médico';
+        this.error = this.$t('error_saving_doctor');
       }
     }
   }

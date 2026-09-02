@@ -11,12 +11,11 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.AdminOperacionException;
 import com.hcc.tfm_hcc.exception.AdminValidationException;
+import com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException;
 import com.hcc.tfm_hcc.facade.impl.AdminFacadeImpl;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.Usuario;
@@ -55,10 +54,7 @@ class AdminFacadeImplTest {
     void listarMedicos_devuelveLaListaDelServicio() {
         when(medicoService.listarMedicos()).thenReturn(List.of(new UsuarioDTO()));
 
-        ResponseEntity<List<UsuarioDTO>> respuesta = facade.listarMedicos();
-
-        assertEquals(HttpStatus.OK, respuesta.getStatusCode());
-        assertEquals(1, respuesta.getBody().size());
+        assertEquals(1, facade.listarMedicos().size());
     }
 
     @Test
@@ -74,10 +70,7 @@ class AdminFacadeImplTest {
         UsuarioDTO creado = new UsuarioDTO();
         when(medicoService.crearMedico(entrada)).thenReturn(creado);
 
-        ResponseEntity<UsuarioDTO> respuesta = facade.crearMedico(entrada);
-
-        assertEquals(HttpStatus.OK, respuesta.getStatusCode());
-        assertEquals(creado, respuesta.getBody());
+        assertEquals(creado, facade.crearMedico(entrada));
     }
 
     @Test
@@ -108,9 +101,7 @@ class AdminFacadeImplTest {
         UsuarioDTO actualizado = new UsuarioDTO();
         when(medicoService.actualizarMedico(id, entrada)).thenReturn(actualizado);
 
-        ResponseEntity<UsuarioDTO> respuesta = facade.actualizarMedico(id, entrada);
-
-        assertEquals(actualizado, respuesta.getBody());
+        assertEquals(actualizado, facade.actualizarMedico(id, entrada));
     }
 
     @Test
@@ -123,9 +114,7 @@ class AdminFacadeImplTest {
         UUID id = UUID.randomUUID();
         when(medicoService.eliminarMedico(id)).thenReturn(id);
 
-        ResponseEntity<UUID> respuesta = facade.eliminarMedico(id);
-
-        assertEquals(id, respuesta.getBody());
+        assertEquals(id, facade.eliminarMedico(id));
     }
 
     @Test
@@ -145,9 +134,7 @@ class AdminFacadeImplTest {
     void setPerfilMedico_conIdValido_devuelveElIdAfectado() {
         UUID id = UUID.randomUUID();
 
-        ResponseEntity<UUID> respuesta = facade.setPerfilMedico(id, true);
-
-        assertEquals(id, respuesta.getBody());
+        assertEquals(id, facade.setPerfilMedico(id, true));
     }
 
     @Test
@@ -162,14 +149,29 @@ class AdminFacadeImplTest {
         when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
         when(usuarioMapper.toDto(usuario)).thenReturn(dto);
 
-        assertEquals(dto, facade.buscarUsuarioPorNif("12345678A").getBody());
+        assertEquals(dto, facade.buscarUsuarioPorNif("12345678A"));
     }
 
     @Test
-    void buscarUsuarioPorNif_conUsuarioInexistente_lanzaAdminValidationException() {
+    void buscarUsuarioPorNif_conUsuarioInexistente_lanzaUsuarioNoEncontradoException() {
         when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.empty());
 
-        assertThrows(AdminValidationException.class, () -> facade.buscarUsuarioPorNif("12345678A"));
+        assertThrows(UsuarioNoEncontradoException.class, () -> facade.buscarUsuarioPorNif("12345678A"));
+    }
+
+    /**
+     * Regresión: el mensaje de la excepción se vuelve a registrar en el log justo
+     * después de lanzarla, así que debe llevar el NIF enmascarado, no en claro.
+     */
+    @Test
+    void buscarUsuarioPorNif_conUsuarioInexistente_elMensajeEnmascaraElNif() {
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.empty());
+
+        UsuarioNoEncontradoException ex = assertThrows(UsuarioNoEncontradoException.class,
+                () -> facade.buscarUsuarioPorNif("12345678A"));
+
+        org.junit.jupiter.api.Assertions.assertFalse(ex.getMessage().contains("12345678A"));
+        org.junit.jupiter.api.Assertions.assertTrue(ex.getMessage().contains("***78A"));
     }
 
     @Test

@@ -24,88 +24,55 @@ button, .btn {
   min-height: 2.5rem;
 }
 
-/* Primary Button - Medical Blue */
-button:not(.secondary):not(.danger-btn):not(.delete-btn), .btn-primary {
-  background: var(--primary-color);
-  color: var(--on-primary);
-  border: 1px solid var(--primary-color);
+/* Every button is green - the app's action colour.
+   Low specificity on purpose: this is the DEFAULT look for a bare <button>.
+   Variant classes and component-scoped styles override it naturally, instead of
+   being steamrolled by an ever-growing :not() chain.
+   Destructive actions (delete, logout) are ALSO green - they are told apart by
+   their label and icon, not by colour. Yellow is reserved for alerts/errors. */
+button, .btn-primary, .danger-btn, .delete-btn, .btn-danger, .btn-success {
+  background: var(--button-color);
+  color: var(--on-button);
+  border: 1px solid var(--button-color);
 }
 
-button:not(.secondary):not(.danger-btn):not(.delete-btn):hover:not(:disabled), .btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
+button:hover:not(:disabled), .btn-primary:hover:not(:disabled),
+.danger-btn:hover:not(:disabled), .delete-btn:hover:not(:disabled),
+.btn-danger:hover:not(:disabled), .btn-success:hover:not(:disabled) {
+  background: var(--button-hover);
+  border-color: var(--button-hover);
   box-shadow: var(--button-shadow-hover);
   transform: translateY(-1px);
 }
 
-button:not(.secondary):not(.danger-btn):not(.delete-btn):active:not(:disabled), .btn-primary:active:not(:disabled) {
-  background: var(--primary-active);
-  border-color: var(--primary-active);
+button:active:not(:disabled), .btn-primary:active:not(:disabled),
+.danger-btn:active:not(:disabled), .delete-btn:active:not(:disabled),
+.btn-danger:active:not(:disabled), .btn-success:active:not(:disabled) {
+  background: var(--button-active);
+  border-color: var(--button-active);
   box-shadow: var(--button-shadow-active);
   transform: translateY(0);
 }
 
-/* Secondary Button - Medical Gray */
+/* Secondary Button - green outline (lower emphasis than the solid green buttons) */
 .secondary, .btn-secondary {
-  background: var(--card-bg);
-  color: var(--secondary-color);
-  border: 1px solid var(--border);
+  background: white;
+  color: var(--button-color);
+  border: 1px solid var(--button-color);
 }
 
 .secondary:hover:not(:disabled), .btn-secondary:hover:not(:disabled) {
-  background: var(--bg-light);
-  border-color: var(--secondary-color);
-  color: var(--secondary-hover);
+  background: var(--button-active);
+  border-color: var(--button-active);
+  color: var(--on-button);
   box-shadow: var(--button-shadow-hover);
   transform: translateY(-1px);
 }
 
 .secondary:active:not(:disabled), .btn-secondary:active:not(:disabled) {
-  background: var(--bg-medium);
-  color: var(--secondary-active);
-  border-color: var(--secondary-hover);
-  transform: translateY(0);
-}
-
-/* Danger/Delete Button - Medical Red */
-.danger-btn, .delete-btn, .btn-danger {
-  background: var(--danger-color);
-  color: white;
-  border: 1px solid var(--danger-color);
-}
-
-.danger-btn:hover:not(:disabled), .delete-btn:hover:not(:disabled), .btn-danger:hover:not(:disabled) {
-  background: var(--danger-hover);
-  border-color: var(--danger-hover);
-  box-shadow: var(--button-shadow-hover);
-  transform: translateY(-1px);
-}
-
-.danger-btn:active:not(:disabled), .delete-btn:active:not(:disabled), .btn-danger:active:not(:disabled) {
-  background: var(--danger-active);
-  border-color: var(--danger-active);
-  box-shadow: var(--button-shadow-active);
-  transform: translateY(0);
-}
-
-/* Success Button - Medical Green */
-.btn-success {
-  background: var(--success-color);
-  color: white;
-  border: 1px solid var(--success-color);
-}
-
-.btn-success:hover:not(:disabled) {
-  background: var(--success-hover);
-  border-color: var(--success-hover);
-  box-shadow: var(--button-shadow-hover);
-  transform: translateY(-1px);
-}
-
-.btn-success:active:not(:disabled) {
-  background: var(--success-active);
-  border-color: var(--success-active);
-  box-shadow: var(--button-shadow-active);
+  background: var(--button-hover);
+  color: var(--on-button);
+  border-color: var(--button-hover);
   transform: translateY(0);
 }
 
@@ -143,7 +110,7 @@ button:disabled, .btn:disabled {
 
 /* Loading State */
 button:disabled[aria-label*="Guardando"], button:disabled[aria-label*="Eliminando"], button:disabled[aria-label*="Exportando"] {
-  background: var(--primary-color) !important;
+  background: var(--button-color) !important;
   color: white !important;
   position: relative;
 }
@@ -378,9 +345,9 @@ button:focus-visible, .btn:focus-visible {
   }
 }
 
-/* Upload Button - Success Style for Medical Actions */
+/* Upload Button - solid green like every other button */
 .upload button[type="submit"] {
-  background: var(--success-color);
+  background: var(--button-color);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -395,13 +362,13 @@ button:focus-visible, .btn:focus-visible {
 }
 
 .upload button[type="submit"]:hover:not(:disabled) {
-  background: var(--success-hover);
+  background: var(--button-hover);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
 .upload button[type="submit"]:active:not(:disabled) {
-  background: var(--success-active);
+  background: var(--button-active);
   transform: translateY(0);
   box-shadow: var(--shadow-sm);
 }
@@ -519,13 +486,23 @@ button:focus-visible, .btn:focus-visible {
 .row { display:flex; gap:1rem; }
 .row > div { flex:1 }
 
+/* Screen-reader-only text. Canonical implementation for the whole app -- do not
+   redefine `.sr-only` inside component <style scoped> blocks. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Additional shared helpers discovered by style checker */
 .success { color: var(--success-active); }
-.nav-link:hover { background-color: var(--brand-accent-hover); }
-.login-btn:hover:not(:disabled) { background-color: var(--brand-accent-hover); }
-.dashboard, .home { padding: 2rem; text-align: center; }
-.user-info, .navigation { margin-top: 2rem; }
-.solicitud-actions { margin-top: 0.5rem; }
+.login-btn:hover:not(:disabled) { background-color: var(--button-hover); }
 
 .fade-slide-enter-active, .fade-slide-leave-active { transition: all 300ms cubic-bezier(.22,.8,.26,1); }
 .fade-slide-enter-from { opacity: 0; transform: translateY(8px); }
