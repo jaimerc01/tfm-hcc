@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.dto.NotificacionPageDTO;
 
 /**
  * Controlador REST para la gestión de notificaciones del usuario autenticado.
@@ -30,10 +30,10 @@ public interface NotificacionController {
      *
      * @param page Número de página a consultar (comenzando desde 0)
      * @param size Tamaño de la página (número de notificaciones por página)
-     * @return ResponseEntity con un Map de notificaciones paginadas indexadas por ID
+     * @return ResponseEntity con las notificaciones de la página solicitada y el total de notificaciones vigentes
      */
-    ResponseEntity<Map<String, NotificacionDTO>> listarMisNotificaciones(@RequestParam("page") int page,
-                                                                         @RequestParam("size") int size);
+    ResponseEntity<NotificacionPageDTO> listarMisNotificaciones(@RequestParam("page") int page,
+                                                                @RequestParam("size") int size);
 
     /**
      * Marca todas las notificaciones del usuario autenticado como leídas.

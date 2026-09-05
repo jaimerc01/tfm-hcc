@@ -2,20 +2,14 @@
   <div class="page-container historia-page">
     <div class="page-header">
       <div class="header-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-        </svg>
+        <AppIcon name="file-text" size="2xl" />
       </div>
       <div>
         <h1>{{ $t('patient_historial_title', { name: nombrePaciente }) }}</h1>
         <p class="subtitle">{{ $t('dni') }}: {{ nif }}</p>
       </div>
       <router-link :to="{ name: 'Medico' }" class="back-link">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
+        <AppIcon name="arrow-left" size="md" />
         {{ $t('back') }}
       </router-link>
     </div>
@@ -26,17 +20,15 @@
     </div>
 
     <div v-else-if="error" class="alert alert-danger" role="alert">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
+      <AppIcon name="alert-circle" size="lg" />
       {{ error }}
     </div>
 
     <div v-else class="historial-content">
+      <AppTabs :tabs="tabs" v-model="activeTab" :aria-label="$t('historial_tabs_aria')" />
+
       <!-- Antecedentes -->
-      <section class="panel-card">
+      <section v-show="activeTab === 'antecedentes'" id="tabpanel-antecedentes" role="tabpanel" aria-labelledby="tab-antecedentes" tabindex="-1" class="panel-card">
         <div class="panel-header">
           <h2>{{ $t('backgrounds') }}</h2>
         </div>
@@ -58,29 +50,38 @@
       </section>
 
       <!-- Alergias -->
-      <section class="panel-card">
+      <section v-show="activeTab === 'alergias'" id="tabpanel-alergias" role="tabpanel" aria-labelledby="tab-alergias" tabindex="-1" class="panel-card">
         <div class="panel-header">
           <h2>{{ $t('allergies') }}</h2>
         </div>
-        <div v-if="historial.alergias && historial.alergias.length" class="cards-grid">
-          <div v-for="al in historial.alergias" :key="al.id" class="read-card allergy">
-            <h3>{{ al.descripcion }}</h3>
-            <span v-if="al.createdAt" class="badge badge-date">{{ formatDateTime(al.createdAt) }}</span>
+        <div v-if="historial.alergias && historial.alergias.length">
+          <div class="cards-grid">
+            <div v-for="al in pagedAlergias" :key="al.id" class="read-card allergy">
+              <h3>{{ al.descripcion }}</h3>
+              <span v-if="al.createdAt" class="badge badge-date">{{ formatDateTime(al.createdAt) }}</span>
+            </div>
           </div>
+          <AppPagination
+            :page="alergiasPage"
+            :total-pages="alergiasTotalPages"
+            :aria-label="$t('pagination_nav_aria', { domain: $t('allergies') })"
+            @prev="goToPrevAlergiasPage"
+            @next="goToNextAlergiasPage"
+          />
         </div>
         <p v-else class="empty-hint">{{ $t('no_allergies_registered') }}</p>
       </section>
 
       <!-- Análisis de sangre -->
-      <section class="panel-card">
+      <section v-show="activeTab === 'analisis-sangre'" id="tabpanel-analisis-sangre" role="tabpanel" aria-labelledby="tab-analisis-sangre" tabindex="-1" class="panel-card">
         <div class="panel-header">
-          <h2>{{ $t('analysis') }}</h2>
+          <h2>{{ $t('tab_blood_analysis') }}</h2>
         </div>
         <ReadOnlyDatoClinicoTable :entries="historial.analisisSangre" :domain-label="$t('domain_blood_analysis')" />
       </section>
 
       <!-- Signos vitales -->
-      <section class="panel-card">
+      <section v-show="activeTab === 'signos-vitales'" id="tabpanel-signos-vitales" role="tabpanel" aria-labelledby="tab-signos-vitales" tabindex="-1" class="panel-card">
         <div class="panel-header">
           <h2>{{ $t('vital_signs') }}</h2>
         </div>
@@ -88,7 +89,7 @@
       </section>
 
       <!-- Análisis de orina -->
-      <section class="panel-card">
+      <section v-show="activeTab === 'analisis-orina'" id="tabpanel-analisis-orina" role="tabpanel" aria-labelledby="tab-analisis-orina" tabindex="-1" class="panel-card">
         <div class="panel-header">
           <h2>{{ $t('urine_analysis') }}</h2>
         </div>
@@ -96,7 +97,7 @@
       </section>
 
       <!-- Gráficas (CU-15) -->
-      <section class="panel-card">
+      <section v-show="activeTab === 'evolucion'" id="tabpanel-evolucion" role="tabpanel" aria-labelledby="tab-evolucion" tabindex="-1" class="panel-card">
         <div class="panel-header">
           <h2>{{ $t('historical_evolution') }}</h2>
           <p class="panel-subtitle">{{ $t('patient_charts_subtitle') }}</p>
@@ -108,16 +109,34 @@
         />
       </section>
 
+      <!-- Línea de tiempo clínica anotada -->
+      <section v-show="activeTab === 'linea-tiempo'" id="tabpanel-linea-tiempo" role="tabpanel" aria-labelledby="tab-linea-tiempo" tabindex="-1" class="panel-card">
+        <div class="panel-header">
+          <h2>{{ $t('clinical_timeline_title') }}</h2>
+          <p class="panel-subtitle">{{ $t('clinical_timeline_subtitle') }}</p>
+        </div>
+        <ClinicalTimelineCard
+          :analisis-sangre="historial.analisisSangre"
+          :signos-vitales="historial.signosVitales"
+          :analisis-orina="historial.analisisOrina"
+          :antecedentes="historial.antecedentes"
+        />
+      </section>
+
       <!-- Documentos (CU-16) -->
-      <section class="panel-card">
+      <section v-show="activeTab === 'documentos'" id="tabpanel-documentos" role="tabpanel" aria-labelledby="tab-documentos" tabindex="-1" class="panel-card">
         <div class="panel-header">
           <h2>{{ $t('files') }}</h2>
           <p class="panel-subtitle">{{ $t('patient_files_subtitle') }}</p>
         </div>
 
         <form class="archivo-form" @submit.prevent="subirArchivo">
-          <label class="form-label" for="archivo-input">{{ $t('upload_file') }}</label>
-          <input id="archivo-input" ref="archivoInput" type="file" class="form-input" @change="onArchivoSeleccionado" />
+          <FileDropZone
+            ref="dropZoneRef"
+            :model-value="archivoSeleccionado"
+            input-id="archivo-input"
+            @update:model-value="onArchivoSeleccionado"
+          />
           <div class="form-actions form-actions--right">
             <button type="submit" class="btn-primary" :disabled="!archivoSeleccionado || subiendoArchivo">
               <div v-if="subiendoArchivo" class="spinner-small"></div>
@@ -128,18 +147,27 @@
           <div v-if="archivoSuccess" class="alert alert-success" role="status" aria-live="polite">{{ $t('file_uploaded_success') }}</div>
         </form>
 
-        <div v-if="archivos.length" class="cards-grid">
-          <div v-for="f in archivos" :key="f.id" class="read-card">
-            <h3>{{ f.nombreOriginal }}</h3>
-            <span v-if="f.fechaCreacion" class="badge badge-date">{{ formatDateTime(f.fechaCreacion) }}</span>
-            <button type="button" class="btn-secondary" @click="descargarArchivo(f)">{{ $t('download') }}</button>
+        <div v-if="archivos.length">
+          <div class="cards-grid">
+            <div v-for="f in pagedArchivos" :key="f.id" class="read-card">
+              <h3>{{ f.nombreOriginal }}</h3>
+              <span v-if="f.fechaCreacion" class="badge badge-date">{{ formatDateTime(f.fechaCreacion) }}</span>
+              <button type="button" class="btn-secondary" @click="descargarArchivo(f)">{{ $t('download') }}</button>
+            </div>
           </div>
+          <AppPagination
+            :page="archivosPage"
+            :total-pages="archivosTotalPages"
+            :aria-label="$t('pagination_nav_aria', { domain: $t('files') })"
+            @prev="goToPrevArchivosPage"
+            @next="goToNextArchivosPage"
+          />
         </div>
         <p v-else class="empty-hint">{{ $t('no_files') }}</p>
       </section>
 
       <!-- Anotación médica -->
-      <section class="panel-card">
+      <section v-show="activeTab === 'anotacion'" id="tabpanel-anotacion" role="tabpanel" aria-labelledby="tab-anotacion" tabindex="-1" class="panel-card">
         <div class="panel-header">
           <h2>{{ $t('write_annotation') }}</h2>
           <p class="panel-subtitle">{{ $t('write_annotation_subtitle') }}</p>
@@ -160,18 +188,12 @@
           </div>
 
           <div v-if="anotacionError" class="alert alert-danger" role="alert" aria-live="assertive">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
+            <AppIcon name="alert-circle" size="lg" />
             {{ anotacionError }}
           </div>
 
           <div v-if="anotacionSuccess" class="alert alert-success" role="status" aria-live="polite">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
+            <AppIcon name="check" size="lg" />
             {{ $t('annotation_sent_success') }}
           </div>
 
@@ -182,6 +204,26 @@
             </button>
           </div>
         </form>
+
+        <div class="anotaciones-previas">
+          <h3 class="anotaciones-previas__title">{{ $t('my_annotations_for_patient') }}</h3>
+          <div v-if="anotaciones.length">
+            <div class="cards-grid">
+              <div v-for="a in pagedAnotaciones" :key="a.id" class="read-card annotation">
+                <p class="annotation-text">{{ a.mensaje }}</p>
+                <span v-if="a.createdAt" class="badge badge-date">{{ formatDateTime(a.createdAt) }}</span>
+              </div>
+            </div>
+            <AppPagination
+              :page="anotacionesPage"
+              :total-pages="anotacionesTotalPages"
+              :aria-label="$t('pagination_nav_aria', { domain: $t('write_annotation') })"
+              @prev="goToPrevAnotacionesPage"
+              @next="goToNextAnotacionesPage"
+            />
+          </div>
+          <p v-else class="empty-hint">{{ $t('no_annotations_written') }}</p>
+        </div>
       </section>
     </div>
   </div>
@@ -191,20 +233,32 @@
 import medicoPacienteService from '@/services/medicoPacienteService'
 import ReadOnlyDatoClinicoTable from '@/components/ReadOnlyDatoClinicoTable.vue'
 import PatientClinicalCharts from '@/components/PatientClinicalCharts.vue'
+import ClinicalTimelineCard from '@/components/ClinicalTimelineCard.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import AppTabs from '@/components/AppTabs.vue'
+import AppPagination from '@/components/AppPagination.vue'
+import FileDropZone from '@/components/FileDropZone.vue'
+
+const PAGE_SIZE = 10
 
 export default {
   name: 'PacienteHistorialView',
-  components: { ReadOnlyDatoClinicoTable, PatientClinicalCharts },
+  components: { ReadOnlyDatoClinicoTable, PatientClinicalCharts, ClinicalTimelineCard, AppIcon, AppTabs, AppPagination, FileDropZone },
   data() {
     return {
       historial: { antecedentes: [], alergias: [], analisisSangre: [], signosVitales: [], analisisOrina: [] },
       loading: true,
       error: null,
+      activeTab: 'antecedentes',
+      alergiasPage: 1,
       anotacionMensaje: '',
       anotacionSaving: false,
       anotacionError: null,
       anotacionSuccess: false,
+      anotaciones: [],
+      anotacionesPage: 1,
       archivos: [],
+      archivosPage: 1,
       archivoSeleccionado: null,
       subiendoArchivo: false,
       archivoError: null,
@@ -218,6 +272,19 @@ export default {
     nombrePaciente() {
       return this.$route.query.nombre || this.nif
     },
+    tabs() {
+      return [
+        { id: 'antecedentes', label: this.$t('backgrounds') },
+        { id: 'alergias', label: this.$t('allergies') },
+        { id: 'analisis-sangre', label: this.$t('tab_blood_analysis') },
+        { id: 'signos-vitales', label: this.$t('vital_signs') },
+        { id: 'analisis-orina', label: this.$t('urine_analysis') },
+        { id: 'evolucion', label: this.$t('historical_evolution') },
+        { id: 'linea-tiempo', label: this.$t('clinical_timeline') },
+        { id: 'documentos', label: this.$t('files') },
+        { id: 'anotacion', label: this.$t('write_annotation') }
+      ]
+    },
     groupedAntecedentes() {
       const antecedentes = this.historial.antecedentes || []
       const personal = antecedentes.filter(a => a.categoria === 'PERSONAL')
@@ -226,11 +293,33 @@ export default {
       if (personal.length) groups.push({ key: 'PERSONAL', label: this.$t('category_personal'), items: personal })
       if (familiar.length) groups.push({ key: 'FAMILIAR', label: this.$t('category_familiar'), items: familiar })
       return groups
+    },
+    alergiasTotalPages() {
+      return Math.max(1, Math.ceil((this.historial.alergias || []).length / PAGE_SIZE))
+    },
+    pagedAlergias() {
+      const start = (this.alergiasPage - 1) * PAGE_SIZE
+      return (this.historial.alergias || []).slice(start, start + PAGE_SIZE)
+    },
+    archivosTotalPages() {
+      return Math.max(1, Math.ceil(this.archivos.length / PAGE_SIZE))
+    },
+    pagedArchivos() {
+      const start = (this.archivosPage - 1) * PAGE_SIZE
+      return this.archivos.slice(start, start + PAGE_SIZE)
+    },
+    anotacionesTotalPages() {
+      return Math.max(1, Math.ceil(this.anotaciones.length / PAGE_SIZE))
+    },
+    pagedAnotaciones() {
+      const start = (this.anotacionesPage - 1) * PAGE_SIZE
+      return this.anotaciones.slice(start, start + PAGE_SIZE)
     }
   },
   created() {
     this.load()
     this.cargarArchivos()
+    this.cargarAnotaciones()
   },
   methods: {
     async load() {
@@ -239,6 +328,7 @@ export default {
       try {
         const { data } = await medicoPacienteService.obtenerHistorialPaciente(this.nif)
         this.historial = data || {}
+        this.alergiasPage = 1
       } catch (e) {
         this.error = this.$t('error_loading_patient_historial')
       } finally {
@@ -249,12 +339,40 @@ export default {
       try {
         const { data } = await medicoPacienteService.listarArchivosPaciente(this.nif)
         this.archivos = Array.isArray(data) ? data : []
+        this.archivosPage = 1
       } catch (e) {
         this.archivos = []
       }
     },
-    onArchivoSeleccionado(e) {
-      this.archivoSeleccionado = e.target.files && e.target.files[0] ? e.target.files[0] : null
+    async cargarAnotaciones() {
+      try {
+        const { data } = await medicoPacienteService.listarAnotacionesPaciente(this.nif)
+        this.anotaciones = Array.isArray(data) ? data : []
+        this.anotacionesPage = 1
+      } catch (e) {
+        this.anotaciones = []
+      }
+    },
+    goToPrevAlergiasPage() {
+      if (this.alergiasPage > 1) this.alergiasPage -= 1
+    },
+    goToNextAlergiasPage() {
+      if (this.alergiasPage < this.alergiasTotalPages) this.alergiasPage += 1
+    },
+    goToPrevArchivosPage() {
+      if (this.archivosPage > 1) this.archivosPage -= 1
+    },
+    goToNextArchivosPage() {
+      if (this.archivosPage < this.archivosTotalPages) this.archivosPage += 1
+    },
+    goToPrevAnotacionesPage() {
+      if (this.anotacionesPage > 1) this.anotacionesPage -= 1
+    },
+    goToNextAnotacionesPage() {
+      if (this.anotacionesPage < this.anotacionesTotalPages) this.anotacionesPage += 1
+    },
+    onArchivoSeleccionado(file) {
+      this.archivoSeleccionado = file
       this.archivoError = null
       this.archivoSuccess = false
     },
@@ -266,7 +384,7 @@ export default {
       try {
         await medicoPacienteService.subirArchivoPaciente(this.nif, this.archivoSeleccionado)
         this.archivoSeleccionado = null
-        if (this.$refs.archivoInput) this.$refs.archivoInput.value = ''
+        this.$refs.dropZoneRef?.reset()
         this.archivoSuccess = true
         await this.cargarArchivos()
       } catch (e) {
@@ -308,6 +426,7 @@ export default {
         await medicoPacienteService.crearAnotacion(this.nif, mensaje)
         this.anotacionMensaje = ''
         this.anotacionSuccess = true
+        await this.cargarAnotaciones()
       } catch (e) {
         const status = e?.response?.status
         if (status === 403) {
@@ -358,7 +477,8 @@ export default {
   gap: 1.5rem;
 }
 
-.anotacion-form {
+.anotacion-form,
+.archivo-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -440,6 +560,27 @@ export default {
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
+  word-break: break-word;
+}
+
+.anotaciones-previas {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.anotaciones-previas__title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.annotation-text {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  white-space: pre-line;
   word-break: break-word;
 }
 

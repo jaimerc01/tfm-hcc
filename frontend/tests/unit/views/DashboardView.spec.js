@@ -4,10 +4,12 @@ import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils'
 const auth = vi.hoisted(() => ({ getCurrentUser: vi.fn(), fetchMyName: vi.fn() }))
 const solicitud = vi.hoisted(() => ({ listarRecibidas: vi.fn() }))
 const noti = vi.hoisted(() => ({ fetchUnreadCount: vi.fn() }))
+const historia = vi.hoisted(() => ({ getMine: vi.fn(), getRangos: vi.fn() }))
 
 vi.mock('@/services/authService', () => ({ default: auth }))
 vi.mock('@/services/solicitudService', () => ({ default: solicitud }))
 vi.mock('@/services/notiService', () => ({ fetchUnreadCount: noti.fetchUnreadCount }))
+vi.mock('@/services/historiaClinicaService', () => ({ default: historia }))
 
 import DashboardView from '@/views/dashboard/DashboardView.vue'
 
@@ -18,7 +20,9 @@ beforeEach(() => {
   auth.getCurrentUser.mockReturnValue(roleClaims(['PACIENTE']))
   auth.fetchMyName.mockResolvedValue(null)
   solicitud.listarRecibidas.mockResolvedValue({ data: [] })
-  noti.fetchUnreadCount.mockResolvedValue({ data: 0 })
+  noti.fetchUnreadCount.mockResolvedValue({ data: { noLeidas: 0 } })
+  historia.getMine.mockResolvedValue({ data: {} })
+  historia.getRangos.mockResolvedValue({ data: [] })
 })
 
 const factory = async () => {
@@ -70,7 +74,9 @@ describe('DashboardView', () => {
   })
 
   it('muestra el contador de notificaciones sin leer', async () => {
-    noti.fetchUnreadCount.mockResolvedValue({ data: 4 })
+    // El backend responde { noLeidas: N }, no el número suelto (regresión: ver
+    // NotificacionControllerImpl#contarNotificacionesNoLeidas).
+    noti.fetchUnreadCount.mockResolvedValue({ data: { noLeidas: 4 } })
     const w = await factory()
     expect(w.vm.unreadNotifications).toBe(4)
   })
@@ -101,11 +107,20 @@ describe('DashboardView', () => {
     expect(names).not.toContain('MisSolicitudes')
   })
 
-  it('el administrador ve las tarjetas de administración y gestión de médicos', async () => {
+  it('el administrador ve la tarjeta de administración pero no una propia de gestión de médicos', async () => {
     auth.getCurrentUser.mockReturnValue(roleClaims(['ADMINISTRADOR']))
     const w = await factory()
     const names = w.vm.accessItems.map(i => i.name)
     expect(names).toContain('Admin')
-    expect(names).toContain('AdminMedicos')
+    expect(names).not.toContain('AdminMedicos')
+  })
+
+  it('el administrador no tiene tile de notificaciones ni de solicitudes: el resumen no se pide ni se muestra', async () => {
+    auth.getCurrentUser.mockReturnValue(roleClaims(['ADMINISTRADOR']))
+    const w = await factory()
+    expect(noti.fetchUnreadCount).not.toHaveBeenCalled()
+    expect(solicitud.listarRecibidas).not.toHaveBeenCalled()
+    expect(w.vm.showSummary).toBe(false)
+    expect(w.find('.dash-summary').exists()).toBe(false)
   })
 })

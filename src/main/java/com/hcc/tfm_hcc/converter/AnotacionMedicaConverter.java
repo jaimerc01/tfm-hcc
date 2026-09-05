@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import com.hcc.tfm_hcc.dto.AnotacionMedicaDTO;
 import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.util.NombreUtil;
 
 /**
  * Convertidor para transformar entidades {@link AnotacionMedica} en {@link AnotacionMedicaDTO}.
@@ -33,7 +34,7 @@ public class AnotacionMedicaConverter {
         Usuario medico = anotacion.getMedico();
         if (medico != null) {
             dto.setMedicoNif(medico.getNif());
-            dto.setMedicoNombre(nombreCompletoMedico(medico));
+            dto.setMedicoNombre(NombreUtil.nombreCompleto(medico));
         }
         return dto;
     }
@@ -49,22 +50,5 @@ public class AnotacionMedicaConverter {
             return List.of();
         }
         return anotaciones.stream().map(this::toDto).toList();
-    }
-
-    private String nombreCompletoMedico(Usuario medico) {
-        StringBuilder nombre = new StringBuilder();
-        appendSiPresente(nombre, medico.getNombre());
-        appendSiPresente(nombre, medico.getApellido1());
-        appendSiPresente(nombre, medico.getApellido2());
-        return nombre.toString();
-    }
-
-    private void appendSiPresente(StringBuilder builder, String parte) {
-        if (parte != null && !parte.isBlank()) {
-            if (builder.length() > 0) {
-                builder.append(' ');
-            }
-            builder.append(parte);
-        }
     }
 }

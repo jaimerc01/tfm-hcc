@@ -61,6 +61,8 @@ public final class ErrorMessages {
             "El enlace de restablecimiento no es válido o ha caducado. Solicita uno nuevo.";
     public static final String ERROR_RESET_PASSWORD_DEBIL =
             "La nueva contraseña debe tener al menos 8 caracteres";
+    public static final String ERROR_REGISTRO_PASSWORD_DEBIL =
+            "La contraseña debe tener al menos 8 caracteres";
 
     // =====================================================
     // MENSAJES DE ERROR - GESTIÓN DE ARCHIVOS

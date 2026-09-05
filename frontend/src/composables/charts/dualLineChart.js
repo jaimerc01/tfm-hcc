@@ -12,6 +12,9 @@ import { getThemeColor } from '@/utils/themeColors'
 export function drawDualLineChart(container, seriesA, seriesB, options = {}) {
   const colorA = options.colorA || getThemeColor('--chart-default')
   const colorB = options.colorB || getThemeColor('--chart-emphasis')
+  const gridColor = getThemeColor('--chart-grid')
+  const pointRingColor = getThemeColor('--chart-point-ring')
+  const crosshairColor = getThemeColor('--chart-crosshair')
 
   const {
     labelA = '',
@@ -24,6 +27,7 @@ export function drawDualLineChart(container, seriesA, seriesB, options = {}) {
   } = options
 
   container.innerHTML = ''
+  container.style.position = 'relative'
 
   const dataA = seriesA || []
   const dataB = seriesB || []
@@ -63,6 +67,13 @@ export function drawDualLineChart(container, seriesA, seriesB, options = {}) {
   const g = svg.append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`)
 
+  // Cuadrícula horizontal recesiva
+  g.append('g')
+    .attr('class', 'chart-grid-lines')
+    .call(d3.axisLeft(y).tickSize(-innerW).tickFormat(''))
+    .call(sel => sel.select('.domain').remove())
+    .call(sel => sel.selectAll('line').attr('stroke', gridColor).attr('stroke-dasharray', '2,3'))
+
   g.append('g')
     .attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(x)
@@ -79,15 +90,13 @@ export function drawDualLineChart(container, seriesA, seriesB, options = {}) {
   const tooltip = d3.select(container)
     .append('div')
     .attr('class', 'chart-tooltip')
-    .style('position', 'absolute')
-    .style('visibility', 'hidden')
-    .style('background', 'rgba(0, 0, 0, 0.8)')
-    .style('color', 'white')
-    .style('padding', '8px 12px')
-    .style('border-radius', '6px')
-    .style('font-size', '13px')
-    .style('pointer-events', 'none')
-    .style('z-index', '1000')
+
+  const crosshair = g.append('line')
+    .attr('class', 'chart-crosshair-line')
+    .attr('y1', 0)
+    .attr('y2', innerH)
+    .attr('stroke', crosshairColor)
+    .style('display', 'none')
 
   function drawSeries (data, color, seriesLabel) {
     if (!data.length) return
@@ -96,7 +105,9 @@ export function drawDualLineChart(container, seriesA, seriesB, options = {}) {
       .datum(data)
       .attr('fill', 'none')
       .attr('stroke', color)
-      .attr('stroke-width', 2)
+      .attr('stroke-width', 2.5)
+      .attr('stroke-linecap', 'round')
+      .attr('stroke-linejoin', 'round')
       .attr('d', line)
 
     g.selectAll(null)
@@ -105,18 +116,29 @@ export function drawDualLineChart(container, seriesA, seriesB, options = {}) {
       .append('circle')
       .attr('cx', d => x(d.date))
       .attr('cy', d => y(d.value))
-      .attr('r', 3.5)
+      .attr('r', 4)
       .attr('fill', color)
+      .attr('stroke', pointRingColor)
+      .attr('stroke-width', 1.5)
       .style('cursor', 'pointer')
       .on('mouseover', function (event, d) {
+        d3.select(this).attr('r', 6)
+        crosshair.attr('x1', x(d.date)).attr('x2', x(d.date)).style('display', null)
         tooltip
           .style('visibility', 'visible')
-          .html(`<strong>${seriesLabel}</strong><br/>${d.value} ${unit}<br/>${d.date.toLocaleString()}`)
-      })
-      .on('mousemove', function (event) {
-        tooltip.style('top', (event.pageY - 60) + 'px').style('left', (event.pageX + 10) + 'px')
+          .html(`<strong>${seriesLabel}</strong>${d.value} ${unit}<br/>${d.date.toLocaleString('es-ES', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}`)
+          .style('top', `${y(d.value) + margin.top - 60}px`)
+          .style('left', `${x(d.date) + margin.left + 12}px`)
       })
       .on('mouseout', function () {
+        d3.select(this).attr('r', 4)
+        crosshair.style('display', 'none')
         tooltip.style('visibility', 'hidden')
       })
   }

@@ -395,6 +395,36 @@
 }
 
 /* ================================
+   APP ICON (lucide via components/AppIcon.vue)
+   ================================ */
+
+/* Dimensiones por tamaño lógico. Especificidad baja (una clase) a propósito:
+   una clase de contexto en el componente padre (p. ej. .register-icon en una
+   media query) puede sobreescribir el tamaño sin pelear con estilos scoped. */
+.app-icon {
+  flex-shrink: 0;
+}
+
+.app-icon--xs { width: var(--icon-xs); height: var(--icon-xs); }
+.app-icon--sm { width: var(--icon-sm); height: var(--icon-sm); }
+.app-icon--md { width: var(--icon-md); height: var(--icon-md); }
+.app-icon--lg { width: var(--icon-lg); height: var(--icon-lg); }
+.app-icon--xl { width: var(--icon-xl); height: var(--icon-xl); }
+.app-icon--2xl { width: var(--icon-2xl); height: var(--icon-2xl); }
+.app-icon--3xl { width: var(--icon-3xl); height: var(--icon-3xl); }
+.app-icon--4xl { width: var(--icon-4xl); height: var(--icon-4xl); }
+
+.app-icon--spin {
+  animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-icon--spin {
+    animation: none;
+  }
+}
+
+/* ================================
    CIRCULAR ICON BADGE
    ================================ */
 

@@ -2,11 +2,7 @@
   <section class="antecedentes-section" :aria-busy="saving ? 'true' : 'false'" aria-labelledby="antecedentes-heading">
     <h2 id="antecedentes-heading" class="sr-only">{{ $t('antecedentes_personales_familiares') }}</h2>
     <div class="info-box">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 16v-4"></path>
-        <path d="M12 8h.01"></path>
-      </svg>
+      <AppIcon name="info" size="lg" />
       <span>
         <strong>{{ $t('describe_antecedentes') }}</strong> {{ $t('familia_personal') }}
       </span>
@@ -42,28 +38,19 @@
           :disabled="saving || !descripcion.trim()"
           :aria-disabled="saving || !descripcion.trim() ? 'true' : 'false'">
           <div v-if="saving" class="spinner-small"></div>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <path d="M12 5v14"></path>
-            <path d="M5 12h14"></path>
-          </svg>
+          <AppIcon v-else name="plus" size="md" />
           {{ saving ? $t('saving') : $t('add_antecedente') }}
         </button>
       </div>
     </form>
 
     <div v-if="error" class="alert alert-danger" role="alert" aria-live="assertive">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 16v-4"></path>
-        <path d="M12 8h.01"></path>
-      </svg>
+      <AppIcon name="alert-circle" size="lg" />
       {{ error }}
     </div>
 
     <div v-if="msg" class="alert alert-success" role="status" aria-live="polite">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <polyline points="20 6 9 17 4 12"></polyline>
-      </svg>
+      <AppIcon name="check" size="lg" />
       {{ msg }}
     </div>
 
@@ -71,12 +58,7 @@
     <div v-if="groupedAntecedentes.length" class="antecedentes-groups">
       <div v-for="group in groupedAntecedentes" :key="group.key" class="section">
         <div class="section-title">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
+          <AppIcon name="users" size="lg" />
           {{ group.label }}
           <span class="badge badge-info">{{ group.items.length }}</span>
         </div>
@@ -105,10 +87,7 @@
             </template>
             <template v-else>
               <div class="antecedente-header">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="antecedente-icon">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                </svg>
+                <AppIcon name="file" size="lg" class="antecedente-icon" />
                 <h3 class="entry-title">{{ a.descripcion }}</h3>
               </div>
               <div class="antecedente-body">
@@ -123,10 +102,7 @@
                   @click="startEdit(a)"
                   :title="$t('edit')"
                   :aria-label="$t('edit')">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
+                  <AppIcon name="edit" size="sm" />
                 </button>
                 <button
                   type="button"
@@ -134,10 +110,7 @@
                   @click="openDelete(a)"
                   :title="$t('delete_antecedente')"
                   :aria-label="$t('delete_antecedente_item_aria', { antecedente: a.descripcion })">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                  </svg>
+                  <AppIcon name="trash" size="sm" />
                 </button>
               </div>
             </template>
@@ -149,10 +122,7 @@
       <AppModal v-if="showDelete && deleteAntecedenteItem" :label="$t('delete_antecedente')" @close="closeDelete">
         <template #header>
           <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger-color);">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
+            <AppIcon name="trash" size="2xl" style="color:var(--danger-color);" />
             <h3 style="margin:0; text-align:center;">{{ $t('delete_antecedente') }}</h3>
           </div>
         </template>
@@ -173,12 +143,7 @@
 
     <!-- Empty state -->
     <div v-else class="empty-state-small">
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-        <circle cx="9" cy="7" r="4"></circle>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-      </svg>
+      <AppIcon name="users" size="3xl" />
       <p>{{ $t('no_antecedentes_registered') }}</p>
       <span>{{ $t('add_first_antecedente_hint') }}</span>
     </div>
@@ -187,10 +152,11 @@
 
 <script>
 import AppModal from './Modal.vue'
+import AppIcon from './AppIcon.vue'
 
 export default {
   name: 'AntecedentesSection',
-  components: { AppModal },
+  components: { AppModal, AppIcon },
   data() {
     return {
       categoria: 'PERSONAL',

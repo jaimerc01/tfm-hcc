@@ -54,11 +54,26 @@ Usage notes:
   box-shadow: 0 0 0 3px var(--primary-100, rgba(74, 144, 226, 0.1));
 }
 
+/* Campos no editables (disabled o readonly): mismo amarillo suave que .alert-warning
+   (variables.css), reservado en toda la app para "esto necesita tu atención" -- aquí,
+   que el valor no se puede modificar. El texto conserva el color normal para que el
+   valor siga siendo perfectamente legible; solo el fondo y el borde cambian.
+
+   El selector de :read-only va con la etiqueta (input/textarea), no solo con la clase:
+   toda la app usa la MISMA clase .form-input tanto en <input> y <textarea> como en
+   <select> (no existe ningún <select class="form-select"> real). El atributo readonly
+   no se aplica a <select> -- por especificación, un <select> habilitado que no soporta
+   readonly hace match con :read-only igualmente ("all other elements"), así que sin
+   esta restricción por etiqueta cualquier desplegable editable se pintaba de amarillo
+   por error. :disabled sí es seguro para las tres etiquetas: ahí el estado es real. */
 .form-input:disabled,
 .form-select:disabled,
-.form-textarea:disabled {
-  background: var(--neutral-50);
-  color: var(--neutral-500, var(--primary-color));
+.form-textarea:disabled,
+input.form-input:read-only,
+textarea.form-input:read-only,
+.form-textarea:read-only {
+  background: var(--alert-warning-bg);
+  border-color: var(--alert-warning-border);
   cursor: not-allowed;
 }
 

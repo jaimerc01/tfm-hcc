@@ -2,11 +2,7 @@
   <div class="chart-section">
     <div class="chart-header">
       <h3>
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10"></line>
-          <line x1="12" y1="20" x2="12" y2="4"></line>
-          <line x1="6" y1="20" x2="6" y2="14"></line>
-        </svg>
+        <AppIcon name="bar-chart" size="lg" />
         {{ $t('historical_evolution') }}
       </h3>
       <div class="chart-controls">
@@ -72,11 +68,7 @@
 
     <!-- Chart info helper -->
     <div class="chart-info" v-if="chartType">
-      <svg class="field-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 16v-4"></path>
-        <path d="M12 8h.01"></path>
-      </svg>
+      <AppIcon class="field-icon" name="info" size="sm" />
       <span>{{ getChartTypeInfo() }}</span>
     </div>
   </div>
@@ -86,6 +78,7 @@
 import { useChart } from '@/composables/useChart'
 import { getThemeColor } from '@/utils/themeColors'
 import { getAnalyteLabel, formatDate, mapTipoToKey } from '@/utils/datosClinicos'
+import AppIcon from './AppIcon.vue'
 
 const CHART_UI = Object.freeze({
   CHART_HEIGHT_INTERACTIVE: 400,
@@ -110,6 +103,7 @@ const CHART_UI = Object.freeze({
 
 export default {
   name: 'DatoClinicoChart',
+  components: { AppIcon },
   props: {
     entries: { type: Array, required: true },
     analytes: { type: Array, required: true },

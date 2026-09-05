@@ -322,6 +322,7 @@ public class MedicoServiceImpl implements MedicoService {
     @Transactional
     public UUID eliminarMedico(UUID id) {
         Usuario usuario = getUsuarioFromId(id);
+        validarEsMedico(id);
 
         // Cerrar las relaciones médico-paciente antes de dar de baja la cuenta: si no,
         // quedarían en estado ACTIVA y el médico eliminado seguiría autorizado para
@@ -347,9 +348,29 @@ public class MedicoServiceImpl implements MedicoService {
         if (asignar) {
             perfilUsuarioService.asignarPerfil(id, PERFIL_MEDICO);
         } else {
+            validarEsMedico(id);
             revocarPerfilMedico(id, usuario);
         }
         return id;
+    }
+
+    /**
+     * Comprueba que el usuario indicado tenga actualmente el perfil MEDICO.
+     *
+     * <p>Necesario porque {@link #eliminarMedico(UUID)} y la revocación de
+     * {@link #setPerfilMedico(UUID, boolean)} actúan sobre cualquier ID de usuario
+     * válido: sin esta comprobación, se podía dar de baja o alterar el rol de una
+     * cuenta que nunca fue médico (por ejemplo, un administrador) simplemente
+     * pasando su ID a estos endpoints.</p>
+     *
+     * @param id identificador del usuario a comprobar
+     * @throws UsuarioNoEncontradoException si el usuario no tiene perfil MEDICO
+     */
+    private void validarEsMedico(UUID id) {
+        if (!perfilUsuarioService.tienePerfil(id, PERFIL_MEDICO)) {
+            log.warn("Operación de médico solicitada sobre un usuario sin perfil MEDICO: {}", id);
+            throw new UsuarioNoEncontradoException(ErrorMessages.ERROR_MEDICO_NO_ENCONTRADO);
+        }
     }
 
     private void revocarPerfilMedico(UUID id, Usuario usuario) {

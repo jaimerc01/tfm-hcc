@@ -1,6 +1,29 @@
 import { describe, it, expect } from 'vitest'
-import { prepareChartData } from '@/composables/charts/chartUtils'
+import { prepareChartData, isOutOfRecommendedRange } from '@/composables/charts/chartUtils'
 import { useChart } from '@/composables/useChart'
+
+describe('isOutOfRecommendedRange', () => {
+  it('detecta valores por debajo o por encima del rango', () => {
+    expect(isOutOfRecommendedRange(60, 70, 110)).toBe(true)
+    expect(isOutOfRecommendedRange(120, 70, 110)).toBe(true)
+  })
+
+  it('los valores dentro del rango (incluidos los límites) no están fuera de rango', () => {
+    expect(isOutOfRecommendedRange(90, 70, 110)).toBe(false)
+    expect(isOutOfRecommendedRange(70, 70, 110)).toBe(false)
+    expect(isOutOfRecommendedRange(110, 70, 110)).toBe(false)
+  })
+
+  it('sin rango de referencia (min/max null) nunca está fuera de rango', () => {
+    expect(isOutOfRecommendedRange(9999, null, 110)).toBe(false)
+    expect(isOutOfRecommendedRange(9999, 70, null)).toBe(false)
+  })
+
+  it('un valor nulo o no numérico nunca está fuera de rango', () => {
+    expect(isOutOfRecommendedRange(null, 70, 110)).toBe(false)
+    expect(isOutOfRecommendedRange(NaN, 70, 110)).toBe(false)
+  })
+})
 
 describe('prepareChartData', () => {
   it('devuelve [] para entradas no válidas', () => {
@@ -57,10 +80,12 @@ describe('useChart', () => {
   it('re-exporta todas las funciones de gráfico', () => {
     const c = useChart()
     expect(Object.keys(c).sort()).toEqual([
+      'drawAnnotatedTimelineChart',
       'drawBarChart',
       'drawComparisonPieChart',
       'drawDualLineChart',
       'drawGaugeChart',
+      'drawHealthRingsChart',
       'drawInteractiveTimeSeriesChart',
       'drawTimeSeriesChart',
       'prepareChartData'

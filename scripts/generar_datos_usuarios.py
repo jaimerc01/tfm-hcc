@@ -7,6 +7,8 @@ Puebla las tablas:
  - public.usuario
  - public.perfil_usuario
  - public.historial_clinico
+ - public.medico_paciente   (cada médico generado queda con entre 1 y 5 pacientes
+   asignados en estado ACTIVA, elegidos al azar entre los pacientes generados)
 
 y escribe además un CSV con los datos en claro para poder iniciar sesión:
     usuarios_generados.csv
@@ -79,6 +81,13 @@ INDEX_KEY_CONTEXT = b"hcc:search-index:v1"
 PERFIL_PACIENTE_ID = "a208c3c9-78a4-4182-9cf5-a872e86ff0cc"
 PERFIL_MEDICO_ID = "650f90b0-26dc-4799-beb5-9f485eb56baa"
 PERFIL_ADMIN_ID = "b7d1f6e2-4c3a-4b8e-9a1d-2f5c6e7a8b90"
+
+# Idéntico a MedicoPaciente.ESTADO_ACTIVA en el backend.
+ESTADO_RELACION_ACTIVA = "ACTIVA"
+
+# Cuántos pacientes, como mínimo y máximo, se asignan a cada médico generado.
+MIN_PACIENTES_POR_MEDICO = 1
+MAX_PACIENTES_POR_MEDICO = 5
 
 
 def _parse_key(raw: str) -> bytes:
@@ -252,8 +261,9 @@ def make_inserts(pacientes: int, seed: int | None = None):
     medicos = pacientes // 15
     nifs_usados: set = set()
 
-    usuarios = [build_usuario(i + 1, False, nifs_usados, password_hash) for i in range(pacientes)]
-    usuarios += [build_usuario(pacientes + i + 1, True, nifs_usados, password_hash) for i in range(medicos)]
+    usuarios_pacientes = [build_usuario(i + 1, False, nifs_usados, password_hash) for i in range(pacientes)]
+    usuarios_medicos = [build_usuario(pacientes + i + 1, True, nifs_usados, password_hash) for i in range(medicos)]
+    usuarios = usuarios_pacientes + usuarios_medicos
 
     lines: list[str] = []
 
@@ -297,7 +307,31 @@ def make_inserts(pacientes: int, seed: int | None = None):
             f"VALUES ('{uuid.uuid4()}', '{u.id}', '{u.fecha_creacion}', '{u.fecha_creacion}');"
         )
 
+    # --- medico_paciente: cada médico generado queda con entre 1 y 5 pacientes ---
+    lines.extend(build_asignaciones(usuarios_pacientes, usuarios_medicos))
+
     return lines, usuarios
+
+
+def build_asignaciones(pacientes: list[Usuario], medicos: list[Usuario]) -> list[str]:
+    """Asigna a cada médico entre MIN_ y MAX_PACIENTES_POR_MEDICO pacientes al azar,
+    insertando la relación en medico_paciente con estado ACTIVA (salta el flujo real
+    de solicitud/aceptación, igual que hace un alta administrativa directa)."""
+    lines: list[str] = []
+    if not pacientes:
+        return lines
+
+    ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    for medico in medicos:
+        n = min(random.randint(MIN_PACIENTES_POR_MEDICO, MAX_PACIENTES_POR_MEDICO), len(pacientes))
+        for paciente in random.sample(pacientes, k=n):
+            lines.append(
+                "INSERT INTO public.medico_paciente "
+                "(id, id_medico, id_paciente, estado, fecha_creacion, fecha_ultima_modificacion) "
+                f"VALUES ('{uuid.uuid4()}', '{medico.id}', '{paciente.id}', "
+                f"'{ESTADO_RELACION_ACTIVA}', '{ahora}', '{ahora}');"
+            )
+    return lines
 
 
 def write_csv(usuarios, path):
@@ -331,11 +365,16 @@ def main():
         f.write(f"-- Pacientes: {args.pacientes} | Médicos: {args.pacientes // 15} | Seed: {args.seed}\n")
         f.write(f"-- Fecha: {datetime.now():%Y-%m-%d %H:%M:%S}\n")
         f.write("-- Cifrado AES/GCM + índice HMAC-SHA256; requiere que el backend use la misma\n")
-        f.write("-- TFM_HCC_ENCRYPTION_KEY con la que se generó este fichero.\n\n")
+        f.write("-- TFM_HCC_ENCRYPTION_KEY con la que se generó este fichero.\n")
+        f.write(f"-- Cada médico queda con entre {MIN_PACIENTES_POR_MEDICO} y {MAX_PACIENTES_POR_MEDICO} "
+                "pacientes asignados (medico_paciente, estado ACTIVA).\n\n")
         f.write("\n".join(lines) + "\n")
 
     write_csv(usuarios, args.csv)
 
+    n_asignaciones = sum(1 for l in lines if l.startswith("INSERT INTO public.medico_paciente"))
+    print(f"[OK] Asignaciones médico-paciente: {n_asignaciones} "
+          f"(entre {MIN_PACIENTES_POR_MEDICO} y {MAX_PACIENTES_POR_MEDICO} pacientes por médico)")
     print(f"[OK] SQL:  {args.out}  ({len(lines)} sentencias)")
     print(f"[OK] CSV:  {args.csv}  ({len(usuarios)} usuarios)")
     print("Todos los usuarios tienen la contrasena: 'password'")

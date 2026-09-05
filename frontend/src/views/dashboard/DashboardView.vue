@@ -28,10 +28,14 @@
         <span class="summary-tile__label">{{ $t('dashboard_pending_requests') }}</span>
       </router-link>
 
-      <div class="summary-tile">
+      <div v-if="!isAdmin" class="summary-tile">
         <span class="summary-tile__value">{{ unreadNotifications }}</span>
         <span class="summary-tile__label">{{ $t('dashboard_unread_notifications') }}</span>
       </div>
+    </section>
+
+    <section v-if="isPaciente" class="dash-health" :aria-label="$t('health_rings_title')">
+      <HealthRingsCard />
     </section>
 
     <section class="dash-access" :aria-label="$t('dashboard_quick_access')">
@@ -85,11 +89,13 @@ import { useRole } from '@/composables/useRole'
 import authService from '@/services/authService'
 import solicitudService from '@/services/solicitudService'
 import { fetchUnreadCount } from '@/services/notiService'
+import HealthRingsCard from '@/components/HealthRingsCard.vue'
 
 const PENDING_STATE = 'PENDIENTE'
 
 export default {
   name: 'DashboardView',
+  components: { HealthRingsCard },
   setup() {
     const { isPaciente, isMedico, isAdmin } = useRole()
 
@@ -111,8 +117,9 @@ export default {
         items.push({ name: 'Medico', icon: 'medico', labelKey: 'medical_zone', descKey: 'dashboard_access_medico_desc' })
       }
       if (isAdmin.value) {
+        // Gestionar médicos es una subsección de Administración (ver AdminView),
+        // no una tarjeta propia en el acceso rápido.
         items.push({ name: 'Admin', icon: 'admin', labelKey: 'admin', descKey: 'dashboard_access_admin_desc' })
-        items.push({ name: 'AdminMedicos', icon: 'doctors', labelKey: 'manage_doctors', descKey: 'dashboard_access_doctors_desc' })
       }
       items.push({ name: 'DatosUsuario', icon: 'user', labelKey: 'user_data', descKey: 'dashboard_access_user_desc' })
       return items
@@ -150,11 +157,16 @@ export default {
         )
       }
 
-      tasks.push(
-        fetchUnreadCount().then(({ data }) => {
-          unreadNotifications.value = Number(data) || 0
-        })
-      )
+      // El administrador no es destinatario de ningún tipo de notificación del
+      // sistema (ver NotificacionFacadeImpl): no tiene sentido pedirle el
+      // contador ni mostrarle el tile correspondiente.
+      if (!isAdmin.value) {
+        tasks.push(
+          fetchUnreadCount().then(({ data }) => {
+            unreadNotifications.value = Number(data?.noLeidas) || 0
+          })
+        )
+      }
 
       const results = await Promise.allSettled(tasks)
       summaryLoaded.value = results.some(r => r.status === 'fulfilled')
@@ -233,6 +245,15 @@ a.summary-tile:focus-visible {
   border-left-color: var(--danger-color);
 }
 
+/* Cuando solo se muestra un tile (p. ej. un administrador con perfil médico
+   adicional, que ve "Solicitudes pendientes" pero no "Notificaciones sin
+   leer"), la única columna de auto-fit se estira a 1fr y ocupa toda la fila.
+   Limitar su ancho evita ese estirado sin afectar al caso habitual de dos
+   tiles, donde no aplica :only-child. */
+.dash-summary .summary-tile:only-child {
+  max-width: 340px;
+}
+
 .summary-tile__value {
   font-size: 1.9rem;
   font-weight: 700;
@@ -249,6 +270,11 @@ a.summary-tile:focus-visible {
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+/* ---------- Health rings ---------- */
+.dash-health {
+  margin-bottom: 2.5rem;
 }
 
 /* ---------- Quick access ---------- */

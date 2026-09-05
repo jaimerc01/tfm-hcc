@@ -46,4 +46,20 @@ public interface AnotacionMedicaService {
      * @throws IllegalArgumentException si el paciente no existe
      */
     List<AnotacionMedica> listarAnotacionesPaciente(String nifPaciente, String nifMedicoFiltro, LocalDateTime desde, LocalDateTime hasta);
+
+    /**
+     * Lista las anotaciones que un médico ha escrito sobre un paciente concreto, de la
+     * más reciente a la más antigua. A diferencia de {@link #listarAnotacionesPaciente},
+     * pensada para que el paciente consulte lo que ha recibido, esta comprueba el acceso
+     * del médico: exige una relación médico-paciente activa y que el paciente no haya
+     * limitado el tratamiento de sus datos.
+     *
+     * @param nifMedico NIF del médico autenticado
+     * @param nifPaciente NIF del paciente
+     * @return lista de anotaciones escritas por ese médico sobre ese paciente
+     * @throws IllegalArgumentException si el paciente no existe
+     * @throws IllegalStateException si el médico no existe, no hay relación médico-paciente
+     *         activa, o el paciente ha limitado el tratamiento de sus datos
+     */
+    List<AnotacionMedica> listarAnotacionesEscritasPorMedico(String nifMedico, String nifPaciente);
 }

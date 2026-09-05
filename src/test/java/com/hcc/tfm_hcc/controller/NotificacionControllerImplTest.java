@@ -12,7 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.Map;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import com.hcc.tfm_hcc.controller.impl.NotificacionControllerImpl;
+import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.dto.NotificacionPageDTO;
 import com.hcc.tfm_hcc.exception.NotificacionAccesoException;
 import com.hcc.tfm_hcc.exception.NotificacionOperacionException;
 import com.hcc.tfm_hcc.exception.NotificacionValidationException;
@@ -37,11 +39,17 @@ class NotificacionControllerImplTest {
     }
 
     @Test
-    void listarMisNotificaciones_delegaEnElFacadeConLaPaginacion() throws Exception {
-        when(notificacionFacade.listarNotificacionesUsuarioActual(0, 10)).thenReturn(Map.of());
+    void listarMisNotificaciones_delegaEnElFacadeYDevuelveItemsYTotal() throws Exception {
+        NotificacionDTO dto = new NotificacionDTO();
+        dto.setId("id-1");
+        when(notificacionFacade.listarNotificacionesUsuarioActual(0, 10))
+                .thenReturn(new NotificacionPageDTO(List.of(dto), 7L));
 
         mvc.perform(get("/notificaciones").param("page", "0").param("size", "10"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].id").value("id-1"))
+                .andExpect(jsonPath("$.total").value(7));
 
         verify(notificacionFacade).listarNotificacionesUsuarioActual(0, 10);
     }

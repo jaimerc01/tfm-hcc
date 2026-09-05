@@ -5,6 +5,8 @@ import { drawBarChart } from './charts/barChart'
 import { drawGaugeChart } from './charts/gaugeChart'
 import { drawComparisonPieChart } from './charts/pieChart'
 import { drawDualLineChart } from './charts/dualLineChart'
+import { drawHealthRingsChart } from './charts/healthRingsChart'
+import { drawAnnotatedTimelineChart } from './charts/annotatedTimelineChart'
 import { prepareChartData } from './charts/chartUtils'
 
 /**
@@ -18,6 +20,8 @@ import { prepareChartData } from './charts/chartUtils'
  * - drawGaugeChart: Medidor circular (gauge) con indicadores de rango
  * - drawComparisonPieChart: Gráfico circular (donut) comparando varios valores
  * - drawDualLineChart: Gráfico de dos líneas temporales combinadas
+ * - drawHealthRingsChart: Anillos de salud concéntricos (una métrica por anillo)
+ * - drawAnnotatedTimelineChart: Evolución de un parámetro con eventos clínicos anotados
  * - prepareChartData: Utilidad para preparar datos de análisis para visualización
  */
 export function useChart() {
@@ -28,6 +32,8 @@ export function useChart() {
     drawGaugeChart,
     drawComparisonPieChart,
     drawDualLineChart,
+    drawHealthRingsChart,
+    drawAnnotatedTimelineChart,
     prepareChartData
   }
 }

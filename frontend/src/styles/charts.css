@@ -3,9 +3,9 @@
 .chart-section {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.08), 0 1px 3px 0 rgb(0 0 0 / 0.06);
 }
 
 .chart-header {
@@ -91,12 +91,13 @@
   background: rgba(0, 0, 0, 0.85);
   color: white;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 13px;
   pointer-events: none;
   z-index: 1000;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  box-shadow: 0 8px 16px -4px rgb(0 0 0 / 0.25);
   line-height: 1.5;
+  backdrop-filter: blur(2px);
 }
 
 .chart-tooltip strong {
@@ -106,23 +107,47 @@
   color: var(--text-inverse);
 }
 
+/* Cuadrícula horizontal recesiva (más discreta que los ejes) */
+.chart-container svg .chart-grid-lines line {
+  shape-rendering: crispEdges;
+}
+
+/* Línea guía vertical del crosshair al pasar el ratón por el gráfico */
+.chart-container svg .chart-crosshair-line {
+  stroke-width: 1;
+  stroke-dasharray: 4, 3;
+  pointer-events: none;
+}
+
 /* Interactividad en puntos y barras */
-.chart-container .dot,
+.chart-container .dot {
+  transition: r 0.15s ease, filter 0.15s ease;
+}
+
+.chart-container .dot:hover {
+  filter: brightness(1.15);
+}
+
 .chart-container .bar {
-  transition: all 0.2s ease;
+  transition: filter 0.15s ease;
 }
 
-.chart-container .dot:hover,
 .chart-container .bar:hover {
-  filter: brightness(1.2);
+  filter: brightness(1.06) drop-shadow(0 4px 8px rgb(0 0 0 / 0.18));
 }
 
-/* Brush para zoom */
+/* Brush para zoom, con asas redondeadas */
 .chart-container .brush .selection {
   fill: var(--primary-color);
-  fill-opacity: 0.2;
+  fill-opacity: 0.15;
   stroke: var(--primary-color);
   stroke-width: 1px;
+  rx: 4px;
+  ry: 4px;
+}
+
+.chart-container .brush .handle {
+  fill: var(--primary-color);
 }
 
 /* Gauge charts */
@@ -157,6 +182,10 @@
   gap: 0.5rem;
   font-size: 0.875rem;
   color: var(--text-primary);
+  background: var(--bg-light);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
 }
 
 .chart-legend-dot {
@@ -164,6 +193,7 @@
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.6);
 }
 
 .chart-legend-label {
@@ -172,4 +202,221 @@
 
 .chart-legend-value {
   color: var(--text-secondary);
+}
+
+/* ---------- Anillos de salud ---------- */
+.health-rings__subtitle {
+  margin: 0 0 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.health-rings__loading {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding: 1.5rem 0;
+}
+
+.health-rings__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem 2rem;
+}
+
+.health-rings__chart {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.health-rings__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.health-rings__legend-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "swatch name value"
+    "swatch range status";
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.1rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--card-bg);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.health-rings__legend-item.is-active {
+  background: var(--bg-light);
+  border-color: var(--border-medium);
+}
+
+.health-rings__swatch {
+  grid-area: swatch;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgb(255 255 255 / 0.7);
+}
+
+.health-rings__legend-name {
+  grid-area: name;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.health-rings__legend-range {
+  grid-area: range;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.health-rings__legend-value {
+  grid-area: value;
+  justify-self: end;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.health-rings__unit {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.health-rings__status {
+  grid-area: status;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.health-rings__status--in {
+  color: var(--success-active);
+}
+
+.health-rings__status--out {
+  color: var(--danger-active);
+}
+
+.health-rings__status--none {
+  color: var(--text-secondary);
+}
+
+/* ---------- Línea de tiempo clínica anotada ---------- */
+.clinical-timeline__subtitle {
+  margin: 0 0 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.clinical-timeline .chart-container {
+  display: block;
+  min-height: 0;
+  overflow-x: auto;
+}
+
+.clinical-timeline__events {
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.clinical-timeline__events h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.clinical-timeline__event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.clinical-timeline__event {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--card-bg);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.clinical-timeline__event.is-active {
+  background: var(--bg-light);
+  border-color: var(--border-medium);
+}
+
+.clinical-timeline__event-num {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--chart-series-slate);
+  color: var(--on-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clinical-timeline__event-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.clinical-timeline__event-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.clinical-timeline__event-date {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+
+.clinical-timeline__event-text {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .health-rings__legend-item,
+  .clinical-timeline__event {
+    transition: none;
+  }
 }

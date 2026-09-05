@@ -117,4 +117,22 @@ describe('NotificationsDropdown', () => {
     expect(w.exists()).toBe(true)
     spy.mockRestore()
   })
+
+  it('marca visualmente las notificaciones no leídas', async () => {
+    svc.listMyNotifications.mockResolvedValue({
+      data: { items: [notif({ leida: false }), notif({ id: 2, leida: true })], total: 2 }
+    })
+    const w = await factory()
+    await w.find('.notif__button').trigger('click')
+    const items = w.findAll('.notif__item')
+    expect(items[0].classes()).toContain('notif__item--unread')
+    expect(items[1].classes()).not.toContain('notif__item--unread')
+  })
+
+  it('deshabilita "marcar todas como leídas" cuando no hay pendientes', async () => {
+    svc.listMyNotifications.mockResolvedValue({ data: { items: [notif({ leida: true })], total: 1 } })
+    const w = await factory()
+    await w.find('.notif__button').trigger('click')
+    expect(w.find('.notif__footer button').attributes('disabled')).toBeDefined()
+  })
 })

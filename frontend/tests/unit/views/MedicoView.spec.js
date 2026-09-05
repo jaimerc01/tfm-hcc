@@ -127,8 +127,67 @@ describe('MedicoView', () => {
   it('renderiza la tarjeta de paciente asignado con enlace al historial', async () => {
     svc.listarMisPacientes.mockResolvedValue({ data: [{ nif: '1Z', nombre: 'Ana', apellido1: 'L' }] })
     const w = await factory()
-    expect(w.find('.paciente-card').exists()).toBe(true)
-    expect(w.find('.desasignar-btn').exists()).toBe(true)
+    expect(w.find('.solicitud-card').exists()).toBe(true)
+    expect(w.find('.btn-accept').text()).toContain('Ver historial')
+    expect(w.find('.btn-reject').text()).toContain('Finalizar relación')
+  })
+
+  it('muestra las solicitudes pendientes como pastillas con estado', async () => {
+    svc.listarSolicitudesPendientes.mockResolvedValue({ data: [{ id: 1, paciente: { nif: '1Z' }, estado: 'PENDIENTE', fechaCreacion: '2024-01-01' }] })
+    const w = await factory()
+    expect(w.find('.solicitudes-grid .status-badge').text()).toBe('Pendiente')
+    expect(w.text()).toContain('1Z')
+  })
+
+  it('muestra el estado vacío de mis pacientes cuando no hay ninguno', async () => {
+    const w = await factory()
+    expect(w.find('.empty-state').exists()).toBe(true)
+    expect(w.text()).toContain('No tienes pacientes asignados todavía')
+  })
+
+  describe('filtro de mis pacientes', () => {
+    const dosPacientes = [
+      { nif: '12345678Z', nombre: 'Ana', apellido1: 'García', apellido2: 'López' },
+      { nif: '87654321X', nombre: 'Luis', apellido1: 'Fernández', apellido2: '' }
+    ]
+
+    it('sin filtro muestra todos los pacientes', async () => {
+      svc.listarMisPacientes.mockResolvedValue({ data: dosPacientes })
+      const w = await factory()
+      expect(w.vm.pacientesFiltrados).toHaveLength(2)
+      expect(w.findAll('.solicitudes-grid .solicitud-card')).toHaveLength(2)
+    })
+
+    it('filtra por nombre (sin distinguir mayúsculas)', async () => {
+      svc.listarMisPacientes.mockResolvedValue({ data: dosPacientes })
+      const w = await factory()
+      w.vm.filtroPacientes = 'ana garcía'
+      await w.vm.$nextTick()
+      expect(w.vm.pacientesFiltrados.map(p => p.nif)).toEqual(['12345678Z'])
+    })
+
+    it('filtra por DNI', async () => {
+      svc.listarMisPacientes.mockResolvedValue({ data: dosPacientes })
+      const w = await factory()
+      w.vm.filtroPacientes = '87654321'
+      await w.vm.$nextTick()
+      expect(w.vm.pacientesFiltrados.map(p => p.nif)).toEqual(['87654321X'])
+    })
+
+    it('sin coincidencias muestra un estado vacío distinto al de "sin pacientes"', async () => {
+      svc.listarMisPacientes.mockResolvedValue({ data: dosPacientes })
+      const w = await factory()
+      w.vm.filtroPacientes = 'no-existe'
+      await w.vm.$nextTick()
+      expect(w.vm.pacientesFiltrados).toHaveLength(0)
+      expect(w.text()).toContain('Ningún paciente coincide con el filtro')
+      expect(w.text()).not.toContain('No tienes pacientes asignados todavía')
+    })
+
+    it('no muestra el filtro cuando no hay pacientes asignados', async () => {
+      const w = await factory()
+      expect(w.find('#filtro-pacientes').exists()).toBe(false)
+    })
   })
 
   it('pedirDesasignar abre el modal con el paciente objetivo', async () => {

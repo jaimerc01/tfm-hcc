@@ -3,11 +3,7 @@
     <h2 id="access-log-heading" class="sr-only">{{ $t('access_log_section_title') }}</h2>
 
     <div class="info-box">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 16v-4"></path>
-        <path d="M12 8h.01"></path>
-      </svg>
+      <AppIcon name="info" size="lg" />
       <span>{{ $t('access_log_help') }}</span>
     </div>
 
@@ -27,11 +23,7 @@
     </form>
 
     <div v-if="error" class="alert alert-danger" role="alert" aria-live="assertive">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
+      <AppIcon name="alert-circle" size="lg" />
       {{ error }}
     </div>
 
@@ -51,7 +43,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(a, idx) in accesos" :key="`${a.timestamp || 'no-date'}-${idx}`">
+          <tr v-for="(a, idx) in pagedAccesos" :key="`${a.timestamp || 'no-date'}-${idx}`">
             <td>{{ formatDateTime(a.timestamp) }}</td>
             <td>{{ a.ruta }}</td>
             <td>{{ a.metodo }}</td>
@@ -60,6 +52,14 @@
           </tr>
         </tbody>
       </table>
+
+      <AppPagination
+        :page="page"
+        :total-pages="totalPages"
+        :aria-label="$t('pagination_nav_aria', { domain: $t('access_log_section_title') })"
+        @prev="goToPrevPage"
+        @next="goToNextPage"
+      />
     </div>
 
     <p v-else class="empty-hint">{{ $t('no_access_log_registered') }}</p>
@@ -68,16 +68,31 @@
 
 <script>
 import authService from '@/services/authService'
+import AppIcon from './AppIcon.vue'
+import AppPagination from './AppPagination.vue'
+
+const PAGE_SIZE = 10
 
 export default {
   name: 'AccessLogSection',
+  components: { AppIcon, AppPagination },
   data() {
     return {
       accesos: [],
       loading: false,
       error: null,
       filtroDesde: '',
-      filtroHasta: ''
+      filtroHasta: '',
+      page: 1
+    }
+  },
+  computed: {
+    totalPages() {
+      return Math.max(1, Math.ceil(this.accesos.length / PAGE_SIZE))
+    },
+    pagedAccesos() {
+      const start = (this.page - 1) * PAGE_SIZE
+      return this.accesos.slice(start, start + PAGE_SIZE)
     }
   },
   created() {
@@ -96,6 +111,7 @@ export default {
         this.error = e.message || this.$t('error_loading_access_log')
         this.accesos = []
       } finally {
+        this.page = 1
         this.loading = false
       }
     },
@@ -106,6 +122,12 @@ export default {
       this.filtroDesde = ''
       this.filtroHasta = ''
       this.load()
+    },
+    goToPrevPage() {
+      if (this.page > 1) this.page -= 1
+    },
+    goToNextPage() {
+      if (this.page < this.totalPages) this.page += 1
     },
     formatDateTime(dt) {
       if (!dt) return ''

@@ -45,6 +45,11 @@ describe('medicoPacienteService', () => {
     expect(client.post).toHaveBeenCalledWith('/medico/pacientes/11111111%2FH/anotaciones', { mensaje: 'Revisar tensión' })
   })
 
+  it('listarAnotacionesPaciente hace GET sobre /medico/pacientes/{nif}/anotaciones', () => {
+    svc.listarAnotacionesPaciente('11111111/H')
+    expect(client.get).toHaveBeenCalledWith('/medico/pacientes/11111111%2FH/anotaciones')
+  })
+
   it('desasignarPaciente hace DELETE sobre /relaciones/mis-pacientes con el nif codificado', () => {
     svc.desasignarPaciente('11111111/H')
     expect(client.delete).toHaveBeenCalledWith('/relaciones/mis-pacientes/11111111%2FH')

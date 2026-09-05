@@ -62,21 +62,14 @@ describe('HistoriaClinicaView', () => {
     w.unmount()
   })
 
-  it('onDrop y onFileChange asignan el fichero seleccionado', async () => {
+  it('seleccionar un archivo en el FileDropZone actualiza el fichero a subir', async () => {
     const w = await factory()
-    w.vm.onFileChange({ target: { files: [file()] } })
+    w.vm.activeSection = 'archivos'
+    await w.vm.$nextTick()
+    const dropZone = w.findComponent({ name: 'FileDropZone' })
+    expect(dropZone.exists()).toBe(true)
+    await dropZone.vm.$emit('update:modelValue', file())
     expect(w.vm.file.name).toBe('a.pdf')
-    w.vm.onDrop({ preventDefault: vi.fn(), stopPropagation: vi.fn(), dataTransfer: { files: [file('b.pdf')] } })
-    expect(w.vm.file.name).toBe('b.pdf')
-    w.unmount()
-  })
-
-  it('onDragOver / onDragLeave alternan isDragging', async () => {
-    const w = await factory()
-    w.vm.onDragOver({ preventDefault: vi.fn(), stopPropagation: vi.fn() })
-    expect(w.vm.isDragging).toBe(true)
-    w.vm.onDragLeave({ preventDefault: vi.fn(), stopPropagation: vi.fn() })
-    expect(w.vm.isDragging).toBe(false)
     w.unmount()
   })
 
@@ -101,13 +94,56 @@ describe('HistoriaClinicaView', () => {
     w.unmount()
   })
 
-  it('remove elimina el archivo de la lista', async () => {
+  it('askDelete abre la confirmación sin borrar todavía', async () => {
+    svc.list.mockResolvedValue([{ id: 1, nombreOriginal: 'a', sizeBytes: 1 }])
+    const w = await factory()
+    w.vm.askDelete({ id: 1, nombreOriginal: 'a' })
+    expect(w.vm.deleteTarget).toMatchObject({ id: 1 })
+    expect(svc.remove).not.toHaveBeenCalled()
+    w.unmount()
+  })
+
+  it('cancelDelete cierra la confirmación sin borrar', async () => {
+    const w = await factory()
+    w.vm.askDelete({ id: 1, nombreOriginal: 'a' })
+    w.vm.cancelDelete()
+    expect(w.vm.deleteTarget).toBeNull()
+    expect(svc.remove).not.toHaveBeenCalled()
+    w.unmount()
+  })
+
+  it('confirmDelete elimina el archivo de la lista y cierra la confirmación', async () => {
     svc.list.mockResolvedValue([{ id: 1, nombreOriginal: 'a', sizeBytes: 1 }, { id: 2, nombreOriginal: 'b', sizeBytes: 1 }])
     const w = await factory()
-    await w.vm.remove({ id: 1 })
+    w.vm.askDelete({ id: 1, nombreOriginal: 'a' })
+    await w.vm.confirmDelete()
     await flushPromises()
     expect(svc.remove).toHaveBeenCalledWith(1)
     expect(w.vm.items).toHaveLength(1)
+    expect(w.vm.deleteTarget).toBeNull()
+    w.unmount()
+  })
+
+  it('confirmDelete muestra error si falla y cierra la confirmación', async () => {
+    svc.list.mockResolvedValue([{ id: 1, nombreOriginal: 'a', sizeBytes: 1 }])
+    svc.remove.mockRejectedValueOnce(new Error('500'))
+    const w = await factory()
+    w.vm.askDelete({ id: 1, nombreOriginal: 'a' })
+    await w.vm.confirmDelete()
+    await flushPromises()
+    expect(w.vm.error).toBeTruthy()
+    expect(w.vm.deleteTarget).toBeNull()
+    w.unmount()
+  })
+
+  it('el botón de borrar abre el modal de confirmación con el nombre del archivo', async () => {
+    svc.list.mockResolvedValue([{ id: 1, nombreOriginal: 'informe.pdf', sizeBytes: 1 }])
+    const w = await factory()
+    w.vm.activeSection = 'archivos'
+    await w.vm.$nextTick()
+    await w.find('.btn-icon.btn-danger').trigger('click')
+    expect(w.vm.deleteTarget).toMatchObject({ id: 1 })
+    expect(w.text()).toContain('informe.pdf')
     w.unmount()
   })
 

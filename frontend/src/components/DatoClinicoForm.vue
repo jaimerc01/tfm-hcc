@@ -1,10 +1,7 @@
 <template>
   <div class="section-card add-entry-section">
     <h3 class="section-subtitle">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 5v14"></path>
-        <path d="M5 12h14"></path>
-      </svg>
+      <AppIcon name="plus" size="md" />
       {{ $t('add_new_result') }}
     </h3>
 
@@ -34,11 +31,7 @@
           <span class="unit-badge">{{ unitForSelected }}</span>
         </div>
         <div v-if="!validation.isValid && String(value).trim() !== ''" id="validation-error" class="form-error">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
+          <AppIcon name="alert-circle" size="xs" />
           {{ validation.message }}
         </div>
         <div v-else id="range-hint" class="form-help">{{ rangeHintText }}</div>
@@ -60,10 +53,7 @@
           :aria-label="saving ? $t('analysis_add_aria_saving', { domain: domainLabel }) : $t('analysis_add_aria', { domain: domainLabel })"
           :aria-describedby="!validation.isValid && String(value).trim() !== '' ? 'validation-error' : 'range-hint'">
           <div v-if="saving" class="spinner-small"></div>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 5v14"></path>
-            <path d="M5 12h14"></path>
-          </svg>
+          <AppIcon v-else name="plus" size="md" />
           {{ saving ? $t('saving') : $t('add_result') }}
         </button>
       </div>
@@ -73,9 +63,11 @@
 
 <script>
 import { getAnalyteLabel } from '@/utils/datosClinicos'
+import AppIcon from './AppIcon.vue'
 
 export default {
   name: 'DatoClinicoForm',
+  components: { AppIcon },
   props: {
     analytes: { type: Array, required: true },
     saving: { type: Boolean, default: false },

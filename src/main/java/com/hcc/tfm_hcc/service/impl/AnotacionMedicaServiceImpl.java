@@ -107,6 +107,20 @@ public class AnotacionMedicaServiceImpl implements AnotacionMedicaService {
             .toList();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<AnotacionMedica> listarAnotacionesEscritasPorMedico(String nifMedico, String nifPaciente) {
+        Usuario medico = resolverMedicoAutenticado(nifMedico);
+        Usuario paciente = buscarUsuarioPorNif(nifPaciente);
+
+        validarAccesoMedicoAPaciente(medico, paciente);
+
+        return anotacionMedicaRepository.findByPacienteIdAndMedicoIdOrderByFechaCreacionDesc(paciente.getId(), medico.getId());
+    }
+
     private List<AnotacionMedica> obtenerAnotaciones(Usuario paciente, String nifMedicoFiltro) {
         if (nifMedicoFiltro == null || nifMedicoFiltro.isBlank()) {
             return anotacionMedicaRepository.findByPacienteIdOrderByFechaCreacionDesc(paciente.getId());

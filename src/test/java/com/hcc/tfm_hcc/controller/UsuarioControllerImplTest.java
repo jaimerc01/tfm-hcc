@@ -92,6 +92,14 @@ class UsuarioControllerImplTest {
     }
 
     @Test
+    void changePassword_conNuevaPasswordDeSieteCaracteres_devuelveBadRequest() throws Exception {
+        mvc.perform(put("/usuario/password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"actual123\",\"newPassword\":\"1234567\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void listarMisSolicitudes_conUsuarioAutenticado_devuelveLaLista() throws Exception {
         when(usuarioFacade.getUsuarioActual()).thenReturn(usuarioDto());
         when(usuarioFacade.listarMisSolicitudes()).thenReturn(List.of(new SolicitudAsignacion()));

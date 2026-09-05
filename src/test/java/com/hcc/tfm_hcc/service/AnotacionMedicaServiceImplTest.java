@@ -205,6 +205,54 @@ class AnotacionMedicaServiceImplTest {
                 () -> service.listarAnotacionesPaciente(NIF_PACIENTE, null, null, null));
     }
 
+    // ---- listarAnotacionesEscritasPorMedico ----
+
+    @Test
+    void listarAnotacionesEscritasPorMedico_conRelacionActiva_devuelveLasDelMedicoSobreEsePaciente() {
+        conRelacionActiva();
+        when(anotacionMedicaRepository.findByPacienteIdAndMedicoIdOrderByFechaCreacionDesc(paciente.getId(), medico.getId()))
+                .thenReturn(List.of(anotacionEn(LocalDateTime.now()), anotacionEn(LocalDateTime.now().minusDays(2))));
+
+        List<AnotacionMedica> resultado = service.listarAnotacionesEscritasPorMedico(NIF_MEDICO, NIF_PACIENTE);
+
+        assertEquals(2, resultado.size());
+        verify(anotacionMedicaRepository, never()).findByPacienteIdOrderByFechaCreacionDesc(any());
+    }
+
+    @Test
+    void listarAnotacionesEscritasPorMedico_sinRelacionActiva_lanzaIllegalStateException() {
+        when(medicoPacienteRepository.existsByMedicoIdAndPacienteIdAndEstado(
+                medico.getId(), paciente.getId(), MedicoPaciente.ESTADO_ACTIVA)).thenReturn(false);
+
+        assertThrows(IllegalStateException.class,
+                () -> service.listarAnotacionesEscritasPorMedico(NIF_MEDICO, NIF_PACIENTE));
+    }
+
+    @Test
+    void listarAnotacionesEscritasPorMedico_conPacienteConTratamientoLimitado_lanzaIllegalStateException() {
+        paciente.setEstadoCuenta(Usuario.ESTADO_CUENTA_SUSPENDIDO);
+        conRelacionActiva();
+
+        assertThrows(IllegalStateException.class,
+                () -> service.listarAnotacionesEscritasPorMedico(NIF_MEDICO, NIF_PACIENTE));
+    }
+
+    @Test
+    void listarAnotacionesEscritasPorMedico_conMedicoInexistente_lanzaIllegalStateException() {
+        when(usuarioRepository.findByNifHash("hash-" + NIF_MEDICO)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class,
+                () -> service.listarAnotacionesEscritasPorMedico(NIF_MEDICO, NIF_PACIENTE));
+    }
+
+    @Test
+    void listarAnotacionesEscritasPorMedico_conPacienteInexistente_lanzaIllegalArgumentException() {
+        when(usuarioRepository.findByNifHash("hash-" + NIF_PACIENTE)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.listarAnotacionesEscritasPorMedico(NIF_MEDICO, NIF_PACIENTE));
+    }
+
     private AnotacionMedica anotacionEn(LocalDateTime fecha) {
         AnotacionMedica anotacion = new AnotacionMedica();
         anotacion.setId(UUID.randomUUID());

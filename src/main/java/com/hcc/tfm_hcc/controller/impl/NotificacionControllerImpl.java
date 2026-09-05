@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.NotificacionController;
-import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.dto.NotificacionPageDTO;
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
 
 import lombok.RequiredArgsConstructor;
@@ -52,8 +52,8 @@ public class NotificacionControllerImpl implements NotificacionController {
      */
     @Override
     @GetMapping
-    public ResponseEntity<Map<String, NotificacionDTO>> listarMisNotificaciones(@RequestParam("page") int page,
-                                                                                @RequestParam("size") int size) {
+    public ResponseEntity<NotificacionPageDTO> listarMisNotificaciones(@RequestParam("page") int page,
+                                                                       @RequestParam("size") int size) {
         log.info("Listando notificaciones del usuario autenticado - página: {}, tamaño: {}", page, size);
         return ResponseEntity.ok(notificacionFacade.listarNotificacionesUsuarioActual(page, size));
     }

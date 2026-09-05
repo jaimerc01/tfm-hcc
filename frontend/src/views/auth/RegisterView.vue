@@ -4,12 +4,7 @@
       <section class="register-card" aria-labelledby="register-title">
         <header class="register-header">
           <div class="icon-wrapper" aria-hidden="true">
-            <svg class="register-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <line x1="19" y1="8" x2="19" y2="14"></line>
-              <line x1="22" y1="11" x2="16" y2="11"></line>
-            </svg>
+            <AppIcon class="register-icon" name="user-plus" size="3xl" />
           </div>
           <h1 id="register-title">{{$t('register_title')}}</h1>
           <p class="subtitle">{{$t('register_subtitle')}}</p>
@@ -24,19 +19,12 @@
           aria-live="assertive"
           tabindex="-1"
         >
-          <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
+          <AppIcon class="alert-icon" name="alert-circle" size="lg" />
           <span>{{ error }}</span>
         </div>
 
         <div v-if="success" class="alert alert-success" role="status" aria-live="polite">
-          <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-          </svg>
+          <AppIcon class="alert-icon" name="check-circle" size="lg" />
           <span>{{ $t('register_success') }}</span>
         </div>
 
@@ -129,6 +117,45 @@
             <legend class="section-title">{{ $t('identification_data') }}</legend>
             <div class="form-grid">
               <div class="form-group">
+                <label for="email" class="form-label">
+                  {{$t('email_label')}} <span class="required" aria-hidden="true">*</span>
+                </label>
+                <input
+                  id="email"
+                  ref="emailInput"
+                  v-model.trim="form.email"
+                  type="email"
+                  class="form-input"
+                  :placeholder="$t('email_placeholder')"
+                  required
+                  autocomplete="email"
+                  :aria-invalid="fieldErrors.email ? 'true' : 'false'"
+                  :aria-describedby="buildDescribedBy('email')"
+                  @blur="validateEmailField"
+                />
+                <p v-if="fieldErrors.email" id="email-error" class="field-error">{{ fieldErrors.email }}</p>
+              </div>
+
+              <div class="form-group">
+                <label for="telefono" class="form-label">
+                  {{ $t('phone') }}
+                </label>
+                <input
+                  id="telefono"
+                  v-model.trim="form.telefono"
+                  type="tel"
+                  class="form-input"
+                  :placeholder="$t('phone_placeholder')"
+                  autocomplete="tel"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-section">
+            <legend class="section-title">{{ $t('access_data') }}</legend>
+            <div class="form-grid">
+              <div class="form-group full-width">
                 <label for="nif" class="form-label">
                   {{$t('nif_label')}} <span class="required" aria-hidden="true">*</span>
                 </label>
@@ -152,45 +179,6 @@
               </div>
 
               <div class="form-group">
-                <label for="telefono" class="form-label">
-                  {{ $t('phone') }}
-                </label>
-                <input
-                  id="telefono"
-                  v-model.trim="form.telefono"
-                  type="tel"
-                  class="form-input"
-                  :placeholder="$t('phone_placeholder')"
-                  autocomplete="tel"
-                />
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="form-section">
-            <legend class="section-title">{{ $t('access_data') }}</legend>
-            <div class="form-grid">
-              <div class="form-group full-width">
-                <label for="email" class="form-label">
-                  {{$t('email_label')}} <span class="required" aria-hidden="true">*</span>
-                </label>
-                <input
-                  id="email"
-                  ref="emailInput"
-                  v-model.trim="form.email"
-                  type="email"
-                  class="form-input"
-                  :placeholder="$t('email_placeholder')"
-                  required
-                  autocomplete="email"
-                  :aria-invalid="fieldErrors.email ? 'true' : 'false'"
-                  :aria-describedby="buildDescribedBy('email')"
-                  @blur="validateEmailField"
-                />
-                <p v-if="fieldErrors.email" id="email-error" class="field-error">{{ fieldErrors.email }}</p>
-              </div>
-
-              <div class="form-group">
                 <label for="password" class="form-label">
                   {{ $t('password') }} <span class="required" aria-hidden="true">*</span>
                 </label>
@@ -202,7 +190,7 @@
                   class="form-input"
                   :placeholder="$t('password_min_placeholder')"
                   required
-                  minlength="6"
+                  minlength="8"
                   autocomplete="new-password"
                   :aria-invalid="fieldErrors.password ? 'true' : 'false'"
                   :aria-describedby="buildDescribedBy('password', true)"
@@ -224,7 +212,7 @@
                   class="form-input"
                   :placeholder="$t('repeat_password_placeholder')"
                   required
-                  minlength="6"
+                  minlength="8"
                   autocomplete="new-password"
                   :aria-invalid="fieldErrors.password2 ? 'true' : 'false'"
                   :aria-describedby="buildDescribedBy('password2')"
@@ -246,27 +234,17 @@
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="loading" :aria-disabled="loading ? 'true' : 'false'">
               <span v-if="!loading">
-                <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <line x1="19" y1="8" x2="19" y2="14"></line>
-                  <line x1="22" y1="11" x2="16" y2="11"></line>
-                </svg>
+                <AppIcon name="user-plus" size="lg" />
                 {{$t('register_title')}}
               </span>
               <span v-else class="loading-text">
-                <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-                </svg>
+                <AppIcon name="spinner" size="lg" spin />
                 {{$t('register_loading')}}
               </span>
             </button>
 
             <button type="button" class="btn-secondary" @click="goLogin" :disabled="loading" :aria-disabled="loading ? 'true' : 'false'">
-              <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-              </svg>
+              <AppIcon name="arrow-left" size="lg" />
               {{ $t('back_to_login') }}
             </button>
           </div>
@@ -274,11 +252,7 @@
 
         <footer class="register-footer">
           <p>
-            <svg class="info-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
+            <AppIcon class="info-icon" name="info" size="sm" />
             {{$t('required_fields_note')}} <span class="required" aria-hidden="true">*</span> {{$t('are_required')}}
           </p>
         </footer>
@@ -293,9 +267,13 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import authService from '@/services/authService'
 import { validateNIF } from '@/utils/validateNIF'
+import AppIcon from '@/components/AppIcon.vue'
+
+const MIN_PASSWORD_LENGTH = 8
 
 export default {
   name: 'RegisterView',
+  components: { AppIcon },
   setup() {
     const router = useRouter()
     const { t } = useI18n()
@@ -405,7 +383,7 @@ export default {
         fieldErrors.value.password = t('password_required')
         return false
       }
-      if (form.value.password.length < 6) {
+      if (form.value.password.length < MIN_PASSWORD_LENGTH) {
         fieldErrors.value.password = t('password_min_length')
         return false
       }
@@ -440,8 +418,8 @@ export default {
       if (fieldErrors.value.nombre && nombreInput.value) return nombreInput.value.focus()
       if (fieldErrors.value.apellido1 && apellido1Input.value) return apellido1Input.value.focus()
       if (fieldErrors.value.fechaNacimiento && fechaNacimientoInput.value) return fechaNacimientoInput.value.focus()
-      if (fieldErrors.value.nif && nifInput.value) return nifInput.value.focus()
       if (fieldErrors.value.email && emailInput.value) return emailInput.value.focus()
+      if (fieldErrors.value.nif && nifInput.value) return nifInput.value.focus()
       if (fieldErrors.value.password && passwordInput.value) return passwordInput.value.focus()
       if (fieldErrors.value.password2 && password2Input.value) return password2Input.value.focus()
 
@@ -453,8 +431,8 @@ export default {
         validateNombreField(),
         validateApellido1Field(),
         validateFechaNacimientoField(),
-        validateNifField(),
         validateEmailField(),
+        validateNifField(),
         validatePasswordField(),
         validatePassword2Field()
       ]
@@ -577,6 +555,7 @@ export default {
   margin: 0;
   opacity: 0.95;
   font-size: 1rem;
+  color: white;
 }
 
 .alert {
@@ -720,28 +699,10 @@ export default {
   flex: 1;
 }
 
-.btn-icon {
-  flex-shrink: 0;
-}
-
 .loading-text {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .register-footer {
@@ -774,10 +735,6 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation: none;
-  }
-
   .btn-primary,
   .btn-secondary,
   .form-input {

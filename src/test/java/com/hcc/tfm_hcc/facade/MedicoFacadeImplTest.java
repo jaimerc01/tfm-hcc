@@ -28,6 +28,8 @@ import com.hcc.tfm_hcc.exception.SolicitudAsignacionException;
 import com.hcc.tfm_hcc.exception.SolicitudExistenteException;
 import com.hcc.tfm_hcc.exception.UsuarioNoAutenticadoException;
 import com.hcc.tfm_hcc.exception.UsuarioSinPermisoException;
+import com.hcc.tfm_hcc.converter.AnotacionMedicaConverter;
+import com.hcc.tfm_hcc.dto.AnotacionMedicaDTO;
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.facade.impl.MedicoFacadeImpl;
 import com.hcc.tfm_hcc.mapper.ArchivoClinicoMapper;
@@ -46,6 +48,7 @@ class MedicoFacadeImplTest {
     private SolicitudAsignacionService solicitudAsignacionService;
     private HistorialClinicoService historialClinicoService;
     private AnotacionMedicaService anotacionMedicaService;
+    private AnotacionMedicaConverter anotacionMedicaConverter;
     private ArchivoClinicoService archivoClinicoService;
     private ArchivoClinicoMapper archivoClinicoMapper;
     private NotificacionFacade notificacionFacade;
@@ -57,11 +60,12 @@ class MedicoFacadeImplTest {
         solicitudAsignacionService = mock(SolicitudAsignacionService.class);
         historialClinicoService = mock(HistorialClinicoService.class);
         anotacionMedicaService = mock(AnotacionMedicaService.class);
+        anotacionMedicaConverter = mock(AnotacionMedicaConverter.class);
         archivoClinicoService = mock(ArchivoClinicoService.class);
         archivoClinicoMapper = mock(ArchivoClinicoMapper.class);
         notificacionFacade = mock(NotificacionFacade.class);
         facade = new MedicoFacadeImpl(medicoService, solicitudAsignacionService, historialClinicoService,
-                anotacionMedicaService, archivoClinicoService, archivoClinicoMapper, notificacionFacade);
+                anotacionMedicaService, anotacionMedicaConverter, archivoClinicoService, archivoClinicoMapper, notificacionFacade);
     }
 
     @AfterEach
@@ -317,6 +321,43 @@ class MedicoFacadeImplTest {
                 .thenThrow(new RuntimeException("fallo"));
 
         assertThrows(MedicoOperacionException.class, () -> facade.crearAnotacion("22222222B", "texto"));
+    }
+
+    // ---- listar anotaciones del médico sobre un paciente ----
+
+    @Test
+    void listarAnotacionesPaciente_delegaEnElServicioYConvierteADto() {
+        autenticarComo("11111111A");
+        AnotacionMedica anotacion = new AnotacionMedica();
+        when(anotacionMedicaService.listarAnotacionesEscritasPorMedico("11111111A", "22222222B"))
+                .thenReturn(java.util.List.of(anotacion));
+        when(anotacionMedicaConverter.toDtoList(java.util.List.of(anotacion)))
+                .thenReturn(java.util.List.of(new AnotacionMedicaDTO()));
+
+        assertEquals(1, facade.listarAnotacionesPaciente("22222222B").size());
+    }
+
+    @Test
+    void listarAnotacionesPaciente_sinAccesoActivo_lanzaUsuarioSinPermisoException() {
+        autenticarComo("11111111A");
+        when(anotacionMedicaService.listarAnotacionesEscritasPorMedico("11111111A", "22222222B"))
+                .thenThrow(new IllegalStateException("acceso denegado"));
+
+        assertThrows(UsuarioSinPermisoException.class, () -> facade.listarAnotacionesPaciente("22222222B"));
+    }
+
+    @Test
+    void listarAnotacionesPaciente_conPacienteInexistente_lanzaPacienteNoEncontradoException() {
+        autenticarComo("11111111A");
+        when(anotacionMedicaService.listarAnotacionesEscritasPorMedico("11111111A", "22222222B"))
+                .thenThrow(new IllegalArgumentException("paciente no encontrado"));
+
+        assertThrows(PacienteNoEncontradoException.class, () -> facade.listarAnotacionesPaciente("22222222B"));
+    }
+
+    @Test
+    void listarAnotacionesPaciente_sinUsuarioAutenticado_lanzaUsuarioNoAutenticadoException() {
+        assertThrows(UsuarioNoAutenticadoException.class, () -> facade.listarAnotacionesPaciente("22222222B"));
     }
 
     // ---- documentos del paciente ----

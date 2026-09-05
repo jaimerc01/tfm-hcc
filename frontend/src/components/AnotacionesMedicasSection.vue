@@ -3,11 +3,7 @@
     <h2 id="anotaciones-heading" class="sr-only">{{ $t('medical_annotations') }}</h2>
 
     <div class="info-box">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 16v-4"></path>
-        <path d="M12 8h.01"></path>
-      </svg>
+      <AppIcon name="info" size="lg" />
       <span>{{ $t('medical_annotations_help') }}</span>
     </div>
 
@@ -36,11 +32,7 @@
     </form>
 
     <div v-if="error" class="alert alert-danger" role="alert" aria-live="assertive">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
+      <AppIcon name="alert-circle" size="lg" />
       {{ error }}
     </div>
 
@@ -50,11 +42,7 @@
 
     <div v-else-if="anotaciones.length" class="section">
       <div class="section-title">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 5h11l5 5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"></path>
-          <path d="M14 5v6h6"></path>
-          <path d="M8 15h8M8 18h5"></path>
-        </svg>
+        <AppIcon name="note" size="lg" />
         {{ $t('medical_annotations') }}
         <span class="badge badge-info">{{ anotaciones.length }}</span>
       </div>
@@ -71,10 +59,7 @@
     </div>
 
     <div v-else class="empty-state-small">
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <path d="M4 5h11l5 5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"></path>
-        <path d="M14 5v6h6"></path>
-      </svg>
+      <AppIcon name="note" size="3xl" />
       <p>{{ $t('no_annotations_registered') }}</p>
       <span>{{ $t('no_annotations_hint') }}</span>
     </div>
@@ -83,9 +68,11 @@
 
 <script>
 import authService from '@/services/authService'
+import AppIcon from './AppIcon.vue'
 
 export default {
   name: 'AnotacionesMedicasSection',
+  components: { AppIcon },
   data() {
     return {
       anotaciones: [],

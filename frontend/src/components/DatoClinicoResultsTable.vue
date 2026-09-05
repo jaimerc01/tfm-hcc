@@ -1,9 +1,7 @@
 <template>
   <div v-if="entries.length" class="section section-card results-section">
     <div class="section-title">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 11H3v2h6m-6-5h6m-6 8h6m4-7h8m-8-3h8m-8 6h8m-8 3h8"></path>
-      </svg>
+      <AppIcon name="list" size="lg" />
       {{ $t('registered_results') }}
       <span class="badge badge-info">{{ entries.length }}</span>
     </div>
@@ -19,14 +17,10 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(e, idx) in entries" :key="idx">
+          <tr v-for="(e, localIdx) in pagedEntries" :key="pageStart + localIdx">
             <td>
               <div class="param-cell">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="1"></circle>
-                  <circle cx="12" cy="5" r="1"></circle>
-                  <circle cx="12" cy="19" r="1"></circle>
-                </svg>
+                <AppIcon name="more-vertical" size="sm" />
                 <strong>{{ getEntryLabel(e) }}</strong>
               </div>
             </td>
@@ -37,19 +31,24 @@
             <td class="actions-col">
               <button
                 type="button"
-                @click="removeEntry(idx)"
+                @click="removeEntry(pageStart + localIdx)"
                 :aria-label="$t('analysis_delete_entry_aria', { label: getEntryLabel(e), date: formatDate(e.createdAt) })"
                 class="btn-icon btn-danger">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
+                <AppIcon name="trash" size="sm" />
               </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <AppPagination
+      :page="page"
+      :total-pages="totalPages"
+      :aria-label="$t('pagination_nav_aria', { domain: domainLabel })"
+      @prev="goToPrevPage"
+      @next="goToNextPage"
+    />
 
     <div class="form-actions">
       <button
@@ -58,10 +57,7 @@
         :disabled="saving"
         :aria-label="$t('analysis_clear_all_aria', { count: entries.length, domain: domainLabel })"
         class="btn-danger">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        </svg>
+        <AppIcon name="trash" size="md" />
         {{ $t('analysis_clear_all_button') }}
       </button>
     </div>
@@ -69,13 +65,7 @@
 
   <!-- Empty state -->
   <div v-else class="empty-state-small">
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <polyline points="14 2 14 8 20 8"></polyline>
-      <line x1="16" y1="13" x2="8" y2="13"></line>
-      <line x1="16" y1="17" x2="8" y2="17"></line>
-      <polyline points="10 9 9 9 8 9"></polyline>
-    </svg>
+    <AppIcon name="file-text" size="3xl" />
     <p>{{ $t('no_results_registered', { domain: domainLabel }) }}</p>
     <span>{{ $t('add_first_result_hint') }}</span>
   </div>
@@ -83,9 +73,14 @@
 
 <script>
 import { getAnalyteLabel, formatDate } from '@/utils/datosClinicos'
+import AppIcon from './AppIcon.vue'
+import AppPagination from './AppPagination.vue'
+
+const PAGE_SIZE = 10
 
 export default {
   name: 'DatoClinicoResultsTable',
+  components: { AppIcon, AppPagination },
   props: {
     entries: { type: Array, required: true },
     analytes: { type: Array, required: true },
@@ -95,6 +90,31 @@ export default {
     domainLabel: { type: String, required: true }
   },
   emits: ['delete-entry', 'clear-all'],
+  data() {
+    return {
+      page: 1
+    }
+  },
+  computed: {
+    totalPages() {
+      return Math.max(1, Math.ceil(this.entries.length / PAGE_SIZE))
+    },
+    pageStart() {
+      return (this.page - 1) * PAGE_SIZE
+    },
+    pagedEntries() {
+      return this.entries.slice(this.pageStart, this.pageStart + PAGE_SIZE)
+    }
+  },
+  watch: {
+    // Si se borra el último elemento de la última página, o se borran todos de golpe
+    // con "clearAll", vuelve a una página válida en vez de dejar la tabla en blanco.
+    totalPages(newTotalPages) {
+      if (this.page > newTotalPages) {
+        this.page = newTotalPages
+      }
+    }
+  },
   methods: {
     getEntryLabel(entry) {
       if (!entry) return ''
@@ -112,6 +132,12 @@ export default {
     },
     clearAll() {
       this.$emit('clear-all')
+    },
+    goToPrevPage() {
+      if (this.page > 1) this.page -= 1
+    },
+    goToNextPage() {
+      if (this.page < this.totalPages) this.page += 1
     }
   }
 }

@@ -17,6 +17,7 @@ import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.SolicitudAsignacionService;
+import com.hcc.tfm_hcc.util.NombreUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +60,10 @@ public class SolicitudAsignacionServiceImpl implements SolicitudAsignacionServic
 
         // Crear notificación (no lanzar si falla)
         try {
-            String nombreMedico = medico.getNombre() != null ? medico.getNombre() : medico.getNif();
+            String nombreMedico = NombreUtil.nombreCompleto(medico);
+            if (nombreMedico == null || nombreMedico.isBlank()) {
+                nombreMedico = medico.getNif();
+            }
             notificacionFacade.crearNotificacionParaUsuario(
                     paciente.getNif(), MENSAJE_SOLICITUD_RECIBIDA_PREFIJO + nombreMedico);
         } catch (Exception e) {

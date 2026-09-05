@@ -2,13 +2,7 @@
   <div class="page-container historia-page">
     <div class="page-header">
       <div class="header-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="16" y1="13" x2="8" y2="13"></line>
-          <line x1="16" y1="17" x2="8" y2="17"></line>
-          <polyline points="10 9 9 9 8 9"></polyline>
-        </svg>
+        <AppIcon name="file-text" size="2xl" />
       </div>
       <div>
         <h1>{{$t('clinical_history')}}</h1>
@@ -30,12 +24,7 @@
           aria-controls="antecedentes-panel"
           :tabindex="activeSection === 'antecedentes' ? 0 : -1"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
+          <AppIcon name="users" size="md" />
           {{$t('backgrounds')}}
         </button>
 
@@ -51,11 +40,7 @@
           aria-controls="alergias-panel"
           :tabindex="activeSection === 'alergias' ? 0 : -1"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
+          <AppIcon name="alert-circle" size="md" />
           {{$t('allergies')}}
         </button>
 
@@ -71,13 +56,7 @@
           aria-controls="analisis-panel"
           :tabindex="activeSection === 'analisis' ? 0 : -1"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <path d="M9 2v6"></path>
-            <path d="M15 2v6"></path>
-            <path d="M12 17v5"></path>
-            <path d="M5 8h14"></path>
-            <path d="M6 11V8h12v3"></path>
-          </svg>
+          <AppIcon name="test-tube" size="md" />
           {{$t('analysis')}}
         </button>
 
@@ -93,9 +72,7 @@
           aria-controls="signos-vitales-panel"
           :tabindex="activeSection === 'signos-vitales' ? 0 : -1"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
-          </svg>
+          <AppIcon name="activity" size="md" />
           {{$t('vital_signs')}}
         </button>
 
@@ -111,12 +88,7 @@
           aria-controls="analisis-orina-panel"
           :tabindex="activeSection === 'analisis-orina' ? 0 : -1"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <path d="M9 2v7.31"></path>
-            <path d="M14.69 2v7.31"></path>
-            <path d="M9 9.31h5.69l4.36 10.15a2 2 0 0 1-1.84 2.79H6.48a2 2 0 0 1-1.84-2.79z"></path>
-            <path d="M7 16h10"></path>
-          </svg>
+          <AppIcon name="flask" size="md" />
           {{$t('urine_analysis')}}
         </button>
 
@@ -132,10 +104,7 @@
           aria-controls="archivos-panel"
           :tabindex="activeSection === 'archivos' ? 0 : -1"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-            <polyline points="13 2 13 9 20 9"></polyline>
-          </svg>
+          <AppIcon name="file" size="md" />
           {{$t('files')}}
         </button>
 
@@ -151,11 +120,7 @@
           aria-controls="anotaciones-panel"
           :tabindex="activeSection === 'anotaciones' ? 0 : -1"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <path d="M4 5h11l5 5v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"></path>
-            <path d="M14 5v6h6"></path>
-            <path d="M8 15h8M8 18h5"></path>
-          </svg>
+          <AppIcon name="note" size="md" />
           {{$t('medical_annotations')}}
         </button>
       </div>
@@ -238,56 +203,17 @@
 
             <div class="upload-section">
               <form @submit.prevent="onUpload">
-                <div
-                  class="file-drop-zone"
-                  :class="{ 'drag-over': isDragging }"
-                  role="button"
-                  tabindex="0"
-                  :aria-label="$t('upload_here')"
-                  @dragover="onDragOver"
-                  @dragleave="onDragLeave"
-                  @drop="onDrop"
-                  @keydown.enter.prevent="openFilePicker"
-                  @keydown.space.prevent="openFilePicker"
-                >
-                  <input type="file" id="fileInput" ref="fileInputRef" @change="onFileChange" class="file-input-hidden" />
-                  <label for="fileInput" class="file-drop-label" tabindex="-1">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="upload-icon" aria-hidden="true" focusable="false">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    <div class="upload-text">
-                      <span v-if="!file" class="upload-primary">{{$t('upload_here')}}</span>
-                      <span v-else class="file-selected-name">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                          <polyline points="14 2 14 8 20 8"></polyline>
-                        </svg>
-                        {{ file.name }}
-                      </span>
-                      <span class="upload-secondary">{{$t('file_types')}}</span>
-                    </div>
-                  </label>
-                </div>
+                <FileDropZone ref="dropZoneRef" v-model="file" input-id="fileInput" />
 
                 <button type="submit" :disabled="!file || uploading" class="btn-primary upload-btn">
-                  <svg v-if="!uploading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                  </svg>
+                  <AppIcon v-if="!uploading" name="upload" size="sm" />
                   <div v-else class="spinner-small"></div>
                   {{ uploading ? $t('uploading') : $t('upload_file') }}
                 </button>
               </form>
 
               <div v-if="error" class="alert alert-danger" role="alert" aria-live="assertive">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
+                <AppIcon name="alert-circle" size="sm" />
                 {{ error }}
               </div>
             </div>
@@ -301,10 +227,7 @@
               <div class="files-grid">
                 <div v-for="it in items" :key="it.id" class="file-card">
                   <div class="file-icon-wrapper">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                    </svg>
+                    <AppIcon name="file" size="xl" />
                   </div>
                   <div class="file-info">
                     <div class="file-name">{{ it.nombreOriginal }}</div>
@@ -312,17 +235,10 @@
                   </div>
                   <div class="file-actions">
                     <button class="btn-icon" @click="download(it)" :title="$t('download')" :aria-label="$t('download')">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                      </svg>
+                      <AppIcon name="download" size="sm" />
                     </button>
-                    <button class="btn-icon btn-danger" @click="remove(it)" :disabled="removingId === it.id" :title="$t('delete')" :aria-label="$t('delete')">
-                      <svg v-if="removingId !== it.id" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
+                    <button class="btn-icon btn-danger" @click="askDelete(it)" :disabled="removingId === it.id" :title="$t('delete')" :aria-label="$t('delete')">
+                      <AppIcon v-if="removingId !== it.id" name="trash" size="sm" />
                       <div v-else class="spinner-small"></div>
                     </button>
                   </div>
@@ -331,13 +247,29 @@
             </div>
 
             <div v-else class="empty-files">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false">
-                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                <polyline points="13 2 13 9 20 9"></polyline>
-              </svg>
+              <AppIcon name="file" size="4xl" :stroke-width="1.5" />
               <p>{{$t('no_files')}}</p>
               <span>{{$t('upload_first')}}</span>
             </div>
+
+            <AppModal v-if="deleteTarget" :label="$t('delete')" @close="cancelDelete">
+              <template #header>
+                <div class="modal-icon-header">
+                  <AppIcon name="trash" size="2xl" class="modal-icon modal-icon--danger" />
+                  <h3>{{$t('delete')}}</h3>
+                </div>
+              </template>
+              <p class="modal-confirm-text">{{ $t('confirm_delete_file', { name: deleteTarget.nombreOriginal }) }}</p>
+              <template #footer>
+                <div class="modal-footer-actions">
+                  <button type="button" class="btn-danger" :disabled="removingId === deleteTarget.id" @click="confirmDelete" :aria-label="$t('delete')">
+                    <div v-if="removingId === deleteTarget.id" class="spinner-small"></div>
+                    {{$t('delete')}}
+                  </button>
+                  <button type="button" class="btn-secondary" :disabled="removingId === deleteTarget.id" @click="cancelDelete">{{$t('cancel')}}</button>
+                </div>
+              </template>
+            </AppModal>
           </div>
         </div>
 
@@ -371,10 +303,13 @@ import AnalisisSangreSection from '@/components/AnalisisSangreSection.vue'
 import SignosVitalesSection from '@/components/SignosVitalesSection.vue'
 import AnalisisOrinaSection from '@/components/AnalisisOrinaSection.vue'
 import AnotacionesMedicasSection from '@/components/AnotacionesMedicasSection.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import FileDropZone from '@/components/FileDropZone.vue'
+import AppModal from '@/components/Modal.vue'
 
 export default {
   name: 'HistoriaClinicaView',
-  components: { AntecedentesSection, AlergiasSection, AnalisisSangreSection, SignosVitalesSection, AnalisisOrinaSection, AnotacionesMedicasSection },
+  components: { AntecedentesSection, AlergiasSection, AnalisisSangreSection, SignosVitalesSection, AnalisisOrinaSection, AnotacionesMedicasSection, AppIcon, FileDropZone, AppModal },
   watch: {
     activeSection() {
       this.$nextTick(() => {
@@ -391,8 +326,8 @@ export default {
       uploading: false,
       removingId: null,
       error: null,
-      isDragging: false,
-      activeSection: 'antecedentes'
+      activeSection: 'antecedentes',
+      deleteTarget: null
     }
   },
   created() {
@@ -435,43 +370,11 @@ export default {
       }
     },
 
-    openFilePicker() {
-      const input = this.$refs.fileInputRef
-      if (input && typeof input.click === 'function') input.click()
-    },
-
     async load() {
       try {
         this.items = await svc.list()
       } catch (e) {
         this.error = this.$t('error_loading_files')
-      }
-    },
-
-    onFileChange(e) {
-      this.file = e.target.files && e.target.files[0] ? e.target.files[0] : null
-    },
-
-    onDragOver(e) {
-      e.preventDefault()
-      e.stopPropagation()
-      this.isDragging = true
-    },
-
-    onDragLeave(e) {
-      e.preventDefault()
-      e.stopPropagation()
-      this.isDragging = false
-    },
-
-    onDrop(e) {
-      e.preventDefault()
-      e.stopPropagation()
-      this.isDragging = false
-
-      const files = e.dataTransfer.files
-      if (files && files[0]) {
-        this.file = files[0]
       }
     },
 
@@ -482,6 +385,7 @@ export default {
       try {
         await svc.upload(this.file)
         this.file = null
+        this.$refs.dropZoneRef?.reset()
         await this.load()
       } catch (e) {
         this.error = this.$t('error_uploading_file')
@@ -490,13 +394,26 @@ export default {
       }
     },
 
-    async remove(it) {
+    askDelete(it) {
+      this.deleteTarget = it
+    },
+
+    cancelDelete() {
+      if (this.removingId) return
+      this.deleteTarget = null
+    },
+
+    async confirmDelete() {
+      const it = this.deleteTarget
+      if (!it) return
       this.removingId = it.id
       try {
         await svc.remove(it.id)
         this.items = this.items.filter(x => x.id !== it.id)
+        this.deleteTarget = null
       } catch (e) {
         this.error = this.$t('error_deleting_file')
+        this.deleteTarget = null
       } finally {
         this.removingId = null
       }
@@ -617,8 +534,7 @@ export default {
 }
 
 .btn-primary:focus-visible,
-.btn-icon:focus-visible,
-.file-drop-zone:focus-visible {
+.btn-icon:focus-visible {
   outline: 3px solid var(--focus-color);
   outline-offset: 2px;
 }
@@ -657,74 +573,10 @@ export default {
   margin-bottom: 2rem;
 }
 
-.file-drop-zone {
-  border: 2px dashed var(--border);
-  border-radius: 12px;
-  padding: 3rem 2rem;
-  text-align: center;
-  transition: all 0.2s ease;
-  background: var(--bg-light);
-  margin-bottom: 1rem;
-}
-
-.file-drop-zone:hover,
-.file-drop-zone.drag-over {
-  border-color: var(--primary-color);
-  background: var(--surface-info-bg);
-}
-
-.file-input-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.file-drop-label {
+.upload-section form {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 1rem;
-  cursor: pointer;
-}
-
-.upload-icon {
-  color: var(--primary-color);
-}
-
-.upload-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.upload-primary {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.file-selected-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--success-color);
-}
-
-.file-selected-name svg {
-  color: var(--success-color);
-}
-
-.upload-secondary {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
 }
 
 .upload-btn {
@@ -867,6 +719,35 @@ export default {
   color: var(--text-secondary);
 }
 
+/* Confirmación de borrado (mismo patrón que AdminMedicosView) */
+.modal-icon-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.modal-icon-header h3 {
+  margin: 0;
+  text-align: center;
+}
+
+.modal-icon--danger {
+  color: var(--danger-color);
+}
+
+.modal-confirm-text {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.modal-footer-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
 @media (max-width: 768px) {
   .historia-page {
     padding: 1.5rem 1rem;
@@ -883,10 +764,6 @@ export default {
   .tab-btn {
     padding: 0.75rem 1rem;
     font-size: 0.8125rem;
-  }
-
-  .file-drop-zone {
-    padding: 2rem 1rem;
   }
 
   .file-card {
@@ -923,7 +800,6 @@ export default {
   .tab-btn,
   .btn-primary,
   .btn-icon,
-  .file-drop-zone,
   .file-card,
   .fade-slide-enter-active,
   .fade-slide-leave-active {

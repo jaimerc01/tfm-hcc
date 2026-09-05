@@ -45,6 +45,17 @@ describe('Navbar', () => {
     expect(w.text().toLowerCase()).toContain('solicitud')
   })
 
+  it('muestra "Mis solicitudes" también si isMedico (solicitudes enviadas)', () => {
+    roles.isMedico = ref(true)
+    const w = mountNav()
+    expect(w.text().toLowerCase()).toContain('solicitud')
+  })
+
+  it('no muestra "Mis solicitudes" si no es ni paciente ni médico', () => {
+    const w = mountNav()
+    expect(w.text().toLowerCase()).not.toContain('solicitud')
+  })
+
   it('toggle del menú alterna la clase abierta', async () => {
     const w = mountNav()
     expect(w.find('.nav__links--open').exists()).toBe(false)
@@ -52,12 +63,11 @@ describe('Navbar', () => {
     expect(w.find('.nav__links--open').exists()).toBe(true)
   })
 
-  it('admin: toggle del submenú de gestión de médicos', async () => {
+  it('admin: muestra un único enlace directo a Administración, sin desplegable', () => {
     roles.isAdmin = ref(true)
     const w = mountNav()
-    expect(w.find('#admin-submenu').exists()).toBe(false)
-    await w.find('.nav__dropdown-toggle').trigger('click')
-    expect(w.find('#admin-submenu').exists()).toBe(true)
+    expect(w.findAll('a').some(a => a.text() === 'Administración')).toBe(true)
+    expect(w.find('.nav__dropdown-toggle').exists()).toBe(false)
   })
 
   it('abre el modal de logout y confirma: logout + redirección a Login', async () => {

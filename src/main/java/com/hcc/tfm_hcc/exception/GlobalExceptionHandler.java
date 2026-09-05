@@ -70,14 +70,27 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Error inesperado durante la gestión de archivos clínicos (subida, descarga
-     * o eliminación). Igual que el resto de manejadores, evita que la excepción
-     * caiga en el manejo de error por defecto de Spring Boot.
+     * Error durante la gestión de archivos clínicos (subida, descarga o eliminación).
+     *
+     * <p>Igual que en {@link #handleHistorialClinico(HistorialClinicoException)}, la
+     * validación de {@link com.hcc.tfm_hcc.service.impl.ArchivoClinicoServiceImpl} (tamaño,
+     * nombre, extensión o tipo MIME no permitidos) se expresa como {@link IllegalArgumentException},
+     * que la fachada y el controlador de archivos envuelven en {@link ArchivoClinicoException}.
+     * Sin recorrer la cadena de causas aquí, esos errores atribuibles al cliente acababan como
+     * un 500 genérico ("Error interno del servidor") que además ocultaba el motivo real -- por
+     * ejemplo, subir un .txt no permitido no explicaba que la extensión estaba rechazada.</p>
      */
     @ExceptionHandler(ArchivoClinicoException.class)
     public ResponseEntity<String> handleArchivoClinico(ArchivoClinicoException e) {
+        Throwable causaRelevante = buscarCausaRelevante(e);
+
+        if (causaRelevante instanceof IllegalArgumentException) {
+            log.warn("Operación de archivos clínicos rechazada: {}", causaRelevante.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(causaRelevante.getMessage());
+        }
+
         log.error("Error en la gestión de archivos clínicos: {}", e.getMessage(), e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorMessages.ERROR_INTERNO_SERVIDOR);
     }
 
     /**

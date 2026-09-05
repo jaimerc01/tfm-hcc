@@ -23,8 +23,8 @@ const fillValid = (vm) => {
   vm.form.fechaNacimiento = '1990-01-01'
   vm.form.nif = '12345678Z'
   vm.form.email = 'ana@example.com'
-  vm.form.password = 'secret1'
-  vm.form.password2 = 'secret1'
+  vm.form.password = 'secret123'
+  vm.form.password2 = 'secret123'
 }
 
 describe('RegisterView', () => {
@@ -54,16 +54,18 @@ describe('RegisterView', () => {
 
   it('valida longitud mínima de contraseña', () => {
     const w = factory()
-    w.vm.form.password = '123'
+    w.vm.form.password = '1234567'
     expect(w.vm.validatePasswordField()).toBe(false)
+    w.vm.form.password = '12345678'
+    expect(w.vm.validatePasswordField()).toBe(true)
   })
 
   it('valida coincidencia de contraseñas', () => {
     const w = factory()
-    w.vm.form.password = 'secret1'
-    w.vm.form.password2 = 'secret2'
+    w.vm.form.password = 'secret123'
+    w.vm.form.password2 = 'secret124'
     expect(w.vm.validatePassword2Field()).toBe(false)
-    w.vm.form.password2 = 'secret1'
+    w.vm.form.password2 = 'secret123'
     expect(w.vm.validatePassword2Field()).toBe(true)
   })
 

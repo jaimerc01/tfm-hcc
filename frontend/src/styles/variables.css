@@ -10,7 +10,7 @@
   --on-primary: #ffffff;
   
   /* Secondary Green - the app's ACTION colour (60-30-10: blue frame, green actions, yellow alerts) */
-  --secondary-color: #7DBA84;    /* Light green for tints, highlights, borders */
+  --secondary-color: #2e7d46;    /* Light green for tints, highlights, borders */
   --secondary-hover: #66986d;    /* Darker green */
   --secondary-active: #3f6344;   /* Darkest green - text/icons on light backgrounds */
   --secondary-light: #d9eadb;    /* Light green for highlights */
@@ -117,6 +117,16 @@
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
   
+  /* Icon sizes - consumed by AppIcon via the `size` prop */
+  --icon-xs: 0.875rem;           /* 14px */
+  --icon-sm: 1rem;               /* 16px */
+  --icon-md: 1.125rem;           /* 18px */
+  --icon-lg: 1.25rem;            /* 20px - default */
+  --icon-xl: 1.5rem;             /* 24px */
+  --icon-2xl: 2rem;              /* 32px */
+  --icon-3xl: 3rem;              /* 48px */
+  --icon-4xl: 4rem;              /* 64px */
+
   /* Border radius for medical applications */
   --radius: 6px;                 /* Standard radius - subtle */
   --radius-sm: 4px;              /* Small radius */
@@ -188,6 +198,14 @@
   --chart-gauge-bg: #e5e7eb;
   --chart-label-muted: #6b7280;
   --chart-label-strong: #374151;
+  /* Puntos/barras fuera del rango recomendado: amarillo de avisos (regla 60-30-10) */
+  --chart-out-of-range: var(--warning-color);
+  /* Anillo blanco alrededor de puntos/separación entre porciones (2px surface gap) */
+  --chart-point-ring: #ffffff;
+  /* Líneas de cuadrícula recesivas (más claras que --border) */
+  --chart-grid: var(--border-subtle);
+  /* Línea guía vertical del crosshair al pasar el ratón */
+  --chart-crosshair: #9ca3af;
 
   /* Categorical series palette for multi-metric charts (yellow stays reserved for errors) */
   --chart-series-blue: var(--primary-color);

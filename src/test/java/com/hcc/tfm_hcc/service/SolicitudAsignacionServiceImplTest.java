@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -66,6 +67,26 @@ class SolicitudAsignacionServiceImplTest {
 
         assertEquals("PENDIENTE", resultado.getEstado());
         verify(notificacionFacade, times(1)).crearNotificacionParaUsuario(anyString(), anyString());
+    }
+
+    @Test
+    void crearSolicitud_notificaConElNombreCompletoDelMedico() {
+        Usuario medico = usuarioConNif("11111111A");
+        medico.setNombre("Ana");
+        medico.setApellido1("García");
+        medico.setApellido2("López");
+        Usuario paciente = usuarioConNif("22222222B");
+        when(usuarioRepository.findByNifHash("hash-11111111A")).thenReturn(Optional.of(medico));
+        when(usuarioRepository.findByNifHash("hash-22222222B")).thenReturn(Optional.of(paciente));
+        when(solicitudAsignacionRepository.existsByMedicoNifHashAndPacienteNifHashAndEstado(
+                "hash-11111111A", "hash-22222222B", "PENDIENTE")).thenReturn(false);
+        when(solicitudAsignacionRepository.save(any(SolicitudAsignacion.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.crearSolicitud("11111111A", "22222222B");
+
+        verify(notificacionFacade).crearNotificacionParaUsuario(eq("22222222B"),
+                eq("Has recibido una solicitud de asignación del médico Ana García López"));
     }
 
     @Test

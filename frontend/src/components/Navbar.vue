@@ -11,7 +11,7 @@
         :aria-expanded="open ? 'true' : 'false'"
         aria-controls="main-nav-links"
       >
-        ☰
+        <AppIcon name="menu" size="xl" />
       </button>
 
       <div id="main-nav-links" class="nav__links" :class="{ 'nav__links--open': open }">
@@ -19,23 +19,9 @@
         <router-link class="nav__link" :to="{ name: 'Dashboard' }" @click="closeAll">{{ $t('home') }}</router-link>
         <router-link class="nav__link" :to="{ name: 'HistoriaClinica' }" @click="closeAll">{{ $t('medical_history') }}</router-link>
         <router-link v-if="isMedico" class="nav__link" :to="{ name: 'Medico' }" @click="closeAll">{{ $t('medical_zone') }}</router-link>
-        <router-link v-if="isPaciente" class="nav__link" :to="{ name: 'MisSolicitudes' }" @click="closeAll">{{ $t('my_requests') }}</router-link>
+        <router-link v-if="isPaciente || isMedico" class="nav__link" :to="{ name: 'MisSolicitudes' }" @click="closeAll">{{ $t('my_requests') }}</router-link>
 
-        <div v-if="isAdmin" class="nav__dropdown">
-          <router-link class="nav__link" :to="{ name: 'Admin' }" @click="closeAll">{{ $t('admin') }}</router-link>
-          <button
-            type="button"
-            class="nav__dropdown-toggle"
-            @click="toggleAdminMenu"
-            :aria-expanded="openAdminMenu ? 'true' : 'false'"
-            aria-controls="admin-submenu"
-          >
-            {{ $t('manage_doctors') }}
-          </button>
-          <div v-if="openAdminMenu" id="admin-submenu" class="nav__dropdown-content" role="menu">
-            <router-link class="nav__link" role="menuitem" :to="{ name: 'AdminMedicos' }" @click="closeAll">{{ $t('manage_doctors') }}</router-link>
-          </div>
-        </div>
+        <router-link v-if="isAdmin" class="nav__link" :to="{ name: 'Admin' }" @click="closeAll">{{ $t('admin') }}</router-link>
 
         <router-link class="nav__link" :to="{ name: 'DatosUsuario' }" @click="closeAll">{{ $t('user_data') }}</router-link>
 
@@ -81,11 +67,7 @@
       tabindex="-1"
     >
       <div class="modal-header">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="logout-icon" aria-hidden="true" focusable="false">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
+        <AppIcon name="log-out" size="3xl" class="logout-icon" />
         <h3 id="logout-modal-title">{{ $t('logout') }}</h3>
       </div>
       <p class="modal-text">{{ $t('logout_confirm') }}</p>
@@ -104,13 +86,13 @@ import { useAuth } from '@/composables/useAuth'
 import { useRole } from '@/composables/useRole'
 import { useI18n } from 'vue-i18n'
 import NotificationsDropdown from '@/components/NotificationsDropdown.vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 export default {
   name: 'AppNavbar',
-  components: { NotificationsDropdown },
+  components: { NotificationsDropdown, AppIcon },
   setup() {
     const open = ref(false)
-    const openAdminMenu = ref(false)
     const showLogoutModal = ref(false)
     const logoutDialog = ref(null)
 
@@ -121,18 +103,12 @@ export default {
 
     const close = () => {
       open.value = false
-      openAdminMenu.value = false
     }
 
     const closeAll = () => close()
 
     const toggleMenu = () => {
       open.value = !open.value
-      if (!open.value) openAdminMenu.value = false
-    }
-
-    const toggleAdminMenu = () => {
-      openAdminMenu.value = !openAdminMenu.value
     }
 
     const openLogoutModal = () => {
@@ -179,11 +155,9 @@ export default {
 
     return {
       open,
-      openAdminMenu,
       close,
       closeAll,
       toggleMenu,
-      toggleAdminMenu,
       showLogoutModal,
       logoutDialog,
       openLogoutModal,
@@ -322,51 +296,10 @@ export default {
   height: 56px;
 }
 
-.nav__dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.nav__dropdown-toggle {
-  background: transparent;
-  color: var(--white-alpha-90);
-  border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 0.5rem 0.75rem;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.nav__dropdown-toggle:hover {
-  color: var(--text-inverse);
-  background: var(--primary-hover);
-}
-
-.nav__dropdown-content {
-  position: absolute;
-  background: var(--primary-hover);
-  min-width: 180px;
-  z-index: 1;
-  border-radius: 4px;
-  box-shadow: var(--shadow-md);
-  overflow: hidden;
-}
-
-.nav__dropdown-content .nav__link {
-  display: block;
-  padding: 0.75rem 1rem;
-  border-radius: 0;
-}
-
-.nav__dropdown-content .nav__link:hover {
-  background: var(--primary-active);
-}
-
 .nav__toggle:focus-visible,
 .nav__link:focus-visible,
 .nav__logout:focus-visible,
-.nav__language-option:focus-visible,
-.nav__dropdown-toggle:focus-visible {
+.nav__language-option:focus-visible {
   outline: 3px solid var(--focus-color);
   outline-offset: 2px;
 }
@@ -406,13 +339,6 @@ export default {
     inset: 56px 0 0 0;
     background: var(--surface-overlay-medium);
   }
-
-  .nav__dropdown-content {
-    position: static;
-    min-width: 100%;
-    box-shadow: none;
-    margin-top: 0.25rem;
-  }
 }
 
 .logout-icon {
@@ -423,7 +349,6 @@ export default {
   .nav__link,
   .nav__toggle,
   .nav__logout,
-  .nav__dropdown-toggle,
   .nav__language-option {
     animation: none;
     transition: none;

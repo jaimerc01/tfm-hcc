@@ -4,12 +4,14 @@ import { mount, flushPromises } from '@vue/test-utils'
 const svc = vi.hoisted(() => ({
   obtenerHistorialPaciente: vi.fn(),
   crearAnotacion: vi.fn(),
+  listarAnotacionesPaciente: vi.fn(),
   listarArchivosPaciente: vi.fn(),
   subirArchivoPaciente: vi.fn(),
   descargarArchivoPaciente: vi.fn()
 }))
 vi.mock('@/services/medicoPacienteService', () => ({ default: svc }))
 vi.mock('@/components/PatientClinicalCharts.vue', () => ({ default: { name: 'PatientClinicalCharts', template: '<div class="charts-stub" />' } }))
+vi.mock('@/components/ClinicalTimelineCard.vue', () => ({ default: { name: 'ClinicalTimelineCard', template: '<div class="timeline-stub" />' } }))
 
 import PacienteHistorialView from '@/views/medico/PacienteHistorialView.vue'
 
@@ -20,6 +22,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   svc.obtenerHistorialPaciente.mockResolvedValue({ data: {} })
   svc.listarArchivosPaciente.mockResolvedValue({ data: [] })
+  svc.listarAnotacionesPaciente.mockResolvedValue({ data: [] })
 })
 
 const factory = async (r = route) => {
@@ -82,6 +85,30 @@ describe('PacienteHistorialView', () => {
     expect(w.vm.anotacionMensaje).toBe('')
   })
 
+  it('carga las anotaciones que el médico ha escrito a este paciente al crearse', async () => {
+    svc.listarAnotacionesPaciente.mockResolvedValueOnce({ data: [
+      { id: 'a1', mensaje: 'Revisar analítica', createdAt: '2026-02-01T09:00:00Z' }
+    ] })
+    const w = await factory()
+    expect(svc.listarAnotacionesPaciente).toHaveBeenCalledWith('12345678Z')
+    expect(w.text()).toContain('Revisar analítica')
+  })
+
+  it('recarga las anotaciones tras enviar una nueva', async () => {
+    svc.crearAnotacion.mockResolvedValueOnce({ data: {} })
+    const w = await factory()
+    svc.listarAnotacionesPaciente.mockClear()
+    w.vm.anotacionMensaje = 'Nueva observación'
+    await w.vm.enviarAnotacion()
+    expect(svc.listarAnotacionesPaciente).toHaveBeenCalledWith('12345678Z')
+  })
+
+  it('un fallo al cargar las anotaciones previas no rompe la vista', async () => {
+    svc.listarAnotacionesPaciente.mockRejectedValueOnce(new Error('boom'))
+    const w = await factory()
+    expect(w.vm.anotaciones).toEqual([])
+  })
+
   it('enviarAnotacion no llama al servicio si el mensaje está vacío', async () => {
     const w = await factory()
     w.vm.anotacionMensaje = '   '
@@ -103,6 +130,19 @@ describe('PacienteHistorialView', () => {
     const w = await factory()
     expect(svc.listarArchivosPaciente).toHaveBeenCalledWith('12345678Z')
     expect(w.text()).toContain('analitica.pdf')
+  })
+
+  it('seleccionar un archivo en el FileDropZone lo deja listo para subir', async () => {
+    const w = await factory()
+    const dropZone = w.findComponent({ name: 'FileDropZone' })
+    expect(dropZone.exists()).toBe(true)
+    const nuevoFile = new File(['x'], 'informe.pdf', { type: 'application/pdf' })
+    w.vm.archivoError = 'error previo'
+    w.vm.archivoSuccess = true
+    await dropZone.vm.$emit('update:modelValue', nuevoFile)
+    expect(w.vm.archivoSeleccionado).toBe(nuevoFile)
+    expect(w.vm.archivoError).toBeNull()
+    expect(w.vm.archivoSuccess).toBe(false)
   })
 
   it('subirArchivo envía el fichero seleccionado y recarga la lista', async () => {

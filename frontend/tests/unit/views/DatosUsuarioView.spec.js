@@ -48,6 +48,130 @@ describe('DatosUsuarioView', () => {
     expect(w.vm.user.nombre).toBe('Ana')
   })
 
+  it('muestra los datos personales como inputs readonly (no como texto plano)', async () => {
+    const w = await factory()
+    const nombre = w.find('#dato-nombre')
+    const nif = w.find('#dato-nif')
+    const email = w.find('#dato-email')
+
+    expect(nombre.element.tagName).toBe('INPUT')
+    expect(nombre.attributes('readonly')).toBeDefined()
+    expect(nombre.classes()).toContain('form-input')
+    expect(nombre.element.value).toBe('Ana')
+    expect(nif.element.value).toBe('12345678Z')
+    expect(email.element.value).toBe('ana@x.com')
+  })
+
+  describe('subpestañas', () => {
+    it('empieza en la subpestaña de información personal', async () => {
+      const w = await factory()
+      expect(w.vm.activeSection).toBe('personal')
+    })
+
+    it('onTabKeydown navega entre las 5 subpestañas con las flechas', async () => {
+      const w = await factory()
+      w.vm.onTabKeydown({ key: 'ArrowRight', preventDefault: vi.fn() }, 'personal')
+      expect(w.vm.activeSection).toBe('password')
+      w.vm.onTabKeydown({ key: 'ArrowRight', preventDefault: vi.fn() }, 'password')
+      expect(w.vm.activeSection).toBe('two-factor')
+      w.vm.onTabKeydown({ key: 'ArrowRight', preventDefault: vi.fn() }, 'two-factor')
+      expect(w.vm.activeSection).toBe('processing-restriction')
+      w.vm.onTabKeydown({ key: 'ArrowRight', preventDefault: vi.fn() }, 'processing-restriction')
+      expect(w.vm.activeSection).toBe('access-log')
+      w.vm.onTabKeydown({ key: 'Home', preventDefault: vi.fn() }, 'access-log')
+      expect(w.vm.activeSection).toBe('personal')
+      w.vm.onTabKeydown({ key: 'End', preventDefault: vi.fn() }, 'personal')
+      expect(w.vm.activeSection).toBe('access-log')
+    })
+
+    it('goToPasswordTab cambia a la subpestaña de cambiar contraseña', async () => {
+      const w = await factory()
+      w.vm.goToPasswordTab()
+      expect(w.vm.activeSection).toBe('password')
+    })
+
+    it('la subpestaña de información personal muestra editar, cambiar contraseña y eliminar cuenta en ese orden, sin el botón de descargar', async () => {
+      const w = await factory()
+      const buttons = w.find('#personal-panel .form-actions').findAll('button')
+      expect(buttons.map(b => b.text())).toEqual([
+        'Editar datos',
+        'Cambiar Contraseña',
+        'Eliminar cuenta'
+      ])
+      expect(w.find('#personal-panel').text()).not.toContain('Descargar mis datos')
+    })
+
+    it('la subpestaña de registro de accesos incluye el botón de descargar mis datos', async () => {
+      const w = await factory()
+      w.vm.activeSection = 'access-log'
+      await w.vm.$nextTick()
+      expect(w.find('#access-log-panel').text()).toContain('Descargar mis datos')
+      expect(w.findComponent({ name: 'AccessLogSection' }).exists()).toBe(true)
+    })
+  })
+
+  describe('botones para desplazar la barra de subpestañas', () => {
+    beforeEach(() => {
+      Element.prototype.scrollBy = vi.fn()
+    })
+
+    const mockScrollable = (el, { scrollLeft = 0, clientWidth = 300, scrollWidth = 600 } = {}) => {
+      Object.defineProperty(el, 'scrollLeft', { configurable: true, value: scrollLeft })
+      Object.defineProperty(el, 'clientWidth', { configurable: true, value: clientWidth })
+      Object.defineProperty(el, 'scrollWidth', { configurable: true, value: scrollWidth })
+    }
+
+    it('no muestra ningún botón si las pestañas caben sin desbordar', async () => {
+      const w = await factory()
+      mockScrollable(w.vm.tabsNavRef, { scrollLeft: 0, clientWidth: 600, scrollWidth: 600 })
+      w.vm.tabsNavRef.dispatchEvent(new Event('scroll'))
+      await w.vm.$nextTick()
+      expect(w.vm.canScrollTabsLeft).toBe(false)
+      expect(w.vm.canScrollTabsRight).toBe(false)
+      expect(w.find('.tabs-scroll-btn').exists()).toBe(false)
+    })
+
+    it('en el extremo izquierdo solo se puede desplazar hacia la derecha', async () => {
+      const w = await factory()
+      mockScrollable(w.vm.tabsNavRef, { scrollLeft: 0, clientWidth: 300, scrollWidth: 600 })
+      w.vm.tabsNavRef.dispatchEvent(new Event('scroll'))
+      await w.vm.$nextTick()
+      expect(w.vm.canScrollTabsLeft).toBe(false)
+      expect(w.vm.canScrollTabsRight).toBe(true)
+      const buttons = w.findAll('.tabs-scroll-btn')
+      expect(buttons).toHaveLength(1)
+      expect(buttons[0].attributes('aria-label')).toBe('Desplazar pestañas a la derecha')
+    })
+
+    it('en el extremo derecho solo se puede desplazar hacia la izquierda', async () => {
+      const w = await factory()
+      mockScrollable(w.vm.tabsNavRef, { scrollLeft: 300, clientWidth: 300, scrollWidth: 600 })
+      w.vm.tabsNavRef.dispatchEvent(new Event('scroll'))
+      await w.vm.$nextTick()
+      expect(w.vm.canScrollTabsLeft).toBe(true)
+      expect(w.vm.canScrollTabsRight).toBe(false)
+      const buttons = w.findAll('.tabs-scroll-btn')
+      expect(buttons).toHaveLength(1)
+      expect(buttons[0].attributes('aria-label')).toBe('Desplazar pestañas a la izquierda')
+    })
+
+    it('muestra ambos botones cuando hay contenido a los dos lados', async () => {
+      const w = await factory()
+      mockScrollable(w.vm.tabsNavRef, { scrollLeft: 150, clientWidth: 300, scrollWidth: 600 })
+      w.vm.tabsNavRef.dispatchEvent(new Event('scroll'))
+      await w.vm.$nextTick()
+      expect(w.findAll('.tabs-scroll-btn')).toHaveLength(2)
+    })
+
+    it('scrollTabsLeft y scrollTabsRight desplazan el contenedor de pestañas', async () => {
+      const w = await factory()
+      w.vm.scrollTabsRight()
+      expect(Element.prototype.scrollBy).toHaveBeenCalledWith({ left: 200, behavior: 'smooth' })
+      w.vm.scrollTabsLeft()
+      expect(Element.prototype.scrollBy).toHaveBeenCalledWith({ left: -200, behavior: 'smooth' })
+    })
+  })
+
   it('muestra error si la carga de datos falla', async () => {
     auth.fetchMyData.mockRejectedValueOnce(new Error('sin conexión'))
     const w = await factory()
@@ -70,13 +194,21 @@ describe('DatosUsuarioView', () => {
       expect(auth.changePassword).not.toHaveBeenCalled()
     })
 
+    it('rechaza si la nueva contraseña tiene menos de 8 caracteres', async () => {
+      const w = await factory()
+      w.vm.pw = { current: 'old', new1: 'nueva12', new2: 'nueva12' }
+      await w.vm.submitPw()
+      expect(w.vm.pwError).toBeTruthy()
+      expect(auth.changePassword).not.toHaveBeenCalled()
+    })
+
     it('cambia la contraseña y redirige a Login', async () => {
       vi.useFakeTimers()
       const w = await factory()
-      w.vm.pw = { current: 'old', new1: 'nueva1', new2: 'nueva1' }
+      w.vm.pw = { current: 'old', new1: 'nuevaClave1', new2: 'nuevaClave1' }
       await w.vm.submitPw()
       await flushPromises()
-      expect(auth.changePassword).toHaveBeenCalledWith('old', 'nueva1')
+      expect(auth.changePassword).toHaveBeenCalledWith('old', 'nuevaClave1')
       expect(w.vm.pwSuccess).toBe(true)
       vi.advanceTimersByTime(800)
       expect(push).toHaveBeenCalledWith({ name: 'Login' })
@@ -86,7 +218,7 @@ describe('DatosUsuarioView', () => {
     it('muestra el error del backend', async () => {
       auth.changePassword.mockRejectedValueOnce(new Error('contraseña incorrecta'))
       const w = await factory()
-      w.vm.pw = { current: 'x', new1: 'nueva1', new2: 'nueva1' }
+      w.vm.pw = { current: 'x', new1: 'nuevaClave1', new2: 'nuevaClave1' }
       await w.vm.submitPw()
       await flushPromises()
       expect(w.vm.pwError).toBe('contraseña incorrecta')
@@ -94,11 +226,32 @@ describe('DatosUsuarioView', () => {
 
     it('cancelPw limpia el formulario', async () => {
       const w = await factory()
-      w.vm.showPwForm = true
       w.vm.pw = { current: 'x', new1: 'y', new2: 'z' }
       w.vm.cancelPw()
-      expect(w.vm.showPwForm).toBe(false)
       expect(w.vm.pw).toEqual({ current: '', new1: '', new2: '' })
+    })
+
+    it('la subpestaña de cambiar contraseña usa PasswordInput con icono, no un botón de texto', async () => {
+      const w = await factory()
+      w.vm.activeSection = 'password'
+      await w.vm.$nextTick()
+      const inputs = w.findAllComponents({ name: 'PasswordInput' })
+      expect(inputs).toHaveLength(3)
+      expect(w.find('.password-visibility-btn svg').exists()).toBe(true)
+      expect(w.text()).not.toContain('Mostrar contraseña')
+    })
+
+    it('cancelPw vuelve a ocultar cada campo de contraseña que se hubiera revelado', async () => {
+      const w = await factory()
+      w.vm.activeSection = 'password'
+      await w.vm.$nextTick()
+      const toggles = w.findAll('.password-visibility-btn')
+      await toggles[0].trigger('click')
+      expect(w.findAllComponents({ name: 'PasswordInput' })[0].find('input').attributes('type')).toBe('text')
+
+      w.vm.cancelPw()
+      await w.vm.$nextTick()
+      expect(w.findAllComponents({ name: 'PasswordInput' })[0].find('input').attributes('type')).toBe('password')
     })
   })
 

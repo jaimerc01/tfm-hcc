@@ -251,6 +251,28 @@ public class MedicoControllerImpl implements MedicoController {
      * {@inheritDoc}
      */
     @Override
+    @GetMapping(RestUrls.MEDICO_PACIENTE_ANOTACIONES)
+    public ResponseEntity<List<AnotacionMedicaDTO>> listarAnotaciones(@PathVariable("nif") String nifPaciente) {
+        String nifPacienteLog = LogMaskUtil.enmascarar(nifPaciente);
+        log.info("Listando anotaciones del médico autenticado para el paciente NIF: {}", nifPacienteLog);
+        try {
+            return ResponseEntity.ok(medicoFacade.listarAnotacionesPaciente(nifPaciente));
+        } catch (PacienteNoEncontradoException e) {
+            log.warn("Paciente no encontrado al listar anotaciones médicas: {}", nifPacienteLog);
+            return ResponseEntity.notFound().build();
+        } catch (UsuarioSinPermisoException e) {
+            log.warn("Acceso denegado al listar anotaciones médicas del paciente {}: {}", nifPacienteLog, e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (Exception e) {
+            log.error("Error al listar anotaciones médicas del paciente {}: {}", nifPacienteLog, e.getMessage(), e);
+            throw new MedicoOperacionException("Error al listar las anotaciones del paciente", e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     @GetMapping(RestUrls.MEDICO_PACIENTE_ARCHIVOS)
     public ResponseEntity<List<ArchivoClinicoDTO>> listarArchivosPaciente(@PathVariable("nif") String nif) {
         String nifLog = LogMaskUtil.enmascarar(nif);

@@ -1,8 +1,6 @@
 package com.hcc.tfm_hcc.facade.impl;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +13,7 @@ import com.hcc.tfm_hcc.exception.NotificacionValidationException;
 import com.hcc.tfm_hcc.exception.NotificacionOperacionException;
 import com.hcc.tfm_hcc.converter.NotificacionConverter;
 import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.dto.NotificacionPageDTO;
 import com.hcc.tfm_hcc.exception.NotificacionAccesoException;
 import com.hcc.tfm_hcc.util.LogMaskUtil;
 
@@ -116,22 +115,20 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public Map<String, NotificacionDTO> listarNotificacionesUsuarioActual(int page, int size) {
-        log.debug("Obteniendo notificaciones paginadas del usuario autenticado - Página: {}, Tamaño: {}", 
+    public NotificacionPageDTO listarNotificacionesUsuarioActual(int page, int size) {
+        log.debug("Obteniendo notificaciones paginadas del usuario autenticado - Página: {}, Tamaño: {}",
                 page, size);
-        
+
         try {
             validarParametrosPaginacion(page, size);
-            
+
             Page<Notificacion> pageNotificaciones = notificacionService.listarNotificacionesUsuarioActual(page, size);
-            
+
             List<NotificacionDTO> items = notificacionConverter.toDtoList(pageNotificaciones.getContent());
-            Map<String, NotificacionDTO> resultado = items.stream()
-                    .collect(Collectors.toMap(NotificacionDTO::getId, n -> n));
-            
-            log.info("Notificaciones paginadas obtenidas: {} de {} registros", 
+
+            log.info("Notificaciones paginadas obtenidas: {} de {} registros",
                     items.size(), pageNotificaciones.getTotalElements());
-            return resultado;
+            return new NotificacionPageDTO(items, pageNotificaciones.getTotalElements());
         } catch (IllegalArgumentException e) {
             log.warn("Error de validación en paginación de notificaciones: {}", e.getMessage());
             throw new NotificacionValidationException(e.getMessage(), e);

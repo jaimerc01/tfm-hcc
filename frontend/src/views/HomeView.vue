@@ -225,11 +225,14 @@ export default {
 
 /* ---------- Buttons ---------- */
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0.8rem 1.6rem;
   border-radius: var(--radius);
   font-size: 1rem;
   font-weight: 600;
+  line-height: 1;
   text-decoration: none;
   border: 2px solid transparent;
   transition:

@@ -2,10 +2,7 @@
   <div class="solicitudes-page">
     <div class="page-header">
       <div class="header-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 11l3 3L22 4"></path>
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-        </svg>
+        <AppIcon name="clipboard-check" size="2xl" />
       </div>
       <div>
         <h1>{{ $t('my_requests') }}</h1>
@@ -21,21 +18,14 @@
 
     <!-- Error state -->
     <div v-if="error" class="alert alert-danger">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
+      <AppIcon name="alert-circle" size="lg" />
       {{ error }}
     </div>
 
     <!-- Mis médicos asignados -->
     <div v-if="!loading && misMedicos.length > 0" class="solicitudes-section">
       <h2 class="section-title">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
+        <AppIcon name="user" size="lg" />
         {{ $t('my_doctors') }}
       </h2>
 
@@ -43,23 +33,17 @@
         <div v-for="m in misMedicos" :key="m.nif" class="solicitud-card">
           <div class="card-body">
             <div class="info-row">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+              <AppIcon name="user" size="sm" />
               <div class="info-content">
                 <span class="info-label">{{ $t('doctor') }}</span>
-                <span class="info-value">{{ nombreMedico(m) }}</span>
+                <span class="info-value">{{ nombreCompleto(m) }}</span>
                 <span v-if="m.especialidad" class="info-value">{{ m.especialidad }}</span>
               </div>
             </div>
           </div>
           <div class="card-actions">
             <button @click="askUnassign(m)" class="btn-reject">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
+              <AppIcon name="x" size="sm" />
               {{ $t('unassign_doctor') }}
             </button>
           </div>
@@ -73,10 +57,7 @@
 
     <!-- Empty state -->
     <div v-if="!loading && misMedicos.length === 0 && solicitudes.length === 0 && (!solicitudesEnviadas || solicitudesEnviadas.length === 0)" class="empty-state">
-      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M9 11l3 3L22 4"></path>
-        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-      </svg>
+      <AppIcon name="clipboard-check" size="4xl" />
       <h3>{{ $t('no_requests') }}</h3>
       <p>{{ $t('no_pending_requests') }}</p>
     </div>
@@ -84,9 +65,7 @@
     <!-- Solicitudes recibidas -->
     <div v-if="!loading && solicitudes.length > 0" class="solicitudes-section">
       <h2 class="section-title">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-        </svg>
+        <AppIcon name="bookmark" size="lg" />
         {{ $t('received_requests') }}
       </h2>
       
@@ -101,40 +80,29 @@
 
           <div class="card-body">
             <div class="info-row">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+              <AppIcon name="user" size="sm" />
               <div class="info-content">
                 <span class="info-label">{{ $t('doctor') }}</span>
-                <span class="info-value">{{ s.medico?.nombre || '-' }}</span>
+                <span class="info-value">{{ nombreCompleto(s.medico) }}</span>
               </div>
             </div>
 
             <div class="info-row">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+              <AppIcon name="user" size="sm" />
               <div class="info-content">
                 <span class="info-label">{{ $t('patient') }}</span>
-                <span class="info-value">{{ s.paciente?.nombre || '-' }}</span>
+                <span class="info-value">{{ nombreCompleto(s.paciente) }}</span>
               </div>
             </div>
           </div>
 
           <div v-if="s.estado === 'PENDIENTE'" class="card-actions">
             <button @click="askConfirm(s.id, 'ACEPTADA')" class="btn-accept">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
+              <AppIcon name="check" size="sm" />
               {{ $t('accept') }}
             </button>
             <button @click="askConfirm(s.id, 'RECHAZADA')" class="btn-reject">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
+              <AppIcon name="x" size="sm" />
               {{ $t('reject') }}
             </button>
           </div>
@@ -149,10 +117,7 @@
     <!-- Solicitudes enviadas -->
     <div v-if="!loading && solicitudesEnviadas && solicitudesEnviadas.length > 0" class="solicitudes-section">
       <h2 class="section-title">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
+        <AppIcon name="send" size="lg" />
         {{ $t('sent_requests') }}
       </h2>
       
@@ -167,13 +132,10 @@
 
           <div class="card-body">
             <div class="info-row">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+              <AppIcon name="user" size="sm" />
               <div class="info-content">
                 <span class="info-label">{{ $t('patient') }}</span>
-                <span class="info-value">{{ s.paciente?.nombre || '-' }}</span>
+                <span class="info-value">{{ nombreCompleto(s.paciente) }}</span>
               </div>
             </div>
           </div>
@@ -185,14 +147,10 @@
     <div v-if="unassignTarget" class="modal-overlay" @click="cancelUnassign">
       <div class="modal" @click.stop>
         <div class="modal-header">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-danger">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
+          <AppIcon name="alert-circle" size="3xl" class="icon-danger" />
           <h3>{{ $t('confirm_action') }}</h3>
         </div>
-        <p class="modal-text">{{ $t('unassign_doctor_confirm', { nombre: nombreMedico(unassignTarget) }) }}</p>
+        <p class="modal-text">{{ $t('unassign_doctor_confirm', { nombre: nombreCompleto(unassignTarget) }) }}</p>
         <div class="modal-actions">
           <button class="modal-btn modal-btn--confirm btn-confirm-reject" :disabled="unassigning" @click="confirmUnassign">
             {{ unassigning ? $t('loading_requests') : $t('unassign_doctor') }}
@@ -206,11 +164,7 @@
     <div v-if="confirmOpen" class="modal-overlay" @click="cancelConfirm">
       <div class="modal" @click.stop>
         <div class="modal-header">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="confirmAction === 'ACEPTADA' ? 'icon-success' : 'icon-danger'">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
+          <AppIcon name="alert-circle" size="3xl" :class="confirmAction === 'ACEPTADA' ? 'icon-success' : 'icon-danger'" />
           <h3>{{ $t('confirm_action') }}</h3>
         </div>
         <p class="modal-text">{{ $t('confirm_request_action', { action: confirmActionLabel }) }}</p>
@@ -233,9 +187,11 @@
 import solicitudService from '@/services/solicitudService'
 import authService from '@/services/authService'
 import { ROLES, hasRole } from '@/utils/roles'
+import AppIcon from '@/components/AppIcon.vue'
 
 export default {
   name: 'MisSolicitudesView',
+  components: { AppIcon },
   data() {
     return {
       solicitudes: [],
@@ -277,8 +233,9 @@ export default {
       }
     },
 
-    nombreMedico(m) {
-      return [m.nombre, m.apellido1, m.apellido2].filter(Boolean).join(' ') || m.nif
+    nombreCompleto(persona) {
+      if (!persona) return '-'
+      return [persona.nombre, persona.apellido1, persona.apellido2].filter(Boolean).join(' ') || persona.nif || '-'
     },
 
     askUnassign(medico) {

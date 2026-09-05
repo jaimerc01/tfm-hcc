@@ -40,6 +40,8 @@ export function drawGaugeChart(container, value, options = {}) {
   const width = customWidth || Math.min(300, container.clientWidth || 300)
   const radius = Math.min(width, height) / 2 - 10
   const arcWidth = 20
+  const startAngle = -Math.PI * 0.75
+  const endAngle = Math.PI * 0.75
 
   const svg = d3.select(container)
     .append('svg')
@@ -54,15 +56,16 @@ export function drawGaugeChart(container, value, options = {}) {
   // Escala angular
   const angle = d3.scaleLinear()
     .domain([min, max])
-    .range([-Math.PI * 0.75, Math.PI * 0.75])
+    .range([startAngle, endAngle])
     .clamp(true)
 
-  // Arco de fondo (gris claro)
+  // Arco de fondo (gris claro), con extremos redondeados
   const backgroundArc = d3.arc()
     .innerRadius(radius - arcWidth)
     .outerRadius(radius)
-    .startAngle(-Math.PI * 0.75)
-    .endAngle(Math.PI * 0.75)
+    .cornerRadius(arcWidth / 2)
+    .startAngle(startAngle)
+    .endAngle(endAngle)
 
   g.append('path')
     .attr('d', backgroundArc)
@@ -74,14 +77,14 @@ export function drawGaugeChart(container, value, options = {}) {
     const maxAngle = angle(recommendedMax)
     const innerR = radius - arcWidth
     const outerR = radius
-    
+
     // Arco verde del rango recomendado
     const recommendedArc = d3.arc()
       .innerRadius(innerR)
       .outerRadius(outerR)
       .startAngle(minAngle)
       .endAngle(maxAngle)
-    
+
     g.append('path')
       .attr('d', recommendedArc)
       .attr('fill', successColor)
@@ -95,13 +98,13 @@ export function drawGaugeChart(container, value, options = {}) {
   // Determinar color según el rango
   let fillColor = defaultColor
   let statusText = ''
-  
+
   if (recommendedMin != null && recommendedMax != null) {
     if (value < recommendedMin) {
-      fillColor = dangerColor // Rojo si está fuera de rango
+      fillColor = dangerColor // Fuera de rango, por debajo
       statusText = 'Bajo'
     } else if (value > recommendedMax) {
-      fillColor = dangerColor // Rojo si está fuera de rango
+      fillColor = dangerColor // Fuera de rango, por encima
       statusText = 'Alto'
     } else {
       fillColor = successColor // Verde si está en rango
@@ -109,14 +112,15 @@ export function drawGaugeChart(container, value, options = {}) {
     }
   }
 
-  // Arco de valor con animación
+  // Arco de valor con animación y extremos redondeados
   const valueArc = d3.arc()
     .innerRadius(radius - arcWidth)
     .outerRadius(radius)
-    .startAngle(-Math.PI * 0.75)
+    .cornerRadius(arcWidth / 2)
+    .startAngle(startAngle)
 
   const arcPath = g.append('path')
-    .datum({ endAngle: -Math.PI * 0.75 })
+    .datum({ endAngle: startAngle })
     .attr('d', valueArc)
     .attr('fill', fillColor)
 
@@ -129,6 +133,20 @@ export function drawGaugeChart(container, value, options = {}) {
         return valueArc(d)
       }
     })
+
+  // Etiquetas de escala en los extremos del arco
+  const labelRadius = radius + 14
+  ;[[min, startAngle], [max, endAngle]].forEach(([tickValue, tickAngle]) => {
+    const plotAngle = tickAngle - Math.PI / 2
+    g.append('text')
+      .attr('x', Math.cos(plotAngle) * labelRadius)
+      .attr('y', Math.sin(plotAngle) * labelRadius)
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'middle')
+      .style('font-size', '11px')
+      .style('fill', unitTextColor)
+      .text(tickValue)
+  })
 
   // Texto del valor
   g.append('text')

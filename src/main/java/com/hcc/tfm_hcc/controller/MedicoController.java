@@ -108,6 +108,17 @@ public interface MedicoController {
                                                       @RequestBody AnotacionMedicaRequestDTO request);
 
     /**
+     * Lista las anotaciones que el médico autenticado ha escrito sobre un paciente
+     * vinculado a él, de la más reciente a la más antigua. Solo se permite si existe
+     * una relación médico-paciente en estado "ACTIVA" y el paciente no ha limitado el
+     * tratamiento de sus datos.
+     *
+     * @param nifPaciente NIF del paciente
+     * @return ResponseEntity con la lista de AnotacionMedicaDTO escritas por el médico
+     */
+    ResponseEntity<List<AnotacionMedicaDTO>> listarAnotaciones(@PathVariable("nif") String nifPaciente);
+
+    /**
      * Lista los documentos clínicos de un paciente vinculado al médico autenticado.
      *
      * @param nif NIF del paciente

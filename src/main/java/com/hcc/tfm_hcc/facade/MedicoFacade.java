@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.hcc.tfm_hcc.dto.AnotacionMedicaDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
@@ -101,6 +102,18 @@ public interface MedicoFacade {
      *         paciente, o el paciente ha limitado el tratamiento de sus datos
      */
     AnotacionMedica crearAnotacion(String nifPaciente, String mensaje);
+
+    /**
+     * Lista las anotaciones que el médico autenticado ha escrito sobre un paciente
+     * vinculado a él, de la más reciente a la más antigua.
+     *
+     * @param nifPaciente NIF del paciente
+     * @return lista de AnotacionMedicaDTO escritas por el médico sobre ese paciente
+     * @throws com.hcc.tfm_hcc.exception.PacienteNoEncontradoException si no existe un paciente con ese NIF
+     * @throws com.hcc.tfm_hcc.exception.UsuarioSinPermisoException si no hay relación activa con el
+     *         paciente, o el paciente ha limitado el tratamiento de sus datos
+     */
+    List<AnotacionMedicaDTO> listarAnotacionesPaciente(String nifPaciente);
 
     /**
      * Lista los documentos clínicos de un paciente vinculado al médico autenticado.

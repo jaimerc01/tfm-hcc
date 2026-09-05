@@ -100,11 +100,13 @@ app:
     token-ttl-minutes: ${PASSWORD_RESET_TOKEN_TTL_MINUTES:30}
   uploads:
     max-size-bytes: ${UPLOADS_MAX_SIZE_BYTES:10485760} # 10 MB
-    # Lista blanca de tipos MIME y extensiones admitidos para los archivos clínicos.
-    # Un historial clínico solo necesita documentos e imágenes; restringirlo evita almacenar
-    # (y luego servir) contenido activo como HTML o SVG. Configurable por entorno.
-    allowed-types: ${UPLOADS_ALLOWED_TYPES:application/pdf,image/png,image/jpeg,image/webp}
-    allowed-extensions: ${UPLOADS_ALLOWED_EXTENSIONS:pdf,png,jpg,jpeg,webp}
+    # Lista blanca de tipos MIME y extensiones admitidos para los archivos clínicos:
+    # informes en PDF/Word, analíticas en Excel, notas en texto plano e imágenes (fotos
+    # de lesiones/pruebas, escaneos de documentos...). Un historial clínico solo necesita
+    # documentos e imágenes; restringirlo evita almacenar (y luego servir) contenido activo
+    # como HTML o SVG. Configurable por entorno.
+    allowed-types: ${UPLOADS_ALLOWED_TYPES:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,image/png,image/jpeg,image/webp,image/gif}
+    allowed-extensions: ${UPLOADS_ALLOWED_EXTENSIONS:pdf,doc,docx,xls,xlsx,txt,png,jpg,jpeg,webp,gif}
 
 logging:
   level:
@@ -134,22 +136,12 @@ logging:
       max-history: 30
       total-size-cap: 1GB
 
----
-spring:
-  config:
-    activate:
-      on-profile: oauth-google
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
-            scope:
-              - openid
-              - profile
-              - email
-        provider:
-          google:
-            issuer-uri: https://accounts.google.com
+# El registro OAuth2 de Google (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET) ya NO se declara aquí
+# como spring.security.oauth2.client.*: ese árbol de propiedades hace que la auto-configuración
+# de Spring Boot intente construir el ClientRegistration de forma incondicional y falle el
+# arranque en cuanto el client-id está en blanco. Antes se evitaba activándolo solo bajo un
+# profile `oauth-google`, pero resultó frágil con springboot3-dotenv (carga el .env después de
+# que Spring ya haya decidido qué profiles activar, así que SPRING_PROFILES_ACTIVE puesto en
+# .env llegaba tarde). Ahora WebSecurityConfig construye el ClientRegistration a mano a partir
+# de @Value("${GOOGLE_CLIENT_ID:}")/@Value("${GOOGLE_CLIENT_SECRET:}") sueltas, igual que
+# TFM_HCC_ENCRYPTION_KEY: sin depender de ningún profile, funcionan estén donde estén definidas.

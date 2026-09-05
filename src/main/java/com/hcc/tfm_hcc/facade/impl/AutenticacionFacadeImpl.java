@@ -65,6 +65,13 @@ import lombok.extern.slf4j.Slf4j;
 public class AutenticacionFacadeImpl implements AutenticacionFacade {
 
     /**
+     * Longitud mínima exigida a la contraseña en el registro de un nuevo usuario.
+     * Coincide con la exigida al restablecer la contraseña
+     * ({@link com.hcc.tfm_hcc.service.impl.PasswordResetServiceImpl}).
+     */
+    private static final int LONGITUD_MINIMA_PASSWORD = 8;
+
+    /**
      * Servicio de autenticación que maneja la validación de credenciales
      * y el proceso de autenticación de usuarios.
      */
@@ -319,6 +326,10 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
         
         if (usuarioDTO.getPassword() == null || usuarioDTO.getPassword().trim().isEmpty()) {
             throw new InvalidRegistrationDataException(ErrorMessages.campoRequerido("contraseña"));
+        }
+
+        if (usuarioDTO.getPassword().trim().length() < LONGITUD_MINIMA_PASSWORD) {
+            throw new InvalidRegistrationDataException(ErrorMessages.ERROR_REGISTRO_PASSWORD_DEBIL);
         }
     }
 }

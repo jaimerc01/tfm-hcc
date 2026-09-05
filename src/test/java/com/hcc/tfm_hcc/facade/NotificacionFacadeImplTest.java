@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageImpl;
 
 import com.hcc.tfm_hcc.converter.NotificacionConverter;
 import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.dto.NotificacionPageDTO;
 import com.hcc.tfm_hcc.exception.NotificacionAccesoException;
 import com.hcc.tfm_hcc.exception.NotificacionOperacionException;
 import com.hcc.tfm_hcc.exception.NotificacionValidationException;
@@ -81,7 +82,7 @@ class NotificacionFacadeImplTest {
     }
 
     @Test
-    void listarNotificacionesUsuarioActualPaginado_devuelveUnMapaPorId() {
+    void listarNotificacionesUsuarioActualPaginado_devuelveLosItemsYElTotalDeLaPagina() {
         Notificacion notificacion = new Notificacion();
         NotificacionDTO dto = new NotificacionDTO();
         dto.setId("id-1");
@@ -89,7 +90,10 @@ class NotificacionFacadeImplTest {
         when(notificacionService.listarNotificacionesUsuarioActual(0, 10)).thenReturn(pagina);
         when(notificacionConverter.toDtoList(List.of(notificacion))).thenReturn(List.of(dto));
 
-        assertEquals(dto, facade.listarNotificacionesUsuarioActual(0, 10).get("id-1"));
+        NotificacionPageDTO resultado = facade.listarNotificacionesUsuarioActual(0, 10);
+
+        assertEquals(List.of(dto), resultado.getItems());
+        assertEquals(pagina.getTotalElements(), resultado.getTotal());
     }
 
     @Test

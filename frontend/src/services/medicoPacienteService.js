@@ -13,6 +13,7 @@ export default {
   listarMisPacientes() { return api.get('/medico/pacientes') },
   obtenerHistorialPaciente(nif) { return api.get(`/medico/pacientes/${encodeURIComponent(nif)}/historial`) },
   crearAnotacion(nif, mensaje) { return api.post(`/medico/pacientes/${encodeURIComponent(nif)}/anotaciones`, { mensaje }) },
+  listarAnotacionesPaciente(nif) { return api.get(`/medico/pacientes/${encodeURIComponent(nif)}/anotaciones`) },
   desasignarPaciente(nif) { return api.delete(`/relaciones/mis-pacientes/${encodeURIComponent(nif)}`) },
   // Documentos clínicos del paciente asignado (CU-16)
   listarArchivosPaciente(nif) { return api.get(`/medico/pacientes/${encodeURIComponent(nif)}/archivos`) },

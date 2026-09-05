@@ -11,6 +11,8 @@ const SLICE_COLOR_TOKENS = ['--chart-default', '--chart-emphasis']
  * @param {Object} options - Opciones de configuración
  */
 export function drawComparisonPieChart(container, data, options = {}) {
+  const pointRingColor = getThemeColor('--chart-point-ring')
+
   const {
     width: customWidth = null,
     height = 280,
@@ -46,28 +48,21 @@ export function drawComparisonPieChart(container, data, options = {}) {
   const g = svg.append('g')
     .attr('transform', `translate(${width / 2},${height / 2})`)
 
-  const pieLayout = d3.pie().value(d => d.value).sort(null)
-  const arcGen = d3.arc().innerRadius(radius * 0.55).outerRadius(radius)
-  const arcHover = d3.arc().innerRadius(radius * 0.55).outerRadius(radius + 6)
+  const pieLayout = d3.pie().value(d => d.value).sort(null).padAngle(validData.length > 1 ? 0.025 : 0)
+  const arcGen = d3.arc().innerRadius(radius * 0.6).outerRadius(radius).cornerRadius(4)
+  const arcHover = d3.arc().innerRadius(radius * 0.6).outerRadius(radius + 6).cornerRadius(4)
 
   const tooltip = d3.select(container)
     .append('div')
     .attr('class', 'chart-tooltip')
-    .style('position', 'absolute')
-    .style('visibility', 'hidden')
-    .style('background', 'rgba(0, 0, 0, 0.8)')
-    .style('color', 'white')
-    .style('padding', '8px 12px')
-    .style('border-radius', '6px')
-    .style('font-size', '13px')
-    .style('pointer-events', 'none')
-    .style('z-index', '1000')
 
   const arcs = g.selectAll('path')
     .data(pieLayout(validData))
     .enter()
     .append('path')
     .attr('fill', (d, i) => colors[i])
+    .attr('stroke', pointRingColor)
+    .attr('stroke-width', 2)
     .style('cursor', 'pointer')
     .each(function (d) { this._current = { startAngle: d.startAngle, endAngle: d.startAngle } })
     .on('mouseover', function (event, d) {
@@ -75,7 +70,7 @@ export function drawComparisonPieChart(container, data, options = {}) {
       const pct = Math.round((d.data.value / total) * 100)
       tooltip
         .style('visibility', 'visible')
-        .html(`<strong>${d.data.label}</strong><br/>${d.data.value} ${d.data.unit || ''} (${pct}%)`)
+        .html(`<strong>${d.data.label}</strong>${d.data.value} ${d.data.unit || ''} (${pct}%)`)
     })
     .on('mousemove', function (event) {
       tooltip.style('top', (event.pageY - 60) + 'px').style('left', (event.pageX + 10) + 'px')

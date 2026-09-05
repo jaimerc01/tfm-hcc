@@ -46,11 +46,7 @@
 
     <!-- Información sobre rangos -->
     <div class="info-box" v-if="selectedMetricData">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 16v-4"></path>
-        <path d="M12 8h.01"></path>
-      </svg>
+      <AppIcon name="info" size="lg" />
       <div>
         <strong>{{ $t('recommended_range', { metric: selectedMetricLabel }) }}</strong>
         <span v-if="selectedMetricData.recommendedMin && selectedMetricData.recommendedMax">
@@ -65,6 +61,7 @@
 <script>
 import { useChart } from '@/composables/useChart'
 import { getThemeColor } from '@/utils/themeColors'
+import AppIcon from './AppIcon.vue'
 
 const DASHBOARD_METRICS_UI = Object.freeze({
   INTERACTIVE_CHART_HEIGHT: 400,
@@ -73,7 +70,8 @@ const DASHBOARD_METRICS_UI = Object.freeze({
 
 export default {
   name: 'DashboardMetricsView',
-  
+  components: { AppIcon },
+
   setup() {
     const { 
       drawTimeSeriesChart, 

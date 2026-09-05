@@ -61,8 +61,35 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void handleArchivoClinico_devuelve500ConElMensajeDeLaExcepcion() {
+    void handleArchivoClinico_sinCausaConcreta_devuelve500Generico() {
         ArchivoClinicoException excepcion = new ArchivoClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR);
+
+        ResponseEntity<String> respuesta = handler.handleArchivoClinico(excepcion);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, respuesta.getStatusCode());
+        assertEquals(ErrorMessages.ERROR_INTERNO_SERVIDOR, respuesta.getBody());
+    }
+
+    @Test
+    void handleArchivoClinico_conCausaDeArgumentoInvalido_devuelve400ConElMensajeReal() {
+        // La cadena real: el controlador envuelve lo que envuelve la fachada, que envuelve
+        // el IllegalArgumentException de ArchivoClinicoServiceImpl (p. ej. extensión no permitida).
+        ArchivoClinicoException excepcion = new ArchivoClinicoException(
+                ErrorMessages.ERROR_INTERNO_SERVIDOR,
+                new ArchivoClinicoException("Error interno durante la subida del archivo",
+                        new IllegalArgumentException(ErrorMessages.ERROR_EXTENSION_NO_PERMITIDA)));
+
+        ResponseEntity<String> respuesta = handler.handleArchivoClinico(excepcion);
+
+        assertEquals(HttpStatus.BAD_REQUEST, respuesta.getStatusCode());
+        assertEquals(ErrorMessages.ERROR_EXTENSION_NO_PERMITIDA, respuesta.getBody());
+    }
+
+    @Test
+    void handleArchivoClinico_conFalloRealDelServidor_devuelve500Generico() {
+        ArchivoClinicoException excepcion = new ArchivoClinicoException(
+                "Error interno durante la subida del archivo",
+                new NullPointerException("bug"));
 
         ResponseEntity<String> respuesta = handler.handleArchivoClinico(excepcion);
 

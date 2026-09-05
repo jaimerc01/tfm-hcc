@@ -7,6 +7,7 @@ import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
@@ -16,6 +17,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.ClientRegistrations;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
@@ -39,11 +44,55 @@ public class WebSecurityConfig {
     private final GoogleOAuth2AuthenticationSuccessHandler googleOAuth2AuthenticationSuccessHandler;
     private final GoogleOAuth2AuthenticationFailureHandler googleOAuth2AuthenticationFailureHandler;
 
-    @Value("${spring.security.oauth2.client.registration.google.client-id:}")
+    // Variables sueltas (no bajo spring.security.oauth2.client.*) a propósito: si se declarase
+    // ese árbol de propiedades en application.yml, la auto-configuración de OAuth2 de Spring Boot
+    // intenta construir el ClientRegistration de forma incondicional y falla el arranque en
+    // cuanto el client-id está en blanco. Además, activar ese árbol solo bajo un profile de
+    // Spring resultó frágil: springboot3-dotenv carga el .env después de que Spring ya haya
+    // decidido qué profiles activar, así que un SPRING_PROFILES_ACTIVE puesto en .env llega
+    // tarde. Al leerlas como @Value sueltas (igual que TFM_HCC_ENCRYPTION_KEY), se resuelven de
+    // forma perezosa al crear el bean, momento en el que el entorno ya está completo sin
+    // importar cómo se haya cargado (.env, variable de entorno real, configuración del IDE...).
+    @Value("${GOOGLE_CLIENT_ID:}")
     private String googleClientId;
+
+    @Value("${GOOGLE_CLIENT_SECRET:}")
+    private String googleClientSecret;
 
     @Value("${security.cors.allowed-origins:http://localhost:8080,https://localhost:8080}")
     private String allowedOrigins;
+
+    /**
+     * Repositorio de registros OAuth2. Solo contiene el registro de Google cuando
+     * GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET están presentes; si no, el login con Google
+     * queda desactivado (ver el guard en {@link #oauth2LoginFilterChain}) y este bean no
+     * llega a usarse, pero se declara siempre para evitar que la auto-configuración de
+     * OAuth2 de Spring Boot intente construir uno a partir de propiedades inexistentes.
+     */
+    private boolean googleLoginHabilitado() {
+        return googleClientId != null && !googleClientId.isBlank()
+                && googleClientSecret != null && !googleClientSecret.isBlank();
+    }
+
+    @Bean
+    public ClientRegistrationRepository clientRegistrationRepository() {
+        if (!googleLoginHabilitado()) {
+            // OJO: el constructor de InMemoryClientRegistrationRepository que recibe una List
+            // rechaza (Assert.notEmpty) una lista vacía y rompería el arranque en este caso, que
+            // es el caso normal sin Google configurado. El constructor que recibe un Map sí
+            // admite vacío (solo exige que no sea null).
+            return new InMemoryClientRegistrationRepository(Map.of());
+        }
+
+        ClientRegistration googleRegistration = ClientRegistrations.fromOidcIssuerLocation("https://accounts.google.com")
+                .registrationId("google")
+                .clientId(googleClientId)
+                .clientSecret(googleClientSecret)
+                .scope("openid", "profile", "email")
+                .build();
+
+        return new InMemoryClientRegistrationRepository(googleRegistration);
+    }
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService, HandlerExceptionResolver handlerExceptionResolver) {
@@ -69,7 +118,7 @@ public class WebSecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .authorizeHttpRequests(requests -> requests.anyRequest().permitAll());
 
-        if (googleClientId != null && !googleClientId.isBlank()) {
+        if (googleLoginHabilitado()) {
             http.oauth2Login(oauth2 -> oauth2
                 .successHandler(googleOAuth2AuthenticationSuccessHandler)
                 .failureHandler(googleOAuth2AuthenticationFailureHandler));

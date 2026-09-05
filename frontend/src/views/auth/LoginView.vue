@@ -1,6 +1,11 @@
 <template>
   <main class="auth-viewport login-container">
     <section class="login-card" aria-labelledby="login-title">
+      <router-link to="/" class="back-home-link">
+        <AppIcon name="arrow-left" size="lg" />
+        {{ $t('login_back_to_home') }}
+      </router-link>
+
       <h1 id="login-title">{{ step === 'twoFactor' ? $t('two_factor_title') : $t('login_title') }}</h1>
 
       <form
@@ -166,6 +171,7 @@
   import { useAuth } from '@/composables/useAuth'
   import authService from '@/services/authService'
   import { validateNIF } from '@/utils/validateNIF'
+  import AppIcon from '@/components/AppIcon.vue'
 
   const GOOGLE_ERROR_KEYS = {
     google_account_not_found: 'google_account_not_found_error',
@@ -176,6 +182,7 @@
 
   export default {
     name: 'LoginView',
+    components: { AppIcon },
     setup() {
       const router = useRouter()
       const route = useRoute()
@@ -390,6 +397,25 @@
     box-shadow: var(--shadow-soft);
     width: 100%;
     max-width: 400px;
+  }
+
+  .back-home-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+
+  .back-home-link:hover {
+    text-decoration: underline;
+  }
+
+  .back-home-link:focus-visible {
+    outline: 3px solid var(--focus-color);
+    outline-offset: 2px;
   }
 
   .login-form {

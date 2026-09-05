@@ -226,6 +226,30 @@ class MedicoControllerImplTest {
                 .andExpect(status().isInternalServerError());
     }
 
+    @Test
+    void listarAnotaciones_devuelveLaListaDelFacade() throws Exception {
+        when(medicoFacade.listarAnotacionesPaciente("22222222B"))
+                .thenReturn(List.of(new com.hcc.tfm_hcc.dto.AnotacionMedicaDTO()));
+
+        mvc.perform(get("/medico/pacientes/22222222B/anotaciones")).andExpect(status().isOk());
+    }
+
+    @Test
+    void listarAnotaciones_sinRelacionActiva_devuelveForbidden() throws Exception {
+        when(medicoFacade.listarAnotacionesPaciente("22222222B"))
+                .thenThrow(new UsuarioSinPermisoException("acceso denegado"));
+
+        mvc.perform(get("/medico/pacientes/22222222B/anotaciones")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listarAnotaciones_conPacienteInexistente_devuelveNotFound() throws Exception {
+        when(medicoFacade.listarAnotacionesPaciente("00000000Z"))
+                .thenThrow(new PacienteNoEncontradoException("paciente no encontrado"));
+
+        mvc.perform(get("/medico/pacientes/00000000Z/anotaciones")).andExpect(status().isNotFound());
+    }
+
     // ---- documentos del paciente (CU-16) ----
 
     @Test

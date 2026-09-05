@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
+import com.hcc.tfm_hcc.converter.AnotacionMedicaConverter;
+import com.hcc.tfm_hcc.dto.AnotacionMedicaDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
@@ -79,6 +81,7 @@ public class MedicoFacadeImpl implements MedicoFacade {
     private final SolicitudAsignacionService solicitudAsignacionService;
     private final HistorialClinicoService historialClinicoService;
     private final AnotacionMedicaService anotacionMedicaService;
+    private final AnotacionMedicaConverter anotacionMedicaConverter;
     private final ArchivoClinicoService archivoClinicoService;
     private final ArchivoClinicoMapper archivoClinicoMapper;
     private final NotificacionFacade notificacionFacade;
@@ -367,6 +370,42 @@ public class MedicoFacadeImpl implements MedicoFacade {
         } catch (Exception e) {
             log.warn("No se pudo notificar la anotación al paciente {}: {}",
                     LogMaskUtil.enmascarar(paciente.getNif()), e.getMessage());
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @PreAuthorize("hasRole('MEDICO')")
+    public List<AnotacionMedicaDTO> listarAnotacionesPaciente(String nifPaciente) {
+        String nifPacienteLog = LogMaskUtil.enmascarar(nifPaciente);
+        log.debug("Listando anotaciones escritas para el paciente {}", nifPacienteLog);
+
+        String nifMedico = SecurityUtils.getCurrentUserNif();
+        if (nifMedico == null) {
+            log.warn("Usuario actual sin NIF al listar anotaciones médicas");
+            throw new UsuarioNoAutenticadoException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
+        }
+
+        try {
+            validarNifPaciente(nifPaciente);
+
+            List<AnotacionMedica> anotaciones =
+                    anotacionMedicaService.listarAnotacionesEscritasPorMedico(nifMedico, nifPaciente);
+            return anotacionMedicaConverter.toDtoList(anotaciones);
+        } catch (MedicoValidationException e) {
+            log.warn("NIF de paciente inválido al listar anotaciones médicas: {}", e.getMessage());
+            throw e;
+        } catch (IllegalStateException e) {
+            log.warn("Acceso denegado al listar anotaciones médicas del paciente {}: {}", nifPacienteLog, e.getMessage());
+            throw new UsuarioSinPermisoException(e.getMessage(), e);
+        } catch (IllegalArgumentException e) {
+            log.warn("Paciente no encontrado al listar anotaciones médicas: {} - {}", nifPacienteLog, e.getMessage());
+            throw new PacienteNoEncontradoException(e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Error inesperado al listar anotaciones médicas del paciente {}: {}", nifPacienteLog, e.getMessage(), e);
+            throw new MedicoOperacionException("Error interno al listar las anotaciones del paciente", e);
         }
     }
 

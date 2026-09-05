@@ -133,6 +133,14 @@ class AutenticacionFacadeImplTest {
     }
 
     @Test
+    void registrar_conPasswordDeMenosDeOchoCaracteres_lanzaInvalidRegistrationDataException() {
+        UsuarioDTO dto = registroValido();
+        dto.setPassword("corta12");
+
+        assertThrows(InvalidRegistrationDataException.class, () -> facade.registrar(dto));
+    }
+
+    @Test
     void registrar_conErrorInesperado_lanzaAutenticacionOperacionException() {
         UsuarioDTO dto = registroValido();
         when(autenticacionService.registrar(dto)).thenThrow(new RuntimeException("fallo"));

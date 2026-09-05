@@ -203,6 +203,7 @@ class MedicoServiceImplTest {
         Usuario medico = new Usuario();
         medico.setNombre("Dr. Ejemplo");
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(medico));
+        when(perfilUsuarioService.tienePerfil(id, "MEDICO")).thenReturn(true);
 
         Usuario paciente = new Usuario();
         paciente.setNif("87654321B");
@@ -236,6 +237,16 @@ class MedicoServiceImplTest {
     }
 
     @Test
+    void eliminarMedico_conUsuarioSinPerfilMedico_lanzaUsuarioNoEncontradoException() {
+        UUID id = UUID.randomUUID();
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(new Usuario()));
+        when(perfilUsuarioService.tienePerfil(id, "MEDICO")).thenReturn(false);
+
+        assertThrows(UsuarioNoEncontradoException.class, () -> service.eliminarMedico(id));
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
     void setPerfilMedico_conAsignarTrue_asignaElPerfilMedico() {
         UUID id = UUID.randomUUID();
         when(perfilRepository.getPerfilByRol("MEDICO")).thenReturn(Optional.of(new Perfil()));
@@ -256,6 +267,7 @@ class MedicoServiceImplTest {
         when(perfilRepository.getPerfilByRol("MEDICO")).thenReturn(Optional.of(new Perfil()));
         when(perfilRepository.getPerfilByRol("PACIENTE")).thenReturn(Optional.of(new Perfil()));
         when(usuarioRepository.findById(id)).thenReturn(Optional.of(medico));
+        when(perfilUsuarioService.tienePerfil(id, "MEDICO")).thenReturn(true);
 
         Usuario paciente = new Usuario();
         paciente.setNif("87654321B");
@@ -271,6 +283,18 @@ class MedicoServiceImplTest {
         verify(medicoPacienteRepository, times(1)).saveAll(List.of(relacion));
         verify(perfilUsuarioService, times(1)).revocarPerfil(id, "MEDICO");
         verify(perfilUsuarioService, times(1)).asignarPerfil(id, "PACIENTE");
+    }
+
+    @Test
+    void setPerfilMedico_conAsignarFalseYUsuarioSinPerfilMedico_lanzaUsuarioNoEncontradoException() {
+        UUID id = UUID.randomUUID();
+        when(perfilRepository.getPerfilByRol("MEDICO")).thenReturn(Optional.of(new Perfil()));
+        when(perfilRepository.getPerfilByRol("PACIENTE")).thenReturn(Optional.of(new Perfil()));
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(new Usuario()));
+        when(perfilUsuarioService.tienePerfil(id, "MEDICO")).thenReturn(false);
+
+        assertThrows(UsuarioNoEncontradoException.class, () -> service.setPerfilMedico(id, false));
+        verify(perfilUsuarioService, never()).revocarPerfil(any(), anyString());
     }
 
     @Test

@@ -31,3 +31,38 @@ export function prepareChartData(entries, paramKey) {
     .filter(d => d.date instanceof Date && !Number.isNaN(d.value))
     .sort((a, b) => a.date - b.date)
 }
+
+/**
+ * Indica si un valor cae fuera del rango recomendado para su analito.
+ * @param {number} value - Valor a comprobar
+ * @param {number|null} min - Mínimo recomendado (null si no hay referencia)
+ * @param {number|null} max - Máximo recomendado (null si no hay referencia)
+ * @returns {boolean}
+ */
+export function isOutOfRecommendedRange(value, min, max) {
+  if (min == null || max == null || value == null || Number.isNaN(value)) return false
+  return value < min || value > max
+}
+
+/**
+ * Indica si el usuario ha pedido reducir el movimiento (prefers-reduced-motion).
+ * Los gráficos usan esto para saltarse las animaciones de entrada.
+ * @returns {boolean}
+ */
+export function prefersReducedMotion() {
+  return typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+/**
+ * Indica si conviene animar la entrada del gráfico. Falso si el usuario pide
+ * reducir el movimiento o si la pestaña está oculta (en ese caso el temporizador
+ * de animación se ralentiza y el gráfico podría quedarse a medio dibujar; mejor
+ * pintar el estado final directamente).
+ * @returns {boolean}
+ */
+export function shouldAnimateChart() {
+  if (prefersReducedMotion()) return false
+  return typeof document === 'undefined' || document.visibilityState !== 'hidden'
+}

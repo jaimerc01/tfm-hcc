@@ -94,7 +94,7 @@ public class Rango extends BaseEntity {
      *   <li>"Colesterol total - Deseable"</li>
      * </ul>
      */
-    @Column(name = "nombre", nullable = false, length = 200)
+    @Column(name = "nombre", nullable = false, length = 200, unique = true)
     private String nombre;
 
 }

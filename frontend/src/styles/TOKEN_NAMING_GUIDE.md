@@ -72,6 +72,17 @@ No crees token si:
 3. Si el color se usa desde JS (D3), leerlo con `getThemeColor('--token')`.
 4. Ejecutar `npm run lint:colors` y `npm run lint`.
 
+## Tokens De Tamaño De Icono
+
+Los iconos de la aplicacion se pintan con `@lucide/vue` a traves del componente
+`components/AppIcon.vue`. Sus dimensiones son tokens (no colores) definidos en
+`variables.css` como familia `--icon-*` (`xs` … `4xl`), siguiendo la misma escala
+que `--spacing-*` y `--radius-*`. En las plantillas se usa el nombre logico via la
+prop `size` (`<AppIcon name="trash" size="sm" />`), nunca `width`/`height` sueltos.
+El color del icono lo hereda del contexto (`currentColor`): las reglas existentes
+que tiñen `svg` (`.header-icon svg`, `.section-title svg`, `.alert svg`…) siguen
+aplicando y mantienen el reparto 60-30-10.
+
 ## Checklist Rapido
 
 - [ ] No hay hex fuera de `variables.css`.

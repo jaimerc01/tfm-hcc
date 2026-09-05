@@ -2,11 +2,7 @@
   <section class="analisis-section" :aria-busy="saving ? 'true' : 'false'" aria-labelledby="analisis-orina-heading">
     <h2 id="analisis-orina-heading" class="sr-only">{{ $t('urine_analysis') }}</h2>
     <div class="info-box">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 16v-4"></path>
-        <path d="M12 8h.01"></path>
-      </svg>
+      <AppIcon name="info" size="lg" />
       <span>
         <strong>{{ $t('register_urine_analysis') }}</strong> {{ $t('track_health') }}
         {{ $t('select_param_value_date') }}
@@ -27,36 +23,24 @@
     />
 
     <div v-if="msg" class="alert alert-success" role="status" aria-live="polite">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"></polyline>
-      </svg>
+      <AppIcon name="check" size="lg" />
       {{ msg }}
     </div>
 
     <div v-if="error" class="alert alert-danger" role="alert" aria-live="assertive">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
+      <AppIcon name="alert-circle" size="lg" />
       {{ error }}
     </div>
 
     <div :class="['toast-notification', showToast ? 'show' : '']" role="status" aria-live="polite" aria-atomic="true">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"></polyline>
-      </svg>
+      <AppIcon name="check" size="lg" />
       {{ showToastMessage }}
     </div>
 
     <!-- Delete Confirmation Modal -->
     <AppModal v-if="showDeleteModal" :label="$t('confirm_delete')" @close="closeDeleteModal">
       <template #header>
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger-color)">
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-          <line x1="12" y1="9" x2="12" y2="13"></line>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
+        <AppIcon name="alert-triangle" size="3xl" style="color: var(--danger-color)" />
         <h3>{{ $t('confirm_delete') }}</h3>
       </template>
       <p class="modal-text">{{ $t('delete_result_confirm') }}</p>
@@ -66,10 +50,7 @@
             {{ $t('cancel') }}
           </button>
           <button type="button" class="btn-danger" @click="confirmDelete">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
+            <AppIcon name="trash" size="md" />
             {{ $t('yes_delete') }}
           </button>
         </div>
@@ -79,11 +60,7 @@
     <!-- Clear All Confirmation Modal -->
     <AppModal v-if="showClearAllModal" :label="$t('confirm_bulk_delete')" @close="closeClearAllModal">
       <template #header>
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--danger-color)">
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-          <line x1="12" y1="9" x2="12" y2="13"></line>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
+        <AppIcon name="alert-triangle" size="3xl" style="color: var(--danger-color)" />
         <h3>{{ $t('confirm_bulk_delete') }}</h3>
       </template>
       <p class="modal-text">
@@ -96,10 +73,7 @@
           </button>
           <button type="button" class="btn-danger" @click="confirmClearAll" :disabled="saving">
             <div v-if="saving" class="spinner-small"></div>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
+            <AppIcon v-else name="trash" size="md" />
             {{ saving ? $t('deleting') : $t('yes_delete_all') }}
           </button>
         </div>
@@ -110,6 +84,7 @@
 
 <script>
 import AppModal from './Modal.vue'
+import AppIcon from './AppIcon.vue'
 import DatoClinicoChart from './DatoClinicoChart.vue'
 import DatoClinicoForm from './DatoClinicoForm.vue'
 import DatoClinicoResultsTable from './DatoClinicoResultsTable.vue'
@@ -122,7 +97,7 @@ const ANALISIS_ORINA_UI = Object.freeze({
 
 export default {
   name: 'AnalisisOrinaSection',
-  components: { AppModal, DatoClinicoChart, DatoClinicoForm, DatoClinicoResultsTable },
+  components: { AppModal, AppIcon, DatoClinicoChart, DatoClinicoForm, DatoClinicoResultsTable },
   setup() {
     const { analytes, entries, saving, load, loadRangos, addEntry, deleteEntryById, clearAllEntries } = useAnalisisOrina()
     return { analytes, entries, saving, load, loadRangos, addEntry, deleteEntryById, clearAllEntries }

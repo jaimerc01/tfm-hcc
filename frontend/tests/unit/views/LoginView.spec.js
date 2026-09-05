@@ -146,4 +146,12 @@ describe('LoginView', () => {
     expect(w.vm.buildDescribedBy('nif', true)).toContain('nif-error')
     expect(w.vm.buildDescribedBy('password', false)).toBeUndefined()
   })
+
+  it('muestra un enlace para volver a la pantalla de inicio', async () => {
+    const w = await factory()
+    const backLink = w.findComponent('.back-home-link')
+    expect(backLink.exists()).toBe(true)
+    expect(backLink.props('to')).toBe('/')
+    expect(backLink.text()).toContain('Volver al inicio')
+  })
 })

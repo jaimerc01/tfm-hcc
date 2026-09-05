@@ -33,6 +33,7 @@ import com.hcc.tfm_hcc.repository.NotificacionRepository;
 import com.hcc.tfm_hcc.model.Notificacion;
 import com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.util.NombreUtil;
 import com.hcc.tfm_hcc.service.AuditoriaCambioService;
 import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.PerfilUsuarioService;
@@ -248,16 +249,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     public String getNombreUsuario() {
         String nif = getNifUsuarioAutenticado();
         return findUsuarioByNif(nif)
-                .map(usuario -> {
-                    String nombreCompleto = usuario.getNombre();
-                    if (usuario.getApellido1() != null && !usuario.getApellido1().isEmpty()) {
-                        nombreCompleto += " " + usuario.getApellido1();
-                    }
-                    if (usuario.getApellido2() != null && !usuario.getApellido2().isEmpty()) {
-                        nombreCompleto += " " + usuario.getApellido2();
-                    }
-                    return nombreCompleto;
-                })
+                .map(NombreUtil::nombreCompleto)
                 .orElse(null);
     }
 

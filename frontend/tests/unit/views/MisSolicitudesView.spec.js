@@ -170,9 +170,33 @@ describe('MisSolicitudesView', () => {
     expect(w.vm.unassignMsg).toBe('No existe una relación')
   })
 
-  it('nombreMedico compone nombre y apellidos con fallback al NIF', async () => {
+  it('nombreCompleto compone nombre y apellidos con fallback al NIF', async () => {
     const w = await factory()
-    expect(w.vm.nombreMedico({ nombre: 'Ana', apellido1: 'Gil', nif: 'X' })).toBe('Ana Gil')
-    expect(w.vm.nombreMedico({ nif: '11111111H' })).toBe('11111111H')
+    expect(w.vm.nombreCompleto({ nombre: 'Ana', apellido1: 'Gil', apellido2: 'Ruiz', nif: 'X' })).toBe('Ana Gil Ruiz')
+    expect(w.vm.nombreCompleto({ nif: '11111111H' })).toBe('11111111H')
+    expect(w.vm.nombreCompleto(null)).toBe('-')
+  })
+
+  it('muestra el nombre completo del médico y del paciente en una solicitud recibida', async () => {
+    svc.listarRecibidas.mockResolvedValueOnce({
+      data: [{
+        id: 1,
+        estado: 'PENDIENTE',
+        medico: { nombre: 'Ana', apellido1: 'Gil', apellido2: 'Ruiz' },
+        paciente: { nombre: 'Luis', apellido1: 'Pérez' }
+      }]
+    })
+    const w = await factory()
+    expect(w.text()).toContain('Ana Gil Ruiz')
+    expect(w.text()).toContain('Luis Pérez')
+  })
+
+  it('muestra el nombre completo del paciente en una solicitud enviada', async () => {
+    auth.getCurrentUser.mockReturnValue({ authorities: ['ROLE_MEDICO'] })
+    svc.listarEnviadas.mockResolvedValueOnce({
+      data: [{ id: 9, estado: 'ACEPTADA', paciente: { nombre: 'Luis', apellido1: 'Pérez', apellido2: 'Soto' } }]
+    })
+    const w = await factory()
+    expect(w.text()).toContain('Luis Pérez Soto')
   })
 })

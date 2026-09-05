@@ -26,7 +26,7 @@ API_URL = os.environ.get("API_URL", "http://localhost:8081")
 LOGIN_ENDPOINT = f"{API_URL}/authentication/login"
 PASSWORD = "password"
 CSV_PATH = os.path.join(os.path.dirname(__file__), "usuarios_generados.csv")
-N_PACIENTES = 3  # cuántos usuarios sin especialidad probar
+N_PACIENTES = 10  # cuántos usuarios sin especialidad probar
 
 
 def cargar_usuarios():
@@ -44,6 +44,7 @@ def test_login(usuario):
     nif = usuario["nif"]
     etiqueta = f'{usuario["nombre"]} {usuario["apellido1"]}'.strip()
     rol = "médico" if usuario["especialidad"] else "paciente"
+    fecha_nacimiento = usuario["fecha_nacimiento"]
     try:
         r = requests.post(LOGIN_ENDPOINT, json={"nif": nif, "password": PASSWORD}, timeout=5)
     except requests.exceptions.ConnectionError:
@@ -51,7 +52,7 @@ def test_login(usuario):
         return False
 
     if r.status_code == 200 and r.json().get("token"):
-        print(f"  [OK]   {nif:<10} {rol:<8} {etiqueta}")
+        print(f"  [OK]   {nif:<10} {rol:<8} {fecha_nacimiento:<12} {etiqueta}")
         return True
     print(f"  [FALLO] {nif:<10} {rol:<8} HTTP {r.status_code}: {r.text[:120]}")
     return False
