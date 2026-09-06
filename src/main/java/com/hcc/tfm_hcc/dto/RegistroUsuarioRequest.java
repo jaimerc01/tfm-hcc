@@ -29,4 +29,11 @@ public class RegistroUsuarioRequest {
     private String password;
     private String telefono;
     private LocalDateTime fechaNacimiento;
+
+    /**
+     * Consentimiento explícito del interesado para el tratamiento de sus datos de salud
+     * (RGPD art. 9.2.a). El alta se rechaza si no es {@code true}: es un acto afirmativo
+     * inequívoco, separado del resto de campos del formulario.
+     */
+    private Boolean aceptaTratamientoDatos;
 }

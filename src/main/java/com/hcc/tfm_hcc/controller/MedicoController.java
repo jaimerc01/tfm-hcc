@@ -15,6 +15,8 @@ import com.hcc.tfm_hcc.dto.AnotacionMedicaRequestDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoRequestDTO;
 import com.hcc.tfm_hcc.dto.SolicitudAsignacionDTO;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -145,4 +147,25 @@ public interface MedicoController {
      * @return ResponseEntity con el Resource del documento
      */
     ResponseEntity<Resource> descargarArchivoPaciente(@PathVariable("nif") String nif, @PathVariable("id") UUID id);
+
+    /**
+     * Registra una propuesta de cambio (alta, edición o borrado) sobre el historial de un
+     * paciente vinculado al médico autenticado. El cambio queda pendiente de que el paciente lo
+     * confirme; no se aplica en el momento.
+     *
+     * @param nif NIF del paciente destinatario
+     * @param request dominio, operación, recurso objetivo, motivo y datos propuestos
+     * @return ResponseEntity con la PropuestaCambioClinicoDTO creada
+     */
+    ResponseEntity<PropuestaCambioClinicoDTO> proponerCambioClinico(@PathVariable("nif") String nif,
+                                                                    @RequestBody PropuestaCambioClinicoRequestDTO request);
+
+    /**
+     * Lista las propuestas de cambio que el médico autenticado ha enviado sobre el historial de
+     * un paciente vinculado a él, con su estado actual.
+     *
+     * @param nif NIF del paciente
+     * @return ResponseEntity con la lista de PropuestaCambioClinicoDTO enviadas a ese paciente
+     */
+    ResponseEntity<List<PropuestaCambioClinicoDTO>> listarPropuestasCambio(@PathVariable("nif") String nif);
 }

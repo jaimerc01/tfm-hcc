@@ -103,6 +103,7 @@ abstract class AbstractIntegrationIT {
         request.setPassword(PASSWORD);
         request.setTelefono("600123123");
         request.setFechaNacimiento(LocalDateTime.of(1990, 1, 1, 0, 0));
+        request.setAceptaTratamientoDatos(true);
 
         mockMvc.perform(post("/authentication/signup")
                 .contentType(MediaType.APPLICATION_JSON)

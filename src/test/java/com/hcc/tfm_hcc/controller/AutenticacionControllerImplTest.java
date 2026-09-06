@@ -20,10 +20,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcc.tfm_hcc.controller.impl.AutenticacionControllerImpl;
 import com.hcc.tfm_hcc.dto.GoogleCodeRequestDTO;
 import com.hcc.tfm_hcc.dto.LoginUsuarioDTO;
+import com.hcc.tfm_hcc.dto.RegistroUsuarioRequest;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.GoogleAuthenticationException;
 import com.hcc.tfm_hcc.facade.AutenticacionFacade;
 import com.hcc.tfm_hcc.model.LoginResponse;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class AutenticacionControllerImplTest {
 
@@ -35,6 +37,7 @@ class AutenticacionControllerImplTest {
     void setUp() {
         autenticacionFacade = mock(AutenticacionFacade.class);
         AutenticacionControllerImpl controller = new AutenticacionControllerImpl(autenticacionFacade);
+        ReflectionTestUtils.setField(controller, "edadMinimaRegistro", 14);
         mvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
@@ -87,12 +90,15 @@ class AutenticacionControllerImplTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    private UsuarioDTO registroValido() {
-        UsuarioDTO dto = new UsuarioDTO();
+    private RegistroUsuarioRequest registroValido() {
+        RegistroUsuarioRequest dto = new RegistroUsuarioRequest();
+        dto.setNombre("Ana");
+        dto.setApellido1("López");
         dto.setNif("12345678A");
         dto.setEmail("ana@example.com");
         dto.setPassword("password123");
         dto.setFechaNacimiento(LocalDateTime.of(1990, 5, 20, 0, 0));
+        dto.setAceptaTratamientoDatos(true);
         return dto;
     }
 
@@ -108,8 +114,44 @@ class AutenticacionControllerImplTest {
 
     @Test
     void registrar_sinFechaNacimiento_devuelveBadRequest() throws Exception {
-        UsuarioDTO dto = registroValido();
+        RegistroUsuarioRequest dto = registroValido();
         dto.setFechaNacimiento(null);
+
+        mvc.perform(post("/authentication/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void registrar_sinConsentimiento_devuelveBadRequestYNoLlegaAlFacade() throws Exception {
+        RegistroUsuarioRequest dto = registroValido();
+        dto.setAceptaTratamientoDatos(false);
+
+        mvc.perform(post("/authentication/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+
+        org.mockito.Mockito.verify(autenticacionFacade, org.mockito.Mockito.never())
+                .registrar(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void registrar_conConsentimientoAusente_devuelveBadRequest() throws Exception {
+        RegistroUsuarioRequest dto = registroValido();
+        dto.setAceptaTratamientoDatos(null);
+
+        mvc.perform(post("/authentication/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void registrar_menorDe14_devuelveBadRequest() throws Exception {
+        RegistroUsuarioRequest dto = registroValido();
+        dto.setFechaNacimiento(LocalDateTime.now().minusYears(13));
 
         mvc.perform(post("/authentication/signup")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -134,7 +176,8 @@ class AutenticacionControllerImplTest {
                   "nif": "12345678A",
                   "email": "ana@example.com",
                   "password": "password123",
-                  "fechaNacimiento": "1990-05-20T00:00:00"
+                  "fechaNacimiento": "1990-05-20T00:00:00",
+                  "aceptaTratamientoDatos": true
                 }
                 """;
 

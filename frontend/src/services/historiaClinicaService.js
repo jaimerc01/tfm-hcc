@@ -13,6 +13,11 @@ export default {
   crearAlergia(alergia) { return api.post('/historia/alergias', alergia, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
   deleteAlergia(id) { return api.delete(`/historia/alergias/${id}`) },
   deleteDatoClinico(id) { return api.delete(`/historia/datos-clinicos/${id}`) },
+  // Edición individual de un dato clínico ya guardado (parámetro, valor, unidad, fecha)
+  editarDatoClinico(id, medicion) { return api.put(`/historia/datos-clinicos/${id}`, medicion, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
+  // Propuestas de cambio que un médico ha enviado sobre el historial y que el paciente debe confirmar
+  listarPropuestasCambio() { return api.get('/historia/propuestas-cambio') },
+  responderPropuestaCambio(id, aceptar) { return api.post(`/historia/propuestas-cambio/${id}`, { aceptar }, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
   // Analisis de sangre: Replace all (PUT) or add new (POST). El cuerpo es un array de mediciones (application/json).
   updateAnalisisSangre(datos) { return api.put('/historia/analisis-sangre', datos) },
   añadirAnalisisSangre(datos) { return api.post('/historia/analisis-sangre', datos) },

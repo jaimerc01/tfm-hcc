@@ -143,6 +143,21 @@ describe('MisSolicitudesView', () => {
     expect(w.text()).toContain('Ana')
   })
 
+  it('muestra la especialidad del médico asignado, etiquetada', async () => {
+    auth.listarMisMedicos.mockResolvedValueOnce([
+      { nif: '11111111H', nombre: 'Ana', apellido1: 'Gil', especialidad: 'Cardiología' }
+    ])
+    const w = await factory()
+    expect(w.text()).toContain('Especialidad')
+    expect(w.text()).toContain('Cardiología')
+  })
+
+  it('no muestra la fila de especialidad si el médico no la tiene', async () => {
+    auth.listarMisMedicos.mockResolvedValueOnce([{ nif: '11111111H', nombre: 'Ana', apellido1: 'Gil' }])
+    const w = await factory()
+    expect(w.text()).not.toContain('Especialidad')
+  })
+
   it('un fallo al cargar los médicos no bloquea la vista', async () => {
     auth.listarMisMedicos.mockRejectedValueOnce(new Error('x'))
     const w = await factory()

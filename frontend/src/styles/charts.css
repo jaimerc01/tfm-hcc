@@ -55,6 +55,7 @@
 }
 
 .chart-empty {
+  box-sizing: border-box;
   color: var(--text-secondary);
   padding: 2rem;
   background: var(--bg-light);
@@ -270,11 +271,27 @@
   box-shadow: 0 0 0 2px rgb(255 255 255 / 0.7);
 }
 
-.health-rings__legend-name {
+.health-rings__legend-select {
   grid-area: name;
-  font-weight: 600;
+  justify-self: start;
+  max-width: 100%;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--bg-light);
   color: var(--text-primary);
+  font-weight: 600;
   font-size: 0.9rem;
+  padding: 0.15rem 1.4rem 0.15rem 0.4rem;
+  cursor: pointer;
+}
+
+.health-rings__legend-select:hover {
+  border-color: var(--border-medium);
+}
+
+.health-rings__legend-select:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 1px;
 }
 
 .health-rings__legend-range {

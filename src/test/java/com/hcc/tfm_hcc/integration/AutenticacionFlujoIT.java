@@ -90,10 +90,53 @@ class AutenticacionFlujoIT extends AbstractIntegrationIT {
         repetido.setEmail("otro.email@example.com");
         repetido.setPassword(PASSWORD);
         repetido.setFechaNacimiento(LocalDateTime.of(1985, 5, 5, 0, 0));
+        repetido.setAceptaTratamientoDatos(true);
 
         mockMvc.perform(post("/authentication/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(repetido)))
                 .andExpect(status().is5xxServerError());
+    }
+
+    @Test
+    void signup_sinConsentimiento_devuelveBadRequestYNoCreaLaCuenta() throws Exception {
+        RegistroUsuarioRequest sinConsentimiento = new RegistroUsuarioRequest();
+        sinConsentimiento.setNombre("Sin");
+        sinConsentimiento.setApellido1("Consentimiento");
+        sinConsentimiento.setNif("99999999R");
+        sinConsentimiento.setEmail("sin.consentimiento@example.com");
+        sinConsentimiento.setPassword(PASSWORD);
+        sinConsentimiento.setFechaNacimiento(LocalDateTime.of(1990, 1, 1, 0, 0));
+        sinConsentimiento.setAceptaTratamientoDatos(false);
+
+        mockMvc.perform(post("/authentication/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sinConsentimiento)))
+                .andExpect(status().isBadRequest());
+
+        LoginUsuarioDTO credenciales = new LoginUsuarioDTO();
+        credenciales.setNif("99999999R");
+        credenciales.setPassword(PASSWORD);
+        mockMvc.perform(post("/authentication/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(credenciales)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void signup_deUnMenorDe14_devuelveBadRequest() throws Exception {
+        RegistroUsuarioRequest menor = new RegistroUsuarioRequest();
+        menor.setNombre("Menor");
+        menor.setApellido1("Edad");
+        menor.setNif("88888888T");
+        menor.setEmail("menor@example.com");
+        menor.setPassword(PASSWORD);
+        menor.setFechaNacimiento(LocalDateTime.now().minusYears(12));
+        menor.setAceptaTratamientoDatos(true);
+
+        mockMvc.perform(post("/authentication/signup")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(menor)))
+                .andExpect(status().isBadRequest());
     }
 }

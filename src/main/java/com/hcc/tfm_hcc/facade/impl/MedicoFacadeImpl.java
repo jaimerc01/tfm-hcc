@@ -15,6 +15,9 @@ import com.hcc.tfm_hcc.dto.AnotacionMedicaDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoRequestDTO;
+import com.hcc.tfm_hcc.converter.PropuestaCambioClinicoConverter;
 import com.hcc.tfm_hcc.facade.MedicoFacade;
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.mapper.ArchivoClinicoMapper;
@@ -26,14 +29,18 @@ import com.hcc.tfm_hcc.service.AnotacionMedicaService;
 import com.hcc.tfm_hcc.service.ArchivoClinicoService;
 import com.hcc.tfm_hcc.service.HistorialClinicoService;
 import com.hcc.tfm_hcc.service.MedicoService;
+import com.hcc.tfm_hcc.service.PropuestaCambioClinicoService;
 import com.hcc.tfm_hcc.service.SolicitudAsignacionService;
 import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.PacienteNoEncontradoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioNoEncontradaException;
 import com.hcc.tfm_hcc.exception.SolicitudAsignacionException;
 import com.hcc.tfm_hcc.exception.SolicitudExistenteException;
 import com.hcc.tfm_hcc.exception.MedicoOperacionException;
 import com.hcc.tfm_hcc.exception.MedicoValidationException;
 import com.hcc.tfm_hcc.exception.UsuarioNoAutenticadoException;
+import com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException;
 import com.hcc.tfm_hcc.exception.UsuarioSinPermisoException;
 import com.hcc.tfm_hcc.util.LogMaskUtil;
 import com.hcc.tfm_hcc.util.SecurityUtils;
@@ -85,6 +92,8 @@ public class MedicoFacadeImpl implements MedicoFacade {
     private final ArchivoClinicoService archivoClinicoService;
     private final ArchivoClinicoMapper archivoClinicoMapper;
     private final NotificacionFacade notificacionFacade;
+    private final PropuestaCambioClinicoService propuestaCambioClinicoService;
+    private final PropuestaCambioClinicoConverter propuestaCambioClinicoConverter;
 
     /** Textos del aviso que recibe el paciente cuando un médico le añade una anotación. */
     private static final String MENSAJE_ANOTACION_PREFIJO = "Tu médico ";
@@ -493,6 +502,70 @@ public class MedicoFacadeImpl implements MedicoFacade {
         } catch (Exception e) {
             log.warn("No se pudo notificar el documento al paciente {}: {}",
                     LogMaskUtil.enmascarar(nifPaciente), e.getMessage());
+        }
+    }
+
+    // ===============================
+    // MÉTODOS DE PROPUESTAS DE CAMBIO CLÍNICO
+    // ===============================
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @PreAuthorize("hasRole('MEDICO')")
+    public PropuestaCambioClinicoDTO proponerCambioClinico(String nifPaciente, PropuestaCambioClinicoRequestDTO request) {
+        String nifPacienteLog = LogMaskUtil.enmascarar(nifPaciente);
+        log.debug("Registrando propuesta de cambio clínico para el paciente {}", nifPacienteLog);
+
+        String nifMedico = SecurityUtils.getCurrentUserNif();
+        if (nifMedico == null) {
+            log.warn("Usuario actual sin NIF al registrar propuesta de cambio clínico");
+            throw new UsuarioNoAutenticadoException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
+        }
+
+        try {
+            validarNifPaciente(nifPaciente);
+            var propuesta = propuestaCambioClinicoService.crearPropuesta(nifMedico, nifPaciente, request);
+            log.info("Propuesta de cambio clínico {} registrada para el paciente {}", propuesta.getId(), nifPacienteLog);
+            return propuestaCambioClinicoConverter.toDto(propuesta);
+        } catch (MedicoValidationException | PropuestaCambioClinicoException | PropuestaCambioNoEncontradaException
+                 | UsuarioSinPermisoException | UsuarioNoEncontradoException e) {
+            log.warn("Propuesta de cambio clínico rechazada para el paciente {}: {}", nifPacienteLog, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al registrar propuesta de cambio clínico para el paciente {}: {}",
+                    nifPacienteLog, e.getMessage(), e);
+            throw new MedicoOperacionException("Error interno durante el registro de la propuesta de cambio clínico", e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @PreAuthorize("hasRole('MEDICO')")
+    public List<PropuestaCambioClinicoDTO> listarPropuestasCambioParaPaciente(String nifPaciente) {
+        String nifPacienteLog = LogMaskUtil.enmascarar(nifPaciente);
+        log.debug("Listando propuestas de cambio clínico enviadas al paciente {}", nifPacienteLog);
+
+        String nifMedico = SecurityUtils.getCurrentUserNif();
+        if (nifMedico == null) {
+            log.warn("Usuario actual sin NIF al listar propuestas de cambio clínico");
+            throw new UsuarioNoAutenticadoException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
+        }
+
+        try {
+            validarNifPaciente(nifPaciente);
+            return propuestaCambioClinicoConverter.toDtoList(
+                    propuestaCambioClinicoService.listarPropuestasEnviadasParaPaciente(nifMedico, nifPaciente));
+        } catch (MedicoValidationException e) {
+            log.warn("NIF de paciente inválido al listar propuestas de cambio clínico: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al listar propuestas de cambio clínico del paciente {}: {}",
+                    nifPacienteLog, e.getMessage(), e);
+            throw new MedicoOperacionException("Error interno al listar las propuestas de cambio clínico", e);
         }
     }
 

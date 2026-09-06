@@ -4,11 +4,15 @@ Generador de datos sintéticos para el Historial Clínico Compartido (tfm-hcc).
 
 Puebla las tablas:
  - public.perfil            (PACIENTE / MEDICO / ADMINISTRADOR, con UUID fijos)
- - public.usuario
+ - public.usuario           (con el consentimiento del alta registrado, ver abajo)
  - public.perfil_usuario
- - public.historial_clinico
+ - public.historial_clinico (uno por usuario, vacío)
  - public.medico_paciente   (cada médico generado queda con entre 1 y 5 pacientes
    asignados en estado ACTIVA, elegidos al azar entre los pacientes generados)
+
+Genera N pacientes + N//15 médicos + 1 administrador (NIF fijo, ver ADMIN_NIF).
+NO siembra datos clínicos (antecedentes, alergias, análisis, signos vitales): los
+usuarios arrancan con el historial vacío, igual que tras registrarse.
 
 y escribe además un CSV con los datos en claro para poder iniciar sesión:
     usuarios_generados.csv
@@ -26,9 +30,13 @@ La clave tiene que ser la MISMA que use el backend en `TFM_HCC_ENCRYPTION_KEY`
 (ver `.env` / `.env.example`). El valor por defecto de abajo coincide con el de la
 plantilla `.env.example` para desarrollo local.
 
-Columnas nuevas cubiertas: `email_hash`, `nif_hash`, `totp_secret` (NULL),
-`totp_enabled` (false). En `historial_clinico` se han eliminado los antiguos campos
-de texto libre (los antecedentes y alergias viven ahora en sus propias tablas).
+Columnas de `usuario` cubiertas explícitamente: `email_hash`, `nif_hash`,
+`totp_secret` (NULL), `totp_enabled` (false), y el registro del consentimiento
+del alta que exige el RGPD (art. 7.1): `fecha_consentimiento` (= fecha de alta) y
+`version_politica_privacidad` (= POLICY_VERSION, debe coincidir con
+`app.privacy.policy-version` de application.yml). En `historial_clinico` se
+eliminaron hace tiempo los antiguos campos de texto libre (los antecedentes y
+alergias viven ahora en sus propias tablas).
 
 Requisitos:
     pip install pycryptodome bcrypt
@@ -88,6 +96,17 @@ ESTADO_RELACION_ACTIVA = "ACTIVA"
 # Cuántos pacientes, como mínimo y máximo, se asignan a cada médico generado.
 MIN_PACIENTES_POR_MEDICO = 1
 MAX_PACIENTES_POR_MEDICO = 5
+
+# Versión vigente de la política de privacidad. Se guarda en
+# usuario.version_politica_privacidad junto a la fecha de consentimiento (RGPD
+# art. 7.1). Tiene que coincidir con `app.privacy.policy-version` de
+# application.yml (por defecto 2026-09-03).
+POLICY_VERSION = os.environ.get("PRIVACY_POLICY_VERSION", "2026-09-03")
+
+# NIF fijo del único administrador que genera el script. La aplicación no tiene
+# ningún flujo para crear administradores, así que la siembra es la vía para
+# tener uno. Contraseña: 'password', como el resto.
+ADMIN_NIF = "00000000T"
 
 
 def _parse_key(raw: str) -> bytes:
@@ -164,6 +183,7 @@ class Usuario:
     especialidad: str | None
     estado_cuenta: str
     fecha_creacion: str
+    rol: str  # "paciente" | "medico" | "admin" (para el CSV y perfil_usuario)
     # Datos en claro (para el CSV y las pruebas de login)
     nombre_raw: str
     apellido1_raw: str
@@ -208,13 +228,18 @@ def make_email(nombre: str, apellido1: str, idx: int) -> str:
     return f"{base}{idx}@{dominio}"
 
 
-def build_usuario(idx: int, as_medico: bool, nifs_usados: set, password_hash: str) -> Usuario:
+def build_usuario(idx: int, rol: str, nifs_usados: set, password_hash: str,
+                  nif_fijo: str | None = None) -> Usuario:
     uid = str(uuid.uuid4())
     nombre_raw = random.choice(FIRST_NAMES)
     ap1_raw = random.choice(LAST_NAMES)
     ap2_raw = random.choice(LAST_NAMES) if random.random() < 0.5 else None
     email_raw = make_email(nombre_raw, ap1_raw, idx)
-    nif_raw = random_spanish_nif(nifs_usados)
+    if nif_fijo:
+        nif_raw = nif_fijo
+        nifs_usados.add(nif_fijo)
+    else:
+        nif_raw = random_spanish_nif(nifs_usados)
     tel_raw = random_phone_es()
 
     fnac_raw = f"{random.randint(1955, 2007)}-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}"
@@ -233,9 +258,10 @@ def build_usuario(idx: int, as_medico: bool, nifs_usados: set, password_hash: st
         nif=aes_gcm_encrypt(nif_raw),
         nif_hash=search_index(nif_raw),
         telefono=aes_gcm_encrypt(tel_raw),
-        especialidad=(random.choice(ESPECIALIDADES) if as_medico else None),
+        especialidad=(random.choice(ESPECIALIDADES) if rol == "medico" else None),
         estado_cuenta=ESTADO_CUENTA_ACTIVO,
         fecha_creacion=fcrea,
+        rol=rol,
         nombre_raw=nombre_raw,
         apellido1_raw=ap1_raw,
         apellido2_raw=ap2_raw,
@@ -261,9 +287,10 @@ def make_inserts(pacientes: int, seed: int | None = None):
     medicos = pacientes // 15
     nifs_usados: set = set()
 
-    usuarios_pacientes = [build_usuario(i + 1, False, nifs_usados, password_hash) for i in range(pacientes)]
-    usuarios_medicos = [build_usuario(pacientes + i + 1, True, nifs_usados, password_hash) for i in range(medicos)]
-    usuarios = usuarios_pacientes + usuarios_medicos
+    usuarios_pacientes = [build_usuario(i + 1, "paciente", nifs_usados, password_hash) for i in range(pacientes)]
+    usuarios_medicos = [build_usuario(pacientes + i + 1, "medico", nifs_usados, password_hash) for i in range(medicos)]
+    usuario_admin = build_usuario(pacientes + medicos + 1, "admin", nifs_usados, password_hash, nif_fijo=ADMIN_NIF)
+    usuarios = usuarios_pacientes + usuarios_medicos + [usuario_admin]
 
     lines: list[str] = []
 
@@ -283,24 +310,30 @@ def make_inserts(pacientes: int, seed: int | None = None):
             "INSERT INTO public.usuario "
             "(id, nombre, apellido1, apellido2, email, email_hash, password, fecha_nacimiento, "
             "nif, nif_hash, telefono, especialidad, estado_cuenta, totp_secret, totp_enabled, "
+            "fecha_consentimiento, version_politica_privacidad, "
             "fecha_creacion, fecha_ultima_modificacion, last_password_change, fecha_eliminacion) VALUES ("
             f"'{u.id}', {sql_str(u.nombre)}, {sql_str(u.apellido1)}, {sql_str(u.apellido2)}, "
             f"{sql_str(u.email)}, {sql_str(u.email_hash)}, {sql_str(u.password_hash)}, {sql_str(u.fecha_nacimiento)}, "
             f"{sql_str(u.nif)}, {sql_str(u.nif_hash)}, {sql_str(u.telefono)}, {sql_str(u.especialidad)}, "
             f"{sql_str(u.estado_cuenta)}, NULL, false, "
+            f"'{u.fecha_creacion}', {sql_str(POLICY_VERSION)}, "
             f"'{u.fecha_creacion}', '{u.fecha_creacion}', '{u.fecha_creacion}', NULL);"
         )
 
     # --- perfil_usuario + historial_clinico ---
+    # Todo usuario tiene el perfil PACIENTE (igual que el alta real: registrarse y
+    # el alta administrativa de médicos asignan siempre PACIENTE primero). Médicos y
+    # administradores llevan además su perfil específico.
+    perfil_extra = {"medico": PERFIL_MEDICO_ID, "admin": PERFIL_ADMIN_ID}
     for u in usuarios:
         lines.append(
             "INSERT INTO public.perfil_usuario (id, id_perfil, id_usuario, fecha_creacion, fecha_ultima_modificacion) "
             f"VALUES ('{uuid.uuid4()}', '{PERFIL_PACIENTE_ID}', '{u.id}', '{u.fecha_creacion}', '{u.fecha_creacion}');"
         )
-        if u.especialidad:
+        if u.rol in perfil_extra:
             lines.append(
                 "INSERT INTO public.perfil_usuario (id, id_perfil, id_usuario, fecha_creacion, fecha_ultima_modificacion) "
-                f"VALUES ('{uuid.uuid4()}', '{PERFIL_MEDICO_ID}', '{u.id}', '{u.fecha_creacion}', '{u.fecha_creacion}');"
+                f"VALUES ('{uuid.uuid4()}', '{perfil_extra[u.rol]}', '{u.id}', '{u.fecha_creacion}', '{u.fecha_creacion}');"
             )
         lines.append(
             "INSERT INTO public.historial_clinico (id, id_paciente, fecha_creacion, fecha_ultima_modificacion) "
@@ -337,11 +370,11 @@ def build_asignaciones(pacientes: list[Usuario], medicos: list[Usuario]) -> list
 def write_csv(usuarios, path):
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f, delimiter=";")
-        w.writerow(["id", "nombre", "apellido1", "apellido2", "email", "nif", "telefono", "fecha_nacimiento", "especialidad", "password"])
+        w.writerow(["id", "nombre", "apellido1", "apellido2", "email", "nif", "telefono", "fecha_nacimiento", "especialidad", "rol", "password"])
         for u in usuarios:
             w.writerow([
                 u.id, u.nombre_raw, u.apellido1_raw, u.apellido2_raw or "", u.email_raw,
-                u.nif_raw, u.telefono_raw, u.fecha_nacimiento_raw, u.especialidad or "", "password",
+                u.nif_raw, u.telefono_raw, u.fecha_nacimiento_raw, u.especialidad or "", u.rol, "password",
             ])
 
 
@@ -353,19 +386,21 @@ def main():
     p.add_argument("--csv", type=str, default="usuarios_generados.csv", help="Archivo CSV de salida")
     args = p.parse_args()
 
-    print(f"Generando {args.pacientes} pacientes (+ {args.pacientes // 15} médicos)...")
+    print(f"Generando {args.pacientes} pacientes + {args.pacientes // 15} médicos + 1 administrador...")
     if args.seed is not None:
         print(f"Semilla: {args.seed}")
-    print(f"Clave AES: {len(MASTER_KEY) * 8} bits")
+    print(f"Clave AES: {len(MASTER_KEY) * 8} bits | Política de privacidad: {POLICY_VERSION}")
 
     lines, usuarios = make_inserts(args.pacientes, args.seed)
 
     with open(args.out, "w", encoding="utf-8") as f:
         f.write("-- Datos generados por generar_datos_usuarios.py\n")
-        f.write(f"-- Pacientes: {args.pacientes} | Médicos: {args.pacientes // 15} | Seed: {args.seed}\n")
+        f.write(f"-- Pacientes: {args.pacientes} | Médicos: {args.pacientes // 15} | Administradores: 1 | Seed: {args.seed}\n")
         f.write(f"-- Fecha: {datetime.now():%Y-%m-%d %H:%M:%S}\n")
         f.write("-- Cifrado AES/GCM + índice HMAC-SHA256; requiere que el backend use la misma\n")
         f.write("-- TFM_HCC_ENCRYPTION_KEY con la que se generó este fichero.\n")
+        f.write(f"-- Consentimiento del alta registrado (RGPD art. 7.1), política v{POLICY_VERSION}.\n")
+        f.write(f"-- Administrador: NIF {ADMIN_NIF}, contraseña 'password'.\n")
         f.write(f"-- Cada médico queda con entre {MIN_PACIENTES_POR_MEDICO} y {MAX_PACIENTES_POR_MEDICO} "
                 "pacientes asignados (medico_paciente, estado ACTIVA).\n\n")
         f.write("\n".join(lines) + "\n")
@@ -377,6 +412,7 @@ def main():
           f"(entre {MIN_PACIENTES_POR_MEDICO} y {MAX_PACIENTES_POR_MEDICO} pacientes por médico)")
     print(f"[OK] SQL:  {args.out}  ({len(lines)} sentencias)")
     print(f"[OK] CSV:  {args.csv}  ({len(usuarios)} usuarios)")
+    print(f"[OK] Administrador: NIF {ADMIN_NIF}")
     print("Todos los usuarios tienen la contrasena: 'password'")
 
 

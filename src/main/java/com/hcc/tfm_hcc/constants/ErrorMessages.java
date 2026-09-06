@@ -63,6 +63,10 @@ public final class ErrorMessages {
             "La nueva contraseña debe tener al menos 8 caracteres";
     public static final String ERROR_REGISTRO_PASSWORD_DEBIL =
             "La contraseña debe tener al menos 8 caracteres";
+    public static final String ERROR_CONSENTIMIENTO_REQUERIDO =
+            "Debes dar tu consentimiento explícito para el tratamiento de tus datos de salud para poder registrarte";
+    public static final String ERROR_EDAD_MINIMA_REGISTRO =
+            "Debes tener al menos {0} años para registrarte";
 
     // =====================================================
     // MENSAJES DE ERROR - GESTIÓN DE ARCHIVOS
@@ -156,6 +160,19 @@ public final class ErrorMessages {
     public static final String PERFIL_NO_ENCONTRADO = "Perfil '{0}' no encontrado";
     public static final String ERROR_SOLICITUD_YA_EXISTE = "Ya existe una solicitud pendiente para este médico y paciente";
     public static final String ERROR_RELACION_MEDICO_PACIENTE_NO_ACTIVA = "No existe una relación asistencial activa con ese usuario";
+
+    // =====================================================
+    // MENSAJES DE ERROR - PROPUESTAS DE CAMBIO CLÍNICO
+    // =====================================================
+
+    public static final String ERROR_PROPUESTA_NO_ENCONTRADA = "La propuesta de cambio no existe";
+    public static final String ERROR_PROPUESTA_YA_RESUELTA = "La propuesta de cambio ya ha sido resuelta";
+    public static final String ERROR_PROPUESTA_MOTIVO_REQUERIDO = "Debes indicar el motivo del cambio";
+    public static final String ERROR_PROPUESTA_DOMINIO_INVALIDO = "El apartado del historial indicado no es válido";
+    public static final String ERROR_PROPUESTA_OPERACION_INVALIDA = "La operación indicada no es válida";
+    public static final String ERROR_PROPUESTA_RECURSO_REQUERIDO = "Debes indicar el dato del historial sobre el que actúa la propuesta";
+    public static final String ERROR_PROPUESTA_DATOS_REQUERIDOS = "Faltan los datos propuestos para el cambio";
+    public static final String ERROR_PROPUESTA_ALERGIA_SIN_EDICION = "Las alergias no admiten edición; propón un borrado y una nueva alta";
 
     // =====================================================
     // MENSAJES DE ERROR - NOTIFICACIONES

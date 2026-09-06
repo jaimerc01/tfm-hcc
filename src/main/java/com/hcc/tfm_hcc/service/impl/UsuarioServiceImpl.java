@@ -55,6 +55,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     private static final int MAX_LONGITUD_NOMBRE = 100;
     private static final String ZONE_ID_EUROPE_MADRID = "Europe/Madrid"; // Zona horaria para la creación de usuarios
     
+    private static final String CONSENTIMIENTO_TIPO_CAMBIO = "CONSENTIMIENTO";
+    private static final String CONSENTIMIENTO_TABLA = "usuario";
+
+    /** Versión de la política de privacidad que se registra junto al consentimiento del alta. */
+    @org.springframework.beans.factory.annotation.Value("${app.privacy.policy-version:2026-09-03}")
+    private String versionPoliticaPrivacidad;
+
     // Dependencies injection by constructor
     private final UsuarioMapper usuarioMapper;
     private final UsuarioRepository usuarioRepository;
@@ -233,16 +240,52 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setId(null);
         usuario.setNifHash(hmacSearchIndexService.indexar(usuario.getNif()));
         usuario.setEmailHash(hmacSearchIndexService.indexar(usuario.getEmail()));
-        usuario.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
+        LocalDateTime ahora = LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID));
+        usuario.setFechaCreacion(ahora);
         usuario.setLastPasswordChange(null);
         usuario.setEstadoCuenta(Usuario.ESTADO_CUENTA_ACTIVO); // Estado activo por defecto al registrarse
-        
+        // Registro del consentimiento explícito prestado en el alta (RGPD art. 7.1): cuándo se
+        // dio y qué versión de la política de privacidad se aceptó. El controlador ya rechaza el
+        // alta si el interesado no marcó la casilla.
+        usuario.setFechaConsentimiento(ahora);
+        usuario.setVersionPoliticaPrivacidad(versionPoliticaPrivacidad);
+
         usuario = usuarioRepository.save(usuario);
-        
+
         // Crear perfil PACIENTE obligatorio
         perfilUsuarioService.asignarPerfil(usuario.getId(), PERFIL_PACIENTE);
-        
+
+        registrarAuditoriaConsentimiento(usuario);
+
         return usuario;
+    }
+
+    /**
+     * Deja constancia inmutable del consentimiento prestado en el alta, en la auditoría
+     * (además del registro en la propia cuenta). Un fallo al auditar no revierte el alta ya
+     * confirmada: la traza queda a nivel ERROR para poder detectar el hueco.
+     */
+    private void registrarAuditoriaConsentimiento(Usuario usuario) {
+        if (usuario.getId() == null) {
+            return;
+        }
+        try {
+            auditoriaCambioService.registrarCambio(
+                usuario.getId().toString(),
+                usuario.getId().toString(),
+                null,
+                CONSENTIMIENTO_TIPO_CAMBIO,
+                CONSENTIMIENTO_TABLA,
+                usuario.getId().toString(),
+                "",
+                "Consentimiento del tratamiento de datos de salud (RGPD art. 9.2.a), política v" + versionPoliticaPrivacidad,
+                AuditoriaCambio.TipoOperacion.CREATE,
+                "Alta de usuario con consentimiento explícito del tratamiento de datos de salud"
+            );
+        } catch (RuntimeException e) {
+            log.error("No se pudo registrar en la auditoría el consentimiento del alta del usuario "
+                    + usuario.getId() + ": " + e.getMessage(), e);
+        }
     }
 
     @Override

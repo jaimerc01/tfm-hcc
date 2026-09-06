@@ -91,4 +91,23 @@ describe('historiaClinicaService', () => {
     svc.getRangos()
     expect(client.get).toHaveBeenCalledWith('/rangos')
   })
+
+  it('editarDatoClinico hace PUT al dato con la medición', () => {
+    svc.editarDatoClinico('d1', { label: 'Glucosa', value: '95' })
+    const [url, body] = client.put.mock.calls.at(-1)
+    expect(url).toBe('/historia/datos-clinicos/d1')
+    expect(body).toEqual({ label: 'Glucosa', value: '95' })
+  })
+
+  it('listarPropuestasCambio hace GET /historia/propuestas-cambio', () => {
+    svc.listarPropuestasCambio()
+    expect(client.get).toHaveBeenCalledWith('/historia/propuestas-cambio')
+  })
+
+  it('responderPropuestaCambio hace POST con { aceptar }', () => {
+    svc.responderPropuestaCambio('p1', true)
+    const [url, body] = client.post.mock.calls.at(-1)
+    expect(url).toBe('/historia/propuestas-cambio/p1')
+    expect(body).toEqual({ aceptar: true })
+  })
 })

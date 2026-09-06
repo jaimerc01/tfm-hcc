@@ -24,7 +24,13 @@ function walk(dir) {
 // Claves que se construyen dinámicamente en el código (interpolación) y que por
 // tanto no aparecen como literal completo; se validan aparte o se aceptan como prefijo.
 const DYNAMIC_KEY_PREFIXES = [
-  'analysis_chart_type_'
+  'analysis_chart_type_',
+  // Propuestas de cambio clínico: la clave se completa con el dominio / operación / estado
+  // en tiempo de ejecución; los valores completos existen en ambos locales.
+  'change_proposal_domain_',
+  'change_proposal_operation_',
+  'change_proposal_status_',
+  'propose_delete_confirm_domain_'
 ]
 
 describe('paridad de locales es/gl', () => {

@@ -35,8 +35,11 @@ import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
 import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.HistorialClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioNoEncontradaException;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
 
 class HistorialClinicoControllerImplTest {
@@ -508,5 +511,59 @@ class HistorialClinicoControllerImplTest {
 
         assertEquals("B+", capturado.get(0).getValue());
         assertEquals("98%", capturado.get(0).getUnit());
+    }
+
+    // ---- editar dato clínico ----
+
+    @Test
+    void editarDatoClinico_conDatosValidos_devuelveOk() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(facade.editarDatoClinico(eq(id), any())).thenReturn(new HistorialClinicoDTO());
+
+        mvc.perform(put("/historia/datos-clinicos/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"label\":\"Glucosa\",\"value\":\"95\",\"unit\":\"mg/dL\"}"))
+                .andExpect(status().isOk());
+    }
+
+    // ---- propuestas de cambio ----
+
+    @Test
+    void listarPropuestasCambio_devuelveLaLista() throws Exception {
+        when(facade.listarPropuestasCambioPendientes()).thenReturn(List.of(new PropuestaCambioClinicoDTO()));
+
+        mvc.perform(get("/historia/propuestas-cambio")).andExpect(status().isOk());
+    }
+
+    @Test
+    void responderPropuestaCambio_aceptar_devuelveOk() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(facade.responderPropuestaCambio(id, true)).thenReturn(new PropuestaCambioClinicoDTO());
+
+        mvc.perform(post("/historia/propuestas-cambio/" + id)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"aceptar\":true}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void responderPropuestaCambio_propuestaInexistente_devuelveNotFound() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(facade.responderPropuestaCambio(id, false))
+                .thenThrow(new PropuestaCambioNoEncontradaException("La propuesta de cambio no existe"));
+
+        mvcConAdvice.perform(post("/historia/propuestas-cambio/" + id)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"aceptar\":false}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void responderPropuestaCambio_yaResuelta_devuelveBadRequest() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(facade.responderPropuestaCambio(id, true))
+                .thenThrow(new PropuestaCambioClinicoException("La propuesta de cambio ya ha sido resuelta"));
+
+        mvcConAdvice.perform(post("/historia/propuestas-cambio/" + id)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"aceptar\":true}"))
+                .andExpect(status().isBadRequest());
     }
 }

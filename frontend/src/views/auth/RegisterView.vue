@@ -223,13 +223,28 @@
             </div>
           </fieldset>
 
-          <p class="privacy-notice">
-            <i18n-t keypath="register_privacy_notice" tag="span">
-              <template #link>
-                <router-link :to="{ name: 'PoliticaPrivacidad' }" target="_blank">{{ $t('privacy') }}</router-link>
-              </template>
-            </i18n-t>
-          </p>
+          <div class="consent-group">
+            <label class="consent-check" for="aceptaTratamientoDatos">
+              <input
+                id="aceptaTratamientoDatos"
+                ref="consentInput"
+                v-model="form.aceptaTratamientoDatos"
+                type="checkbox"
+                :aria-invalid="fieldErrors.aceptaTratamientoDatos ? 'true' : 'false'"
+                :aria-describedby="buildDescribedBy('aceptaTratamientoDatos')"
+              />
+              <span>
+                <i18n-t keypath="register_consent_label" tag="span">
+                  <template #link>
+                    <router-link :to="{ name: 'PoliticaPrivacidad' }" target="_blank">{{ $t('privacy') }}</router-link>
+                  </template>
+                </i18n-t>
+              </span>
+            </label>
+            <p v-if="fieldErrors.aceptaTratamientoDatos" id="aceptaTratamientoDatos-error" class="field-error">
+              {{ fieldErrors.aceptaTratamientoDatos }}
+            </p>
+          </div>
 
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="loading" :aria-disabled="loading ? 'true' : 'false'">
@@ -290,6 +305,7 @@ export default {
     const emailInput = ref(null)
     const passwordInput = ref(null)
     const password2Input = ref(null)
+    const consentInput = ref(null)
 
     const form = ref({
       nombre: '',
@@ -300,7 +316,8 @@ export default {
       password2: '',
       fechaNacimiento: '',
       nif: '',
-      telefono: ''
+      telefono: '',
+      aceptaTratamientoDatos: false
     })
 
     const fieldErrors = ref({
@@ -310,7 +327,8 @@ export default {
       nif: '',
       email: '',
       password: '',
-      password2: ''
+      password2: '',
+      aceptaTratamientoDatos: ''
     })
 
     const resetFieldErrors = () => {
@@ -321,9 +339,13 @@ export default {
         nif: '',
         email: '',
         password: '',
-        password2: ''
+        password2: '',
+        aceptaTratamientoDatos: ''
       }
     }
+
+    // Edad mínima para registrarse (LOPDGDD art. 7).
+    const MIN_EDAD_REGISTRO = 14
 
     const normalizeNif = () => {
       form.value.nif = form.value.nif.toUpperCase().replace(/\s+/g, '')
@@ -347,12 +369,34 @@ export default {
       return true
     }
 
+    const calcularEdad = (fechaIso) => {
+      const nacimiento = new Date(fechaIso)
+      const hoy = new Date()
+      let edad = hoy.getFullYear() - nacimiento.getFullYear()
+      const m = hoy.getMonth() - nacimiento.getMonth()
+      if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad -= 1
+      return edad
+    }
+
     const validateFechaNacimientoField = () => {
       if (!form.value.fechaNacimiento) {
         fieldErrors.value.fechaNacimiento = t('birth_date_required')
         return false
       }
+      if (calcularEdad(form.value.fechaNacimiento) < MIN_EDAD_REGISTRO) {
+        fieldErrors.value.fechaNacimiento = t('register_min_age_error', { age: MIN_EDAD_REGISTRO })
+        return false
+      }
       fieldErrors.value.fechaNacimiento = ''
+      return true
+    }
+
+    const validateConsentimientoField = () => {
+      if (!form.value.aceptaTratamientoDatos) {
+        fieldErrors.value.aceptaTratamientoDatos = t('register_consent_required')
+        return false
+      }
+      fieldErrors.value.aceptaTratamientoDatos = ''
       return true
     }
 
@@ -422,6 +466,7 @@ export default {
       if (fieldErrors.value.nif && nifInput.value) return nifInput.value.focus()
       if (fieldErrors.value.password && passwordInput.value) return passwordInput.value.focus()
       if (fieldErrors.value.password2 && password2Input.value) return password2Input.value.focus()
+      if (fieldErrors.value.aceptaTratamientoDatos && consentInput.value) return consentInput.value.focus()
 
       if (error.value && formErrorRef.value) formErrorRef.value.focus()
     }
@@ -434,7 +479,8 @@ export default {
         validateEmailField(),
         validateNifField(),
         validatePasswordField(),
-        validatePassword2Field()
+        validatePassword2Field(),
+        validateConsentimientoField()
       ]
       return checks.every(Boolean)
     }
@@ -480,6 +526,7 @@ export default {
       emailInput,
       passwordInput,
       password2Input,
+      consentInput,
       fieldErrors,
       loading,
       error,
@@ -494,6 +541,7 @@ export default {
       validateEmailField,
       validatePasswordField,
       validatePassword2Field,
+      validateConsentimientoField,
       buildDescribedBy
     }
   }
@@ -667,6 +715,27 @@ export default {
   font-size: 0.85rem;
   color: var(--text-secondary);
   text-align: center;
+}
+
+.consent-group {
+  margin: 0.5rem 0;
+}
+
+.consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.consent-check input[type='checkbox'] {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
 }
 
 .privacy-notice a {

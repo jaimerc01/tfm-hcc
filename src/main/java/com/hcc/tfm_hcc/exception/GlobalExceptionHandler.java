@@ -125,6 +125,29 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Propuesta de cambio clínico inexistente o ajena al usuario que opera. Se resuelve aquí,
+     * dentro del ciclo de la petición, por el mismo motivo que {@link #handleUsuarioNoEncontrado}:
+     * dejar que Spring la resuelva por {@code @ResponseStatus} provoca un reenvío a {@code /error}
+     * que Spring Security acaba rechazando con 403 en lugar del 404 real.
+     */
+    @ExceptionHandler(PropuestaCambioNoEncontradaException.class)
+    public ResponseEntity<String> handlePropuestaNoEncontrada(PropuestaCambioNoEncontradaException e) {
+        log.warn("Propuesta de cambio no encontrada: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    }
+
+    /**
+     * Petición mal formada al crear o resolver una propuesta de cambio clínico (motivo ausente,
+     * operación no soportada, datos que faltan...). Se resuelve aquí para devolver el 400 real
+     * con su mensaje en lugar de un 403 engañoso tras el reenvío a {@code /error}.
+     */
+    @ExceptionHandler(PropuestaCambioClinicoException.class)
+    public ResponseEntity<String> handlePropuestaCambioClinico(PropuestaCambioClinicoException e) {
+        log.warn("Propuesta de cambio clínico rechazada: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+    }
+
+    /**
      * Error en una operación de historial clínico.
      *
      * <p>Los controladores y fachadas de historial clínico envuelven cualquier fallo

@@ -27,6 +27,7 @@ import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.PerfilUsuarioService;
 import com.hcc.tfm_hcc.service.MedicoService;
+import com.hcc.tfm_hcc.service.PropuestaCambioClinicoService;
 import com.hcc.tfm_hcc.util.FechaUtils;
 import com.hcc.tfm_hcc.util.LogMaskUtil;
 
@@ -73,6 +74,7 @@ public class MedicoServiceImpl implements MedicoService {
     private final PacienteConverter pacienteConverter;
     private final PerfilUsuarioService perfilUsuarioService;
     private final HmacSearchIndexService hmacSearchIndexService;
+    private final PropuestaCambioClinicoService propuestaCambioClinicoService;
 
     /**
      * Busca un paciente por DNI y fecha de nacimiento.
@@ -405,6 +407,8 @@ public class MedicoServiceImpl implements MedicoService {
         for (MedicoPaciente relacion : relaciones) {
             relacion.setEstado(MedicoPaciente.ESTADO_REVOCADA);
             notificacionFacade.crearNotificacionParaUsuario(relacion.getPaciente().getNif(), mensaje);
+            // Deja sin efecto las propuestas de cambio que el médico tuviera pendientes con ese paciente.
+            propuestaCambioClinicoService.anularPendientes(medicoId, relacion.getPaciente().getId());
         }
         medicoPacienteRepository.saveAll(relaciones);
     }

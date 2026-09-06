@@ -29,8 +29,11 @@
 
       <!-- Antecedentes -->
       <section v-show="activeTab === 'antecedentes'" id="tabpanel-antecedentes" role="tabpanel" aria-labelledby="tab-antecedentes" tabindex="-1" class="panel-card">
-        <div class="panel-header">
+        <div class="panel-header panel-header--action">
           <h2>{{ $t('backgrounds') }}</h2>
+          <button type="button" class="btn-primary btn-sm" @click="abrirProponer('ANTECEDENTE', 'CREATE')">
+            {{ $t('propose_new') }}
+          </button>
         </div>
         <div v-if="groupedAntecedentes.length" class="antecedentes-groups">
           <div v-for="group in groupedAntecedentes" :key="group.key" class="section">
@@ -42,6 +45,10 @@
               <div v-for="a in group.items" :key="a.id" class="read-card">
                 <h3>{{ a.descripcion }}</h3>
                 <span v-if="a.createdAt" class="badge badge-date">{{ formatDateTime(a.createdAt) }}</span>
+                <div class="read-card__actions">
+                  <button type="button" class="btn-secondary btn-sm" @click="abrirProponer('ANTECEDENTE', 'UPDATE', a)">{{ $t('propose_edit') }}</button>
+                  <button type="button" class="btn-secondary btn-sm" @click="abrirProponer('ANTECEDENTE', 'DELETE', a)">{{ $t('propose_delete') }}</button>
+                </div>
               </div>
             </div>
           </div>
@@ -51,14 +58,20 @@
 
       <!-- Alergias -->
       <section v-show="activeTab === 'alergias'" id="tabpanel-alergias" role="tabpanel" aria-labelledby="tab-alergias" tabindex="-1" class="panel-card">
-        <div class="panel-header">
+        <div class="panel-header panel-header--action">
           <h2>{{ $t('allergies') }}</h2>
+          <button type="button" class="btn-primary btn-sm" @click="abrirProponer('ALERGIA', 'CREATE')">
+            {{ $t('propose_new') }}
+          </button>
         </div>
         <div v-if="historial.alergias && historial.alergias.length">
           <div class="cards-grid">
             <div v-for="al in pagedAlergias" :key="al.id" class="read-card allergy">
               <h3>{{ al.descripcion }}</h3>
               <span v-if="al.createdAt" class="badge badge-date">{{ formatDateTime(al.createdAt) }}</span>
+              <div class="read-card__actions">
+                <button type="button" class="btn-secondary btn-sm" @click="abrirProponer('ALERGIA', 'DELETE', al)">{{ $t('propose_delete') }}</button>
+              </div>
             </div>
           </div>
           <AppPagination
@@ -74,26 +87,67 @@
 
       <!-- Análisis de sangre -->
       <section v-show="activeTab === 'analisis-sangre'" id="tabpanel-analisis-sangre" role="tabpanel" aria-labelledby="tab-analisis-sangre" tabindex="-1" class="panel-card">
-        <div class="panel-header">
+        <div class="panel-header panel-header--action">
           <h2>{{ $t('tab_blood_analysis') }}</h2>
+          <button type="button" class="btn-primary btn-sm" @click="abrirProponer('ANALISIS_SANGRE', 'CREATE')">{{ $t('propose_new') }}</button>
         </div>
-        <ReadOnlyDatoClinicoTable :entries="historial.analisisSangre" :domain-label="$t('domain_blood_analysis')" />
+        <ReadOnlyDatoClinicoTable
+          :entries="historial.analisisSangre"
+          :domain-label="$t('domain_blood_analysis')"
+          actionable
+          @propose-edit="e => abrirProponer('ANALISIS_SANGRE', 'UPDATE', e)"
+          @propose-delete="e => abrirProponer('ANALISIS_SANGRE', 'DELETE', e)"
+        />
       </section>
 
       <!-- Signos vitales -->
       <section v-show="activeTab === 'signos-vitales'" id="tabpanel-signos-vitales" role="tabpanel" aria-labelledby="tab-signos-vitales" tabindex="-1" class="panel-card">
-        <div class="panel-header">
+        <div class="panel-header panel-header--action">
           <h2>{{ $t('vital_signs') }}</h2>
+          <button type="button" class="btn-primary btn-sm" @click="abrirProponer('SIGNOS_VITALES', 'CREATE')">{{ $t('propose_new') }}</button>
         </div>
-        <ReadOnlyDatoClinicoTable :entries="historial.signosVitales" :domain-label="$t('domain_vital_signs')" />
+        <ReadOnlyDatoClinicoTable
+          :entries="historial.signosVitales"
+          :domain-label="$t('domain_vital_signs')"
+          actionable
+          @propose-edit="e => abrirProponer('SIGNOS_VITALES', 'UPDATE', e)"
+          @propose-delete="e => abrirProponer('SIGNOS_VITALES', 'DELETE', e)"
+        />
       </section>
 
       <!-- Análisis de orina -->
       <section v-show="activeTab === 'analisis-orina'" id="tabpanel-analisis-orina" role="tabpanel" aria-labelledby="tab-analisis-orina" tabindex="-1" class="panel-card">
-        <div class="panel-header">
+        <div class="panel-header panel-header--action">
           <h2>{{ $t('urine_analysis') }}</h2>
+          <button type="button" class="btn-primary btn-sm" @click="abrirProponer('ANALISIS_ORINA', 'CREATE')">{{ $t('propose_new') }}</button>
         </div>
-        <ReadOnlyDatoClinicoTable :entries="historial.analisisOrina" :domain-label="$t('domain_urine_analysis')" />
+        <ReadOnlyDatoClinicoTable
+          :entries="historial.analisisOrina"
+          :domain-label="$t('domain_urine_analysis')"
+          actionable
+          @propose-edit="e => abrirProponer('ANALISIS_ORINA', 'UPDATE', e)"
+          @propose-delete="e => abrirProponer('ANALISIS_ORINA', 'DELETE', e)"
+        />
+      </section>
+
+      <!-- Propuestas de cambio enviadas -->
+      <section v-show="activeTab === 'propuestas'" id="tabpanel-propuestas" role="tabpanel" aria-labelledby="tab-propuestas" tabindex="-1" class="panel-card">
+        <div class="panel-header">
+          <h2>{{ $t('sent_change_proposals') }}</h2>
+          <p class="panel-subtitle">{{ $t('sent_change_proposals_subtitle') }}</p>
+        </div>
+        <div v-if="propuestasEnviadas.length" class="cards-grid">
+          <div v-for="p in propuestasEnviadas" :key="p.id" class="read-card">
+            <div class="propuesta-badges">
+              <span class="badge badge-info">{{ $t('change_proposal_domain_' + p.dominio) }}</span>
+              <span class="badge badge-date">{{ $t('change_proposal_operation_' + p.operacion) }}</span>
+              <span :class="['badge', 'badge-status', 'badge-status--' + p.estado]">{{ $t('change_proposal_status_' + p.estado) }}</span>
+            </div>
+            <p class="propuesta-motivo">{{ p.motivo }}</p>
+            <span v-if="p.fechaCreacion" class="badge badge-date">{{ formatDateTime(p.fechaCreacion) }}</span>
+          </div>
+        </div>
+        <p v-else class="empty-hint">{{ $t('no_sent_change_proposals') }}</p>
       </section>
 
       <!-- Gráficas (CU-15) -->
@@ -225,7 +279,21 @@
           <p v-else class="empty-hint">{{ $t('no_annotations_written') }}</p>
         </div>
       </section>
+
+      <div v-if="proponerMsg" :class="['alert', proponerError ? 'alert-danger' : 'alert-success']" role="status" aria-live="polite">
+        {{ proponerMsg }}
+      </div>
     </div>
+
+    <ProponerCambioClinicoModal
+      v-if="proponer.visible"
+      :dominio="proponer.dominio"
+      :operacion="proponer.operacion"
+      :entrada="proponer.entrada"
+      :saving="proponerSaving"
+      @close="cerrarProponer"
+      @submit="enviarPropuesta"
+    />
   </div>
 </template>
 
@@ -234,6 +302,7 @@ import medicoPacienteService from '@/services/medicoPacienteService'
 import ReadOnlyDatoClinicoTable from '@/components/ReadOnlyDatoClinicoTable.vue'
 import PatientClinicalCharts from '@/components/PatientClinicalCharts.vue'
 import ClinicalTimelineCard from '@/components/ClinicalTimelineCard.vue'
+import ProponerCambioClinicoModal from '@/components/ProponerCambioClinicoModal.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import AppTabs from '@/components/AppTabs.vue'
 import AppPagination from '@/components/AppPagination.vue'
@@ -243,7 +312,7 @@ const PAGE_SIZE = 10
 
 export default {
   name: 'PacienteHistorialView',
-  components: { ReadOnlyDatoClinicoTable, PatientClinicalCharts, ClinicalTimelineCard, AppIcon, AppTabs, AppPagination, FileDropZone },
+  components: { ReadOnlyDatoClinicoTable, PatientClinicalCharts, ClinicalTimelineCard, ProponerCambioClinicoModal, AppIcon, AppTabs, AppPagination, FileDropZone },
   data() {
     return {
       historial: { antecedentes: [], alergias: [], analisisSangre: [], signosVitales: [], analisisOrina: [] },
@@ -262,7 +331,12 @@ export default {
       archivoSeleccionado: null,
       subiendoArchivo: false,
       archivoError: null,
-      archivoSuccess: false
+      archivoSuccess: false,
+      propuestasEnviadas: [],
+      proponer: { visible: false, dominio: null, operacion: null, entrada: null },
+      proponerSaving: false,
+      proponerMsg: '',
+      proponerError: false
     }
   },
   computed: {
@@ -282,7 +356,8 @@ export default {
         { id: 'evolucion', label: this.$t('historical_evolution') },
         { id: 'linea-tiempo', label: this.$t('clinical_timeline') },
         { id: 'documentos', label: this.$t('files') },
-        { id: 'anotacion', label: this.$t('write_annotation') }
+        { id: 'anotacion', label: this.$t('write_annotation') },
+        { id: 'propuestas', label: this.$t('sent_change_proposals') }
       ]
     },
     groupedAntecedentes() {
@@ -320,8 +395,42 @@ export default {
     this.load()
     this.cargarArchivos()
     this.cargarAnotaciones()
+    this.cargarPropuestas()
   },
   methods: {
+    async cargarPropuestas() {
+      try {
+        const { data } = await medicoPacienteService.listarPropuestasCambio(this.nif)
+        this.propuestasEnviadas = Array.isArray(data) ? data : []
+      } catch (e) {
+        this.propuestasEnviadas = []
+      }
+    },
+    abrirProponer(dominio, operacion, entrada = null) {
+      this.proponer = { visible: true, dominio, operacion, entrada }
+      this.proponerMsg = ''
+    },
+    cerrarProponer() {
+      if (this.proponerSaving) return
+      this.proponer = { visible: false, dominio: null, operacion: null, entrada: null }
+    },
+    async enviarPropuesta(payload) {
+      this.proponerSaving = true
+      this.proponerMsg = ''
+      try {
+        await medicoPacienteService.proponerCambioClinico(this.nif, payload)
+        this.proponer = { visible: false, dominio: null, operacion: null, entrada: null }
+        this.proponerMsg = this.$t('propose_change_sent')
+        this.proponerError = false
+        await this.cargarPropuestas()
+      } catch (e) {
+        const status = e?.response?.status
+        this.proponerError = true
+        this.proponerMsg = status === 403 ? this.$t('propose_change_forbidden') : this.$t('propose_change_error')
+      } finally {
+        this.proponerSaving = false
+      }
+    },
     async load() {
       this.loading = true
       this.error = null
@@ -515,11 +624,67 @@ export default {
   border-bottom: 1px solid var(--border);
 }
 
+.panel-header--action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .panel-header h2 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.panel-subtitle {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.btn-sm {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.read-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+}
+
+.propuesta-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.propuesta-motivo {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.badge-status--ACEPTADA {
+  background: var(--success-light);
+  color: var(--success-active);
+}
+
+.badge-status--RECHAZADA,
+.badge-status--ANULADA {
+  background: var(--badge-danger-bg);
+  color: var(--badge-danger-text);
+}
+
+.badge-status--PENDIENTE {
+  background: var(--badge-warning-bg);
+  color: var(--badge-warning-text);
 }
 
 .antecedentes-groups {

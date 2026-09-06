@@ -38,11 +38,30 @@ HELP.md
 clave.txt
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Python (scripts de scripts/)
+# ─────────────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+.venv/
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Base de datos local
 # ─────────────────────────────────────────────────────────────────────────────
 *.db
 *.sqlite
 *.sqlite3
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TLS de las conexiones con las bases de datos
+# ─────────────────────────────────────────────────────────────────────────────
+# Solo se ignora el material criptográfico (claves privadas y certificados), que
+# cada máquina genera con `bash certs/postgres/generar.sh`. La configuración sí
+# se versiona: certs/postgres/pg_hba.conf, certs/postgres/generar.sh,
+# compose.override.yaml y CONFIGURACION-SSL-TLS-POSTGRESQL.md.
+/certs/**/*.crt
+/certs/**/*.key
+/certs/**/*.csr
+/certs/**/*.srl
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Subidas de archivos clínicos (contenido de usuario, nunca al repositorio)

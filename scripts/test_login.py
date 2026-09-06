@@ -35,15 +35,16 @@ def cargar_usuarios():
 
 
 def elegir_muestra(usuarios):
-    pacientes = [u for u in usuarios if not u["especialidad"]][:N_PACIENTES]
-    medicos = [u for u in usuarios if u["especialidad"]][:1]
-    return pacientes + medicos
+    pacientes = [u for u in usuarios if u["rol"] == "paciente"][:N_PACIENTES]
+    medicos = [u for u in usuarios if u["rol"] == "medico"][:1]
+    admins = [u for u in usuarios if u["rol"] == "admin"]
+    return pacientes + medicos + admins
 
 
 def test_login(usuario):
     nif = usuario["nif"]
     etiqueta = f'{usuario["nombre"]} {usuario["apellido1"]}'.strip()
-    rol = "médico" if usuario["especialidad"] else "paciente"
+    rol = usuario["rol"]
     fecha_nacimiento = usuario["fecha_nacimiento"]
     try:
         r = requests.post(LOGIN_ENDPOINT, json={"nif": nif, "password": PASSWORD}, timeout=5)

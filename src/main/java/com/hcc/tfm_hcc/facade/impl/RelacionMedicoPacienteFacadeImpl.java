@@ -13,6 +13,7 @@ import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.facade.RelacionMedicoPacienteFacade;
 import com.hcc.tfm_hcc.model.MedicoPaciente;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.service.PropuestaCambioClinicoService;
 import com.hcc.tfm_hcc.service.RelacionMedicoPacienteService;
 import com.hcc.tfm_hcc.service.RelacionMedicoPacienteService.IniciadorRevocacion;
 import com.hcc.tfm_hcc.util.LogMaskUtil;
@@ -44,6 +45,7 @@ public class RelacionMedicoPacienteFacadeImpl implements RelacionMedicoPacienteF
     private static final String MENSAJE_PACIENTE_REVOCO_SUFIJO = " ha finalizado vuestra relación asistencial";
 
     private final RelacionMedicoPacienteService relacionMedicoPacienteService;
+    private final PropuestaCambioClinicoService propuestaCambioClinicoService;
     private final NotificacionFacade notificacionFacade;
     private final MedicoResumenConverter medicoResumenConverter;
 
@@ -69,6 +71,7 @@ public class RelacionMedicoPacienteFacadeImpl implements RelacionMedicoPacienteF
         log.info("El paciente autenticado revoca la relación con el médico {}", LogMaskUtil.enmascarar(nifMedico));
 
         MedicoPaciente revocada = relacionMedicoPacienteService.revocarRelacion(nifMedico, nifPaciente, IniciadorRevocacion.PACIENTE);
+        anularPropuestasPendientes(revocada);
         notificar(revocada.getMedico(), nombreVisible(revocada.getPaciente()),
                 MENSAJE_PACIENTE_REVOCO_PREFIJO, MENSAJE_PACIENTE_REVOCO_SUFIJO);
     }
@@ -83,8 +86,25 @@ public class RelacionMedicoPacienteFacadeImpl implements RelacionMedicoPacienteF
         log.info("El médico autenticado revoca la relación con el paciente {}", LogMaskUtil.enmascarar(nifPaciente));
 
         MedicoPaciente revocada = relacionMedicoPacienteService.revocarRelacion(nifMedico, nifPaciente, IniciadorRevocacion.MEDICO);
+        anularPropuestasPendientes(revocada);
         notificar(revocada.getPaciente(), nombreVisible(revocada.getMedico()),
                 MENSAJE_MEDICO_REVOCO_PREFIJO, MENSAJE_MEDICO_REVOCO_SUFIJO);
+    }
+
+    /**
+     * Al finalizar la relación asistencial, deja sin efecto las propuestas de cambio que ese
+     * médico tuviera pendientes de que este paciente las confirmase. Un fallo aquí no invalida
+     * la revocación ya efectuada.
+     */
+    private void anularPropuestasPendientes(MedicoPaciente relacion) {
+        if (relacion.getMedico() == null || relacion.getPaciente() == null) {
+            return;
+        }
+        try {
+            propuestaCambioClinicoService.anularPendientes(relacion.getMedico().getId(), relacion.getPaciente().getId());
+        } catch (Exception e) {
+            log.warn("No se pudieron anular las propuestas de cambio pendientes tras revocar la relación: {}", e.getMessage());
+        }
     }
 
     private String nifUsuarioAutenticado() {

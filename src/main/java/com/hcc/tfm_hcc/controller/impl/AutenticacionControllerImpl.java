@@ -1,5 +1,9 @@
 package com.hcc.tfm_hcc.controller.impl;
 
+import java.time.LocalDate;
+import java.time.Period;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,6 +56,10 @@ public class AutenticacionControllerImpl implements AutenticacionController {
 
     /** Facade para operaciones de autenticación */
     private final AutenticacionFacade autenticacionFacade;
+
+    /** Edad mínima para registrarse (LOPDGDD art. 7: 14 años). */
+    @Value("${app.registration.min-age:14}")
+    private int edadMinimaRegistro;
 
     /**
      * {@inheritDoc}
@@ -210,6 +218,19 @@ public class AutenticacionControllerImpl implements AutenticacionController {
 
         if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
             throw new InvalidRegistrationDataException(ErrorMessages.campoRequerido("password"));
+        }
+
+        // Consentimiento explícito para el tratamiento de datos de salud (RGPD art. 9.2.a):
+        // acto afirmativo inequívoco, sin el cual no se puede completar el alta.
+        if (!Boolean.TRUE.equals(request.getAceptaTratamientoDatos())) {
+            throw new InvalidRegistrationDataException(ErrorMessages.ERROR_CONSENTIMIENTO_REQUERIDO);
+        }
+
+        // Edad mínima para consentir por sí mismo (LOPDGDD art. 7).
+        int edad = Period.between(request.getFechaNacimiento().toLocalDate(), LocalDate.now()).getYears();
+        if (edad < edadMinimaRegistro) {
+            throw new InvalidRegistrationDataException(
+                    ErrorMessages.formatError(ErrorMessages.ERROR_EDAD_MINIMA_REGISTRO, edadMinimaRegistro));
         }
     }
 

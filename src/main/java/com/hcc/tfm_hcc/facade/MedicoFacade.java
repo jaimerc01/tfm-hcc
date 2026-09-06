@@ -11,6 +11,8 @@ import com.hcc.tfm_hcc.dto.AnotacionMedicaDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoRequestDTO;
 import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
@@ -153,4 +155,26 @@ public interface MedicoFacade {
      * @return recurso con el contenido descifrado del documento
      */
     Resource descargarArchivoPaciente(String nifPaciente, UUID archivoId);
+
+    /**
+     * Registra una propuesta de cambio (alta, edición o borrado) sobre el historial de un
+     * paciente vinculado al médico autenticado. El cambio no se aplica: queda pendiente de que
+     * el paciente lo confirme y este recibe una notificación.
+     *
+     * @param nifPaciente NIF del paciente destinatario
+     * @param request dominio, operación, recurso objetivo, motivo y datos propuestos
+     * @return la propuesta creada
+     * @throws com.hcc.tfm_hcc.exception.UsuarioSinPermisoException si no hay relación asistencial activa
+     * @throws com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException si la petición es inválida
+     */
+    PropuestaCambioClinicoDTO proponerCambioClinico(String nifPaciente, PropuestaCambioClinicoRequestDTO request);
+
+    /**
+     * Lista las propuestas de cambio que el médico autenticado ha enviado a un paciente,
+     * de la más reciente a la más antigua, con su estado actual.
+     *
+     * @param nifPaciente NIF del paciente
+     * @return lista de PropuestaCambioClinicoDTO enviadas por el médico a ese paciente
+     */
+    List<PropuestaCambioClinicoDTO> listarPropuestasCambioParaPaciente(String nifPaciente);
 }

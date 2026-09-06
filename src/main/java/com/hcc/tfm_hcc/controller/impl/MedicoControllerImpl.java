@@ -27,15 +27,20 @@ import com.hcc.tfm_hcc.dto.AnotacionMedicaRequestDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoRequestDTO;
 import com.hcc.tfm_hcc.dto.SolicitudAsignacionDTO;
 import com.hcc.tfm_hcc.facade.MedicoFacade;
 import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.exception.PacienteNoEncontradoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioNoEncontradaException;
 import com.hcc.tfm_hcc.exception.SolicitudAsignacionException;
 import com.hcc.tfm_hcc.exception.SolicitudExistenteException;
 import com.hcc.tfm_hcc.exception.MedicoOperacionException;
 import com.hcc.tfm_hcc.exception.MedicoValidationException;
+import com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException;
 import com.hcc.tfm_hcc.exception.UsuarioSinPermisoException;
 import com.hcc.tfm_hcc.util.LogMaskUtil;
 
@@ -344,6 +349,51 @@ public class MedicoControllerImpl implements MedicoController {
         } catch (Exception e) {
             log.error("Error al descargar documento del paciente {}: {}", nifLog, e.getMessage(), e);
             throw new MedicoOperacionException("Error al descargar el documento del paciente", e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @PostMapping(RestUrls.MEDICO_PACIENTE_PROPUESTAS_CAMBIO)
+    public ResponseEntity<PropuestaCambioClinicoDTO> proponerCambioClinico(@PathVariable("nif") String nif,
+            @RequestBody PropuestaCambioClinicoRequestDTO request) {
+        String nifLog = LogMaskUtil.enmascarar(nif);
+        log.info("Registrando propuesta de cambio clínico para el paciente NIF: {}", nifLog);
+        try {
+            PropuestaCambioClinicoDTO propuesta = medicoFacade.proponerCambioClinico(nif, request);
+            log.info("Propuesta de cambio clínico registrada para el paciente: {}", nifLog);
+            return ResponseEntity.ok(propuesta);
+        } catch (UsuarioSinPermisoException e) {
+            log.warn("Acceso denegado al proponer un cambio clínico para el paciente {}: {}", nifLog, e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (PropuestaCambioClinicoException | PropuestaCambioNoEncontradaException
+                 | UsuarioNoEncontradoException | MedicoValidationException e) {
+            log.warn("Propuesta de cambio clínico rechazada para el paciente {}: {}", nifLog, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al registrar la propuesta de cambio clínico para el paciente {}: {}", nifLog, e.getMessage(), e);
+            throw new MedicoOperacionException("Error al registrar la propuesta de cambio clínico", e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @GetMapping(RestUrls.MEDICO_PACIENTE_PROPUESTAS_CAMBIO)
+    public ResponseEntity<List<PropuestaCambioClinicoDTO>> listarPropuestasCambio(@PathVariable("nif") String nif) {
+        String nifLog = LogMaskUtil.enmascarar(nif);
+        log.info("Listando propuestas de cambio clínico enviadas al paciente NIF: {}", nifLog);
+        try {
+            return ResponseEntity.ok(medicoFacade.listarPropuestasCambioParaPaciente(nif));
+        } catch (MedicoValidationException e) {
+            log.warn("NIF de paciente inválido al listar propuestas de cambio clínico: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al listar las propuestas de cambio clínico del paciente {}: {}", nifLog, e.getMessage(), e);
+            throw new MedicoOperacionException("Error al listar las propuestas de cambio clínico del paciente", e);
         }
     }
 

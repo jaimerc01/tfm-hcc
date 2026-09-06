@@ -67,16 +67,16 @@ export function runSectionContract({ name, loadComponent, composable }) {
     it('removeEntry abre el modal y confirmDelete borra por id', async () => {
       composable.entries.value = [{ id: 42, key: 'x', value: '1' }]
       const w = await factory()
-      w.vm.removeEntry(0)
+      w.vm.removeEntry(42)
       expect(w.vm.showDeleteModal).toBe(true)
       await w.vm.confirmDelete()
       expect(composable.deleteEntryById).toHaveBeenCalledWith(42)
       expect(w.vm.showDeleteModal).toBe(false)
     })
 
-    it('confirmDelete no hace nada si no hay índice', async () => {
+    it('confirmDelete no hace nada si no hay id', async () => {
       const w = await factory()
-      w.vm.deleteIndex = null
+      w.vm.deleteId = null
       await w.vm.confirmDelete()
       expect(composable.deleteEntryById).not.toHaveBeenCalled()
     })

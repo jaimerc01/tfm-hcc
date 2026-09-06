@@ -31,6 +31,7 @@ import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.DatoClinico;
 import com.hcc.tfm_hcc.model.HistorialClinico;
 import com.hcc.tfm_hcc.model.MedicoPaciente;
+import com.hcc.tfm_hcc.model.PropuestaCambioClinico;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.AlergiaRepository;
 import com.hcc.tfm_hcc.repository.AntecedenteClinicoRepository;
@@ -59,6 +60,17 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     private static final String TIPO_CAMBIO_SIGNOS_VITALES = "SIGNOS_VITALES";
     private static final String TIPO_CAMBIO_ANALISIS_ORINA = "ANALISIS_ORINA";
     private static final String ZONE_ID_EUROPA_MADRID = "Europe/Madrid";
+
+    // Razones por defecto de la auditoría cuando el propio paciente hace el cambio. Cuando lo
+    // hace un médico a través de una propuesta aceptada, la razón es el motivo que indicó él.
+    private static final String RAZON_CREAR_ANTECEDENTE = "Creación de antecedente clínico";
+    private static final String RAZON_EDITAR_ANTECEDENTE = "Edición de antecedente clínico";
+    private static final String RAZON_BORRAR_ANTECEDENTE = "Eliminación de antecedente clínico";
+    private static final String RAZON_CREAR_ALERGIA = "Creación de alergia";
+    private static final String RAZON_BORRAR_ALERGIA = "Eliminación de alergia";
+    private static final String RAZON_CREAR_DATO = "Creación de dato clínico";
+    private static final String RAZON_EDITAR_DATO = "Edición de dato clínico";
+    private static final String RAZON_BORRAR_DATO = "Eliminación de dato clínico";
 
     private final HistorialClinicoRepository historiaRepo;
     private final UsuarioFacade usuarioFacade;
@@ -107,6 +119,41 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     }
 
     /**
+     * Contexto de un cambio en el historial: sobre qué historial se aplica, quién es el actor,
+     * de qué paciente es el dato, si lo realiza un médico (y cuál) y con qué motivo se registra
+     * en la auditoría.
+     *
+     * <p>Los métodos públicos del paciente construyen el contexto con
+     * {@link #dePaciente(HistorialClinico, Usuario, String)} (actor = paciente, sin médico); los
+     * métodos que aplican una propuesta aceptada usan
+     * {@link #deMedico(HistorialClinico, UUID, UUID, String)} (actor = médico, motivo = el que
+     * indicó el médico).</p>
+     */
+    private record ContextoCambio(HistorialClinico historial, UUID actorId, UUID pacienteId,
+                                  UUID medicoId, String motivo) {
+
+        static ContextoCambio dePaciente(HistorialClinico historial, Usuario paciente, String razon) {
+            return new ContextoCambio(historial, paciente.getId(), paciente.getId(), null, razon);
+        }
+
+        static ContextoCambio deMedico(HistorialClinico historial, UUID medicoId, UUID pacienteId, String motivo) {
+            return new ContextoCambio(historial, medicoId, pacienteId, medicoId, motivo);
+        }
+
+        String actorIdTexto() {
+            return actorId != null ? actorId.toString() : null;
+        }
+
+        String pacienteIdTexto() {
+            return pacienteId != null ? pacienteId.toString() : null;
+        }
+
+        String medicoIdTexto() {
+            return medicoId != null ? medicoId.toString() : null;
+        }
+    }
+
+    /**
      * Construye el DTO completo del historial clínico, incluyendo antecedentes,
      * alergias y datos clínicos cuantitativos (análisis, signos vitales...).
      */
@@ -125,7 +172,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         if (usuarioAutenticadoDTO == null) {
             throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
         }
-        
+
         String usuarioIdTexto = usuarioAutenticadoDTO.getId();
         if (usuarioIdTexto == null || usuarioIdTexto.isBlank()) {
             throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
@@ -148,6 +195,14 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         });
     }
 
+    private Usuario obtenerPaciente(UUID pacienteId) {
+        if (pacienteId == null) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO);
+        }
+        return usuarioRepository.findById(pacienteId)
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
+    }
+
     @Override
     @Transactional(readOnly = true)
     public HistorialClinicoDTO obtenerHistoriaUsuarioActual() {
@@ -155,7 +210,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         if (usuarioActualDTO == null) {
             return null;
         }
-        
+
         String usuarioIdTexto = usuarioActualDTO.getId();
         if (usuarioIdTexto == null || usuarioIdTexto.isBlank()) {
             return null;
@@ -166,7 +221,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         if (usuario.isEmpty()) {
             return null;
         }
-        
+
         return historiaRepo.findByUsuario(usuario.get())
             .map(this::construirHistorialClinicoDTO)
             .orElse(null);
@@ -199,30 +254,16 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
                 .orElse(null);
     }
 
+    // ===============================
+    // ANTECEDENTES
+    // ===============================
+
     @Override
     @Transactional
     public HistorialClinicoDTO crearAntecedente(AntecedenteClinicoDTO antecedenteDTO) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
-
-        AntecedenteClinico antecedente = antecedenteClinicoConverter.toEntity(antecedenteDTO, historial);
-        antecedente.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
-        AntecedenteClinico guardado = antecedenteClinicoRepository.save(antecedente);
-
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            ANTECEDENTE_CLINICO,
-            ANTECEDENTE_CLINICO_TABLA,
-            guardado.getId().toString(),
-            "",
-            guardado.getDescripcion(),
-            AuditoriaCambio.TipoOperacion.CREATE,
-            "Creación de antecedente clínico"
-        );
-
-        return construirHistorialClinicoDTO(historial);
+        return aplicarCrearAntecedente(ContextoCambio.dePaciente(historial, usuario, RAZON_CREAR_ANTECEDENTE), antecedenteDTO);
     }
 
     @Override
@@ -230,29 +271,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     public HistorialClinicoDTO editarAntecedente(UUID id, AntecedenteClinicoDTO antecedenteDTO) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = obtenerHistorialUsuario(usuario);
-
-        AntecedenteClinico antecedente = obtenerAntecedente(id);
-        validarPropiedadAntecedente(antecedente, historial);
-
-        String valorAnterior = antecedente.getDescripcion();
-        antecedente.setCategoria(antecedenteClinicoConverter.parseCategoria(antecedenteDTO.getCategoria()));
-        antecedente.setDescripcion(antecedenteDTO.getDescripcion());
-        antecedenteClinicoRepository.save(antecedente);
-
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            ANTECEDENTE_CLINICO,
-            ANTECEDENTE_CLINICO_TABLA,
-            id.toString(),
-            valorAnterior,
-            antecedente.getDescripcion(),
-            AuditoriaCambio.TipoOperacion.UPDATE,
-            "Edición de antecedente clínico"
-        );
-
-        return construirHistorialClinicoDTO(historial);
+        return aplicarEditarAntecedente(ContextoCambio.dePaciente(historial, usuario, RAZON_EDITAR_ANTECEDENTE), id, antecedenteDTO);
     }
 
     @Override
@@ -260,53 +279,58 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     public HistorialClinicoDTO borrarAntecedente(UUID id) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = obtenerHistorialUsuario(usuario);
+        return aplicarBorrarAntecedente(ContextoCambio.dePaciente(historial, usuario, RAZON_BORRAR_ANTECEDENTE), id);
+    }
 
+    private HistorialClinicoDTO aplicarCrearAntecedente(ContextoCambio ctx, AntecedenteClinicoDTO antecedenteDTO) {
+        AntecedenteClinico antecedente = antecedenteClinicoConverter.toEntity(antecedenteDTO, ctx.historial());
+        antecedente.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
+        AntecedenteClinico guardado = antecedenteClinicoRepository.save(antecedente);
+
+        registrarAuditoria(ctx, ANTECEDENTE_CLINICO, ANTECEDENTE_CLINICO_TABLA, guardado.getId().toString(),
+                "", guardado.getDescripcion(), AuditoriaCambio.TipoOperacion.CREATE);
+
+        return construirHistorialClinicoDTO(ctx.historial());
+    }
+
+    private HistorialClinicoDTO aplicarEditarAntecedente(ContextoCambio ctx, UUID id, AntecedenteClinicoDTO antecedenteDTO) {
         AntecedenteClinico antecedente = obtenerAntecedente(id);
-        validarPropiedadAntecedente(antecedente, historial);
+        validarPropiedadAntecedente(antecedente, ctx.historial());
+
+        String valorAnterior = antecedente.getDescripcion();
+        antecedente.setCategoria(antecedenteClinicoConverter.parseCategoria(antecedenteDTO.getCategoria()));
+        antecedente.setDescripcion(antecedenteDTO.getDescripcion());
+        antecedenteClinicoRepository.save(antecedente);
+
+        registrarAuditoria(ctx, ANTECEDENTE_CLINICO, ANTECEDENTE_CLINICO_TABLA, id.toString(),
+                valorAnterior, antecedente.getDescripcion(), AuditoriaCambio.TipoOperacion.UPDATE);
+
+        return construirHistorialClinicoDTO(ctx.historial());
+    }
+
+    private HistorialClinicoDTO aplicarBorrarAntecedente(ContextoCambio ctx, UUID id) {
+        AntecedenteClinico antecedente = obtenerAntecedente(id);
+        validarPropiedadAntecedente(antecedente, ctx.historial());
 
         String valorAnterior = antecedente.getDescripcion();
         antecedenteClinicoRepository.delete(antecedente);
 
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            ANTECEDENTE_CLINICO,
-            ANTECEDENTE_CLINICO_TABLA,
-            id.toString(),
-            valorAnterior,
-            "",
-            AuditoriaCambio.TipoOperacion.DELETE,
-            "Eliminación de antecedente clínico"
-        );
+        registrarAuditoria(ctx, ANTECEDENTE_CLINICO, ANTECEDENTE_CLINICO_TABLA, id.toString(),
+                valorAnterior, "", AuditoriaCambio.TipoOperacion.DELETE);
 
-        return construirHistorialClinicoDTO(historial);
+        return construirHistorialClinicoDTO(ctx.historial());
     }
+
+    // ===============================
+    // ALERGIAS
+    // ===============================
 
     @Override
     @Transactional
     public HistorialClinicoDTO crearAlergia(AlergiaDTO alergiaDTO) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = ensureForUsuario(usuario);
-
-        Alergia alergia = alergiaConverter.toEntity(alergiaDTO, historial);
-        alergia.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
-        Alergia guardada = alergiaRepository.save(alergia);
-
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            ALERGIA,
-            ALERGIA_TABLA,
-            guardada.getId().toString(),
-            "",
-            guardada.getDescripcion(),
-            AuditoriaCambio.TipoOperacion.CREATE,
-            "Creación de alergia"
-        );
-
-        return construirHistorialClinicoDTO(historial);
+        return aplicarCrearAlergia(ContextoCambio.dePaciente(historial, usuario, RAZON_CREAR_ALERGIA), alergiaDTO);
     }
 
     @Override
@@ -314,27 +338,31 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     public HistorialClinicoDTO borrarAlergia(UUID id) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = obtenerHistorialUsuario(usuario);
+        return aplicarBorrarAlergia(ContextoCambio.dePaciente(historial, usuario, RAZON_BORRAR_ALERGIA), id);
+    }
 
+    private HistorialClinicoDTO aplicarCrearAlergia(ContextoCambio ctx, AlergiaDTO alergiaDTO) {
+        Alergia alergia = alergiaConverter.toEntity(alergiaDTO, ctx.historial());
+        alergia.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
+        Alergia guardada = alergiaRepository.save(alergia);
+
+        registrarAuditoria(ctx, ALERGIA, ALERGIA_TABLA, guardada.getId().toString(),
+                "", guardada.getDescripcion(), AuditoriaCambio.TipoOperacion.CREATE);
+
+        return construirHistorialClinicoDTO(ctx.historial());
+    }
+
+    private HistorialClinicoDTO aplicarBorrarAlergia(ContextoCambio ctx, UUID id) {
         Alergia alergia = obtenerAlergia(id);
-        validarPropiedadAlergia(alergia, historial);
+        validarPropiedadAlergia(alergia, ctx.historial());
 
         String valorAnterior = alergia.getDescripcion();
         alergiaRepository.delete(alergia);
 
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            ALERGIA,
-            ALERGIA_TABLA,
-            id.toString(),
-            valorAnterior,
-            "",
-            AuditoriaCambio.TipoOperacion.DELETE,
-            "Eliminación de alergia"
-        );
+        registrarAuditoria(ctx, ALERGIA, ALERGIA_TABLA, id.toString(),
+                valorAnterior, "", AuditoriaCambio.TipoOperacion.DELETE);
 
-        return construirHistorialClinicoDTO(historial);
+        return construirHistorialClinicoDTO(ctx.historial());
     }
 
     /**
@@ -378,6 +406,10 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
             throw new IllegalArgumentException(ErrorMessages.ERROR_NO_PERMITIDO);
         }
     }
+
+    // ===============================
+    // DATOS CLÍNICOS CUANTITATIVOS (PACIENTE)
+    // ===============================
 
     @Override
     @Transactional
@@ -428,17 +460,10 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     }
 
     /**
-     * Flujo común de los seis endpoints de datos clínicos cuantitativos (análisis de
+     * Flujo común de los seis endpoints de datos clínicos cuantitativos del paciente (análisis de
      * sangre, signos vitales, análisis de orina; en variante "reemplazar todo" o "añadir"):
      * asegura el historial del usuario autenticado, persiste las mediciones y registra el
      * cambio en la auditoría.
-     *
-     * @param entradas             mediciones recibidas del cliente (ya deserializadas por Jackson)
-     * @param tiposDominio         tipos que delimitan el dominio afectado (p. ej. {@link TiposDatoClinico#ANALISIS_SANGRE})
-     * @param eliminarExistentes   {@code true} para reemplazar todo el dominio, {@code false} para añadir
-     * @param tipoCambioAuditoria  etiqueta de auditoría (p. ej. {@code ANALISIS_SANGRE})
-     * @param operacion            operación de auditoría (UPDATE al reemplazar, CREATE al añadir)
-     * @param razonCambio          descripción legible del cambio para la auditoría
      */
     private HistorialClinicoDTO guardarDatosClinicos(List<DatoClinicoEntradaDTO> entradas,
             List<String> tiposDominio, boolean eliminarExistentes, String tipoCambioAuditoria,
@@ -469,12 +494,6 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
     /**
      * Almacena una tanda de mediciones cuantitativas, opcionalmente reemplazando primero
      * todas las existentes cuyo tipo pertenezca al dominio indicado.
-     *
-     * @param entradas Mediciones a añadir
-     * @param historial Historial clínico al que pertenecen
-     * @param eliminarExistentes Si true, elimina los datos existentes cuyo tipo esté en {@code tiposConocidos}
-     *                           antes de guardar los nuevos (reemplazo completo).
-     * @param tiposConocidos Tipos de dato clínico que delimitan el dominio (p. ej. {@link TiposDatoClinico#ANALISIS_SANGRE})
      */
     private void procesarDatosClinicos(List<DatoClinicoEntradaDTO> entradas, HistorialClinico historial,
                                        boolean eliminarExistentes, List<String> tiposConocidos) {
@@ -504,8 +523,6 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
 
     /**
      * Serializa las mediciones a JSON para dejarlas registradas en la auditoría de cambios.
-     * Si la serialización fallara (no debería, son POJOs planos), cae a la representación
-     * por defecto en vez de abortar la operación clínica.
      */
     private String serializarParaAuditoria(List<DatoClinicoEntradaDTO> entradas) {
         try {
@@ -542,32 +559,26 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
         datoClinico.setObservacion(null);
         datoClinico.setHistorialClinico(historial);
         datoClinico.setFechaCreacion(fechaCreacion);
-        
-        // Buscar y asignar el rango correspondiente para este tipo de dato clínico
+
         buscarYAsignarRango(datoClinico, tipo);
-        
+
         return datoClinico;
     }
 
     /**
      * Busca y asigna el rango correspondiente a un dato clínico basado en su tipo
-     * @param datoClinico El dato clínico al que asignar el rango
-     * @param tipo El tipo/nombre del análisis para buscar el rango
      */
     private void buscarYAsignarRango(DatoClinico datoClinico, String tipo) {
         if (tipo == null || tipo.trim().isEmpty()) {
-            return; // No asignar rango si no hay tipo definido
+            return;
         }
-        
-        // Intentar buscar el rango exacto primero
+
         var rangoOptional = rangoRepository.findByNombreIgnoreCase(tipo.trim());
-        
-        // Si no se encuentra exacto, buscar por coincidencia parcial
+
         if (rangoOptional.isEmpty()) {
             rangoOptional = rangoRepository.findByNombreContainingIgnoreCase(tipo.trim());
         }
-        
-        // Asignar el rango si se encontró uno
+
         rangoOptional.ifPresent(datoClinico::setRango);
     }
 
@@ -593,9 +604,7 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
 
     /**
      * Valida que el valor de la medición sea numérico y lo devuelve normalizado (coma
-     * decimal a punto, sin espacios). Se conserva como texto para no perder precisión:
-     * convertir a {@code float} y de vuelta a {@code String} redondeaba valores como
-     * {@code "5.1"} a {@code "5.0999999"}.
+     * decimal a punto, sin espacios). Se conserva como texto para no perder precisión.
      */
     private String obtenerValorAnalisis(DatoClinicoEntradaDTO item) {
         String valorNormalizado = item.getValue().trim().replace(',', '.');
@@ -630,29 +639,77 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
 
     @Override
     @Transactional
+    public HistorialClinicoDTO editarDatoClinico(UUID id, DatoClinicoEntradaDTO datos) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        HistorialClinico historial = obtenerHistorialUsuario(usuario);
+        aplicarEdicionMedicion(ContextoCambio.dePaciente(historial, usuario, RAZON_EDITAR_DATO), id, datos);
+        return construirHistorialClinicoDTO(historial);
+    }
+
+    @Override
+    @Transactional
     public void borrarDatoClinico(UUID id) {
         Usuario usuario = obtenerUsuarioAutenticado();
         HistorialClinico historial = obtenerHistorialUsuario(usuario);
-        
-        DatoClinico datoClinico = obtenerDatoClinico(id);
-        validarPropiedadDatoClinico(datoClinico, historial);
-        
-        String valorAnterior = datoClinico.getTipo() + ": " + datoClinico.getValor() + " " + datoClinico.getUnidad();
-        
+        aplicarBorradoMedicion(ContextoCambio.dePaciente(historial, usuario, RAZON_BORRAR_DATO), id);
+    }
+
+    /**
+     * Núcleo de la edición individual de un dato clínico: valida que el dato pertenezca al
+     * historial del contexto, actualiza tipo/valor/unidad/fecha, reasigna el rango de
+     * referencia y registra el cambio en la auditoría.
+     */
+    private void aplicarEdicionMedicion(ContextoCambio ctx, UUID datoId, DatoClinicoEntradaDTO datos) {
+        DatoClinico datoClinico = obtenerDatoClinico(datoId);
+        validarPropiedadDatoClinico(datoClinico, ctx.historial());
+        validarEntradaAnalisis(datos);
+
+        String valorAnterior = describirDato(datoClinico);
+
+        String tipo = obtenerTipoAnalisis(datos);
+        datoClinico.setTipo(tipo);
+        datoClinico.setTipoHash(hmacSearchIndexService.indexar(tipo));
+        datoClinico.setValor(obtenerValorAnalisis(datos));
+        datoClinico.setUnidad(obtenerUnidadAnalisis(datos));
+        datoClinico.setFechaCreacion(obtenerFechaCreacionAnalisis(datos));
+        datoClinico.setRango(null);
+        buscarYAsignarRango(datoClinico, tipo);
+
+        datoClinicoRepository.save(datoClinico);
+
+        registrarAuditoria(ctx, datoClinico.getTipo(), DATO_CLINICO, datoId.toString(),
+                valorAnterior, describirDato(datoClinico), AuditoriaCambio.TipoOperacion.UPDATE);
+    }
+
+    /**
+     * Núcleo del borrado individual de un dato clínico.
+     */
+    private void aplicarBorradoMedicion(ContextoCambio ctx, UUID datoId) {
+        DatoClinico datoClinico = obtenerDatoClinico(datoId);
+        validarPropiedadDatoClinico(datoClinico, ctx.historial());
+
+        String valorAnterior = describirDato(datoClinico);
+        String tipo = datoClinico.getTipo();
         datoClinicoRepository.delete(datoClinico);
-        
-        auditoriaCambioService.registrarCambio(
-            usuario.getId().toString(),
-            usuario.getId().toString(),
-            null,
-            datoClinico.getTipo(),
-            DATO_CLINICO,
-            id.toString(),
-            valorAnterior,
-            "",
-            AuditoriaCambio.TipoOperacion.DELETE,
-            "Eliminación de dato clínico"
-        );
+
+        registrarAuditoria(ctx, tipo, DATO_CLINICO, datoId.toString(),
+                valorAnterior, "", AuditoriaCambio.TipoOperacion.DELETE);
+    }
+
+    /**
+     * Núcleo del alta individual de una medición (usado al aceptar una propuesta de un médico).
+     */
+    private void aplicarAltaMedicion(ContextoCambio ctx, DatoClinicoEntradaDTO datos) {
+        validarEntradaAnalisis(datos);
+        DatoClinico datoClinico = crearDatoClinicoAnalisis(datos, ctx.historial());
+        DatoClinico guardado = datoClinicoRepository.save(datoClinico);
+
+        registrarAuditoria(ctx, guardado.getTipo(), DATO_CLINICO, guardado.getId().toString(),
+                "", describirDato(guardado), AuditoriaCambio.TipoOperacion.CREATE);
+    }
+
+    private String describirDato(DatoClinico dato) {
+        return dato.getTipo() + ": " + dato.getValor() + " " + dato.getUnidad();
     }
 
     /**
@@ -678,10 +735,115 @@ public class HistorialClinicoServiceImpl implements HistorialClinicoService {
      * Valida que el dato clínico pertenezca al historial del usuario
      */
     private void validarPropiedadDatoClinico(DatoClinico datoClinico, HistorialClinico historial) {
-        if (datoClinico.getHistorialClinico() == null || 
+        if (datoClinico.getHistorialClinico() == null ||
             !datoClinico.getHistorialClinico().getId().equals(historial.getId())) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_NO_PERMITIDO);
         }
     }
 
+    /**
+     * Registra un cambio del historial en la auditoría usando los identificadores del contexto:
+     * actor, paciente y, si lo hay, médico; la razón es el motivo del contexto.
+     */
+    private void registrarAuditoria(ContextoCambio ctx, String tipoCambio, String tabla, String idRecurso,
+            String valorAnterior, String valorNuevo, AuditoriaCambio.TipoOperacion operacion) {
+        auditoriaCambioService.registrarCambio(
+            ctx.actorIdTexto(),
+            ctx.pacienteIdTexto(),
+            ctx.medicoIdTexto(),
+            tipoCambio,
+            tabla,
+            idRecurso,
+            valorAnterior,
+            valorNuevo,
+            operacion,
+            ctx.motivo()
+        );
+    }
+
+    // ===============================
+    // APLICACIÓN DE PROPUESTAS DE CAMBIO (MÉDICO)
+    // ===============================
+
+    @Override
+    @Transactional
+    public HistorialClinico asegurarHistorial(UUID pacienteId) {
+        return ensureForUsuario(obtenerPaciente(pacienteId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public String describirRecursoHistorial(UUID pacienteId, PropuestaCambioClinico.Dominio dominio, UUID recursoId) {
+        Usuario paciente = obtenerPaciente(pacienteId);
+        HistorialClinico historial = obtenerHistorialUsuario(paciente);
+        if (recursoId == null) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_PROPUESTA_RECURSO_REQUERIDO);
+        }
+        return switch (dominio) {
+            case ANTECEDENTE -> {
+                AntecedenteClinico antecedente = obtenerAntecedente(recursoId);
+                validarPropiedadAntecedente(antecedente, historial);
+                yield antecedente.getCategoria() + ": " + antecedente.getDescripcion();
+            }
+            case ALERGIA -> {
+                Alergia alergia = obtenerAlergia(recursoId);
+                validarPropiedadAlergia(alergia, historial);
+                yield alergia.getDescripcion();
+            }
+            case ANALISIS_SANGRE, SIGNOS_VITALES, ANALISIS_ORINA -> {
+                DatoClinico dato = obtenerDatoClinico(recursoId);
+                validarPropiedadDatoClinico(dato, historial);
+                yield describirDato(dato);
+            }
+        };
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO aplicarCambioAntecedente(UUID pacienteId, UUID medicoId,
+            PropuestaCambioClinico.Operacion operacion, UUID recursoId, AntecedenteClinicoDTO datos, String motivo) {
+        Usuario paciente = obtenerPaciente(pacienteId);
+        HistorialClinico historial = operacion == PropuestaCambioClinico.Operacion.CREATE
+                ? ensureForUsuario(paciente)
+                : obtenerHistorialUsuario(paciente);
+        ContextoCambio ctx = ContextoCambio.deMedico(historial, medicoId, pacienteId, motivo);
+        return switch (operacion) {
+            case CREATE -> aplicarCrearAntecedente(ctx, datos);
+            case UPDATE -> aplicarEditarAntecedente(ctx, recursoId, datos);
+            case DELETE -> aplicarBorrarAntecedente(ctx, recursoId);
+        };
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO aplicarCambioAlergia(UUID pacienteId, UUID medicoId,
+            PropuestaCambioClinico.Operacion operacion, UUID recursoId, AlergiaDTO datos, String motivo) {
+        Usuario paciente = obtenerPaciente(pacienteId);
+        HistorialClinico historial = operacion == PropuestaCambioClinico.Operacion.CREATE
+                ? ensureForUsuario(paciente)
+                : obtenerHistorialUsuario(paciente);
+        ContextoCambio ctx = ContextoCambio.deMedico(historial, medicoId, pacienteId, motivo);
+        return switch (operacion) {
+            case CREATE -> aplicarCrearAlergia(ctx, datos);
+            case DELETE -> aplicarBorrarAlergia(ctx, recursoId);
+            case UPDATE -> throw new IllegalArgumentException(ErrorMessages.ERROR_PROPUESTA_ALERGIA_SIN_EDICION);
+        };
+    }
+
+    @Override
+    @Transactional
+    public HistorialClinicoDTO aplicarCambioMedicion(UUID pacienteId, UUID medicoId,
+            PropuestaCambioClinico.Operacion operacion, UUID recursoId, DatoClinicoEntradaDTO datos, String motivo) {
+        Usuario paciente = obtenerPaciente(pacienteId);
+        HistorialClinico historial = operacion == PropuestaCambioClinico.Operacion.CREATE
+                ? ensureForUsuario(paciente)
+                : obtenerHistorialUsuario(paciente);
+        ContextoCambio ctx = ContextoCambio.deMedico(historial, medicoId, pacienteId, motivo);
+        switch (operacion) {
+            case CREATE -> aplicarAltaMedicion(ctx, datos);
+            case UPDATE -> aplicarEdicionMedicion(ctx, recursoId, datos);
+            case DELETE -> aplicarBorradoMedicion(ctx, recursoId);
+        }
+        return construirHistorialClinicoDTO(historial);
+    }
 }

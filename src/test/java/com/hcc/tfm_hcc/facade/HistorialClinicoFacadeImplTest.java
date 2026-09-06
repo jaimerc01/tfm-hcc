@@ -27,16 +27,19 @@ import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.DatosClinicosValidationException;
 import com.hcc.tfm_hcc.exception.HistorialClinicoException;
 import com.hcc.tfm_hcc.facade.impl.HistorialClinicoFacadeImpl;
+import com.hcc.tfm_hcc.converter.PropuestaCambioClinicoConverter;
 import com.hcc.tfm_hcc.mapper.ArchivoClinicoMapper;
 import com.hcc.tfm_hcc.model.ArchivoClinico;
 import com.hcc.tfm_hcc.service.ArchivoClinicoService;
 import com.hcc.tfm_hcc.service.HistorialClinicoService;
+import com.hcc.tfm_hcc.service.PropuestaCambioClinicoService;
 
 class HistorialClinicoFacadeImplTest {
 
     private ArchivoClinicoService archivoClinicoService;
     private ArchivoClinicoMapper archivoClinicoMapper;
     private HistorialClinicoService historiaClinicaService;
+    private PropuestaCambioClinicoService propuestaCambioClinicoService;
     private HistorialClinicoFacadeImpl facade;
 
     @BeforeEach
@@ -44,7 +47,9 @@ class HistorialClinicoFacadeImplTest {
         archivoClinicoService = mock(ArchivoClinicoService.class);
         archivoClinicoMapper = mock(ArchivoClinicoMapper.class);
         historiaClinicaService = mock(HistorialClinicoService.class);
-        facade = new HistorialClinicoFacadeImpl(archivoClinicoService, archivoClinicoMapper, historiaClinicaService);
+        propuestaCambioClinicoService = mock(PropuestaCambioClinicoService.class);
+        facade = new HistorialClinicoFacadeImpl(archivoClinicoService, archivoClinicoMapper, historiaClinicaService,
+                propuestaCambioClinicoService, new PropuestaCambioClinicoConverter(new com.fasterxml.jackson.databind.ObjectMapper()));
     }
 
     // ---- archivos clínicos ----

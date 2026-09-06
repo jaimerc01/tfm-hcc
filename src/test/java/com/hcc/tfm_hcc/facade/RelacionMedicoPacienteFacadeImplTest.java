@@ -25,21 +25,24 @@ import com.hcc.tfm_hcc.exception.UsuarioNoAutenticadoException;
 import com.hcc.tfm_hcc.facade.impl.RelacionMedicoPacienteFacadeImpl;
 import com.hcc.tfm_hcc.model.MedicoPaciente;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.service.PropuestaCambioClinicoService;
 import com.hcc.tfm_hcc.service.RelacionMedicoPacienteService;
 import com.hcc.tfm_hcc.service.RelacionMedicoPacienteService.IniciadorRevocacion;
 
 class RelacionMedicoPacienteFacadeImplTest {
 
     private RelacionMedicoPacienteService relacionMedicoPacienteService;
+    private PropuestaCambioClinicoService propuestaCambioClinicoService;
     private NotificacionFacade notificacionFacade;
     private RelacionMedicoPacienteFacadeImpl facade;
 
     @BeforeEach
     void setUp() {
         relacionMedicoPacienteService = mock(RelacionMedicoPacienteService.class);
+        propuestaCambioClinicoService = mock(PropuestaCambioClinicoService.class);
         notificacionFacade = mock(NotificacionFacade.class);
-        facade = new RelacionMedicoPacienteFacadeImpl(relacionMedicoPacienteService, notificacionFacade,
-                new MedicoResumenConverter());
+        facade = new RelacionMedicoPacienteFacadeImpl(relacionMedicoPacienteService, propuestaCambioClinicoService,
+                notificacionFacade, new MedicoResumenConverter());
     }
 
     @AfterEach

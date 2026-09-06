@@ -12,6 +12,7 @@ import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
 
 /**
  * Facade para la gestión integral de historiales clínicos en el sistema HCC.
@@ -169,9 +170,36 @@ public interface HistorialClinicoFacade {
     HistorialClinicoDTO anadirAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina);
 
     /**
+     * Edita un dato clínico cuantitativo ya guardado del historial del usuario autenticado.
+     *
+     * @param id ID del dato clínico a editar
+     * @param datos nuevos valores de la medición
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO editarDatoClinico(UUID id, DatoClinicoEntradaDTO datos);
+
+    /**
      * Elimina un dato clínico específico del historial.
-     * 
+     *
      * @param id ID único del dato clínico a eliminar
      */
     void borrarDatoClinico(UUID id);
+
+    /**
+     * Lista las propuestas de cambio en el historial del usuario autenticado que un médico ha
+     * enviado y siguen pendientes de que el paciente las confirme.
+     *
+     * @return lista de PropuestaCambioClinicoDTO con estado {@code PENDIENTE}
+     */
+    List<PropuestaCambioClinicoDTO> listarPropuestasCambioPendientes();
+
+    /**
+     * Resuelve una propuesta de cambio en el historial del usuario autenticado. Si la acepta, el
+     * cambio se aplica y queda auditado con el médico como autor; si la rechaza, se descarta.
+     *
+     * @param id ID de la propuesta
+     * @param aceptar {@code true} para aceptar y aplicar el cambio, {@code false} para rechazarlo
+     * @return la propuesta resuelta
+     */
+    PropuestaCambioClinicoDTO responderPropuestaCambio(UUID id, boolean aceptar);
 }

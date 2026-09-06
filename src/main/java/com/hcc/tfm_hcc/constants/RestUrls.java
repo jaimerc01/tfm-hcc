@@ -28,6 +28,8 @@ public final class RestUrls {
     public static final String HISTORIA_SIGNOS_VITALES = "/signos-vitales";
     public static final String HISTORIA_ANALISIS_ORINA = "/analisis-orina";
     public static final String HISTORIA_DATOS_CLINICOS_ID = "/datos-clinicos/{id}";
+    public static final String HISTORIA_PROPUESTAS_CAMBIO = "/propuestas-cambio";
+    public static final String HISTORIA_PROPUESTA_CAMBIO_ID = "/propuestas-cambio/{id}";
 
     public static final String USUARIO_BASE = "/usuario";
     public static final String USUARIO_NOMBRE = "/nombre";
@@ -58,6 +60,7 @@ public final class RestUrls {
     public static final String MEDICO_PACIENTE_ANOTACIONES = "/pacientes/{nif}/anotaciones";
     public static final String MEDICO_PACIENTE_ARCHIVOS = "/pacientes/{nif}/archivos";
     public static final String MEDICO_PACIENTE_ARCHIVO_ID = "/pacientes/{nif}/archivos/{id}";
+    public static final String MEDICO_PACIENTE_PROPUESTAS_CAMBIO = "/pacientes/{nif}/propuestas-cambio";
 
     public static final String ADMIN_BASE = "/admin";
     public static final String ADMIN_MEDICOS = "/medicos";

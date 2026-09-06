@@ -38,6 +38,7 @@ import com.hcc.tfm_hcc.repository.MedicoPacienteRepository;
 import com.hcc.tfm_hcc.repository.PerfilRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.service.impl.MedicoServiceImpl;
+import com.hcc.tfm_hcc.service.PropuestaCambioClinicoService;
 
 class MedicoServiceImplTest {
 
@@ -50,6 +51,7 @@ class MedicoServiceImplTest {
     private PacienteConverter pacienteConverter;
     private PerfilUsuarioService perfilUsuarioService;
     private HmacSearchIndexService hmacSearchIndexService;
+    private PropuestaCambioClinicoService propuestaCambioClinicoService;
     private MedicoServiceImpl service;
 
     @BeforeEach
@@ -63,11 +65,12 @@ class MedicoServiceImplTest {
         pacienteConverter = mock(PacienteConverter.class);
         perfilUsuarioService = mock(PerfilUsuarioService.class);
         hmacSearchIndexService = mock(HmacSearchIndexService.class);
+        propuestaCambioClinicoService = mock(PropuestaCambioClinicoService.class);
         when(hmacSearchIndexService.indexar("12345678A")).thenReturn("hash-12345678A");
         when(hmacSearchIndexService.indexar("00000000Z")).thenReturn("hash-00000000Z");
         service = new MedicoServiceImpl(notificacionFacade, usuarioRepository, perfilRepository,
                 medicoPacienteRepository, usuarioMapper, usuarioFacade, pacienteConverter, perfilUsuarioService,
-                hmacSearchIndexService);
+                hmacSearchIndexService, propuestaCambioClinicoService);
     }
 
     @Test

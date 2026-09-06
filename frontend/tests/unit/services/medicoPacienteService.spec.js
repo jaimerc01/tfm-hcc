@@ -73,4 +73,17 @@ describe('medicoPacienteService', () => {
     svc.descargarArchivoPaciente('11111111H', 'f1')
     expect(client.get).toHaveBeenCalledWith('/medico/pacientes/11111111H/archivos/f1', { responseType: 'blob' })
   })
+
+  it('proponerCambioClinico hace POST al endpoint del paciente con el cuerpo de la propuesta', () => {
+    const propuesta = { dominio: 'ANALISIS_SANGRE', operacion: 'CREATE', motivo: 'm' }
+    svc.proponerCambioClinico('11111111H', propuesta)
+    const [url, body] = client.post.mock.calls.at(-1)
+    expect(url).toBe('/medico/pacientes/11111111H/propuestas-cambio')
+    expect(body).toEqual(propuesta)
+  })
+
+  it('listarPropuestasCambio hace GET al endpoint del paciente', () => {
+    svc.listarPropuestasCambio('11111111H')
+    expect(client.get).toHaveBeenCalledWith('/medico/pacientes/11111111H/propuestas-cambio')
+  })
 })

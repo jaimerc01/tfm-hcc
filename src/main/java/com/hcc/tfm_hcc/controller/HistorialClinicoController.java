@@ -16,6 +16,8 @@ import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.dto.ResponderPropuestaRequestDTO;
 
 /**
  * Controlador REST para la gestión integral de historiales clínicos.
@@ -173,10 +175,38 @@ public interface HistorialClinicoController {
     ResponseEntity<HistorialClinicoDTO> crearAnalisisOrina(@RequestBody List<DatoClinicoEntradaDTO> analisisOrina);
 
     /**
+     * Edita un dato clínico cuantitativo ya guardado del historial del usuario autenticado.
+     *
+     * @param id ID del dato clínico a editar
+     * @param datos nuevos valores de la medición (parámetro, valor, unidad, fecha)
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> editarDatoClinico(@PathVariable("id") UUID id,
+                                                          @RequestBody DatoClinicoEntradaDTO datos);
+
+    /**
      * Elimina un dato clínico específico del historial.
-     * 
+     *
      * @param id ID único del dato clínico a eliminar
      * @return ResponseEntity con el ID del dato clínico eliminado para confirmación
      */
     ResponseEntity<UUID> borrarDatoClinico(@PathVariable("id") UUID id);
+
+    /**
+     * Lista las propuestas de cambio pendientes que un médico ha enviado sobre el historial del
+     * usuario autenticado y que este debe confirmar o rechazar.
+     *
+     * @return ResponseEntity con la lista de PropuestaCambioClinicoDTO pendientes
+     */
+    ResponseEntity<List<PropuestaCambioClinicoDTO>> listarPropuestasCambio();
+
+    /**
+     * Resuelve una propuesta de cambio sobre el historial del usuario autenticado.
+     *
+     * @param id ID de la propuesta
+     * @param request cuerpo con {@code aceptar = true} para aplicar el cambio o {@code false} para rechazarlo
+     * @return ResponseEntity con la PropuestaCambioClinicoDTO resuelta
+     */
+    ResponseEntity<PropuestaCambioClinicoDTO> responderPropuestaCambio(@PathVariable("id") UUID id,
+                                                                       @RequestBody ResponderPropuestaRequestDTO request);
 }

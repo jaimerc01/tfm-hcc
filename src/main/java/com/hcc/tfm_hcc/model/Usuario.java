@@ -190,6 +190,24 @@ public class Usuario extends BaseEntity implements UserDetails {
     private LocalDateTime lastPasswordChange;
 
     /**
+     * Fecha y hora en que el usuario prestó el consentimiento explícito para el tratamiento
+     * de sus datos de salud al registrarse (RGPD art. 9.2.a). Junto con
+     * {@link #versionPoliticaPrivacidad} constituye el registro del consentimiento que exige
+     * el principio de responsabilidad proactiva (RGPD art. 7.1: poder demostrar que el
+     * interesado consintió y qué información aceptó). No es un dato de salud, así que se
+     * guarda sin cifrar.
+     */
+    @Column(name = "fecha_consentimiento")
+    private LocalDateTime fechaConsentimiento;
+
+    /**
+     * Identificador de la versión de la política de privacidad vigente cuando el usuario
+     * prestó su consentimiento, para saber exactamente qué información aceptó.
+     */
+    @Column(name = "version_politica_privacidad")
+    private String versionPoliticaPrivacidad;
+
+    /**
      * Secreto TOTP (RFC 6238) del segundo factor de autenticación, en Base32.
      * Campo cifrado con AES/GCM. Nulo si el usuario nunca ha configurado 2FA o lo
      * ha desactivado. Mientras {@link #totpEnabled} sea falso pero este campo no

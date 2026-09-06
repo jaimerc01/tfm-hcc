@@ -9,19 +9,27 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.dto.AlergiaDTO;
 import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.converter.PropuestaCambioClinicoConverter;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
 import com.hcc.tfm_hcc.mapper.ArchivoClinicoMapper;
 import com.hcc.tfm_hcc.model.ArchivoClinico;
 import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.DatosClinicosValidationException;
 import com.hcc.tfm_hcc.exception.HistorialClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioNoEncontradaException;
+import com.hcc.tfm_hcc.exception.UsuarioNoAutenticadoException;
 import com.hcc.tfm_hcc.service.ArchivoClinicoService;
 import com.hcc.tfm_hcc.service.HistorialClinicoService;
+import com.hcc.tfm_hcc.service.PropuestaCambioClinicoService;
+import com.hcc.tfm_hcc.util.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -72,6 +80,16 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
      * Servicio para operaciones del historial clínico.
      */
     private final HistorialClinicoService historiaClinicaService;
+
+    /**
+     * Servicio de propuestas de cambio clínico (médico propone, paciente confirma).
+     */
+    private final PropuestaCambioClinicoService propuestaCambioClinicoService;
+
+    /**
+     * Convierte las propuestas de cambio clínico a DTO antes de exponerlas en la API.
+     */
+    private final PropuestaCambioClinicoConverter propuestaCambioClinicoConverter;
 
     // ===============================
     // MÉTODOS DE ARCHIVOS CLÍNICOS
@@ -505,6 +523,73 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
             log.error("Error inesperado al borrar dato clínico: {} - Error: {}", id, e.getMessage(), e);
             throw new HistorialClinicoException("Error interno durante la eliminación del dato clínico", e);
         }
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public HistorialClinicoDTO editarDatoClinico(UUID id, DatoClinicoEntradaDTO datos) {
+        log.debug("Editando dato clínico {} del historial del usuario autenticado", id);
+        try {
+            validarId(id);
+            if (datos == null) {
+                throw new DatosClinicosValidationException(ErrorMessages.ERROR_ANALISIS_VALUE_REQUERIDO);
+            }
+            HistorialClinicoDTO resultado = historiaClinicaService.editarDatoClinico(id, datos);
+            log.info("Dato clínico {} editado exitosamente", id);
+            return resultado;
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al editar dato clínico {}: {}", id, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al editar dato clínico {}: {}", id, e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la edición del dato clínico", e);
+        }
+    }
+
+    // ===============================
+    // MÉTODOS DE PROPUESTAS DE CAMBIO CLÍNICO
+    // ===============================
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public List<PropuestaCambioClinicoDTO> listarPropuestasCambioPendientes() {
+        log.debug("Listando propuestas de cambio pendientes del usuario autenticado");
+        String nif = nifUsuarioAutenticado();
+        try {
+            return propuestaCambioClinicoConverter.toDtoList(
+                    propuestaCambioClinicoService.listarPropuestasPendientesParaPaciente(nif));
+        } catch (Exception e) {
+            log.error("Error inesperado al listar propuestas de cambio pendientes: {}", e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno al listar las propuestas de cambio", e);
+        }
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public PropuestaCambioClinicoDTO responderPropuestaCambio(UUID id, boolean aceptar) {
+        log.debug("Resolviendo propuesta de cambio {} (aceptar={})", id, aceptar);
+        String nif = nifUsuarioAutenticado();
+        try {
+            validarId(id);
+            var propuesta = propuestaCambioClinicoService.resolver(nif, id, aceptar);
+            log.info("Propuesta de cambio {} resuelta por el paciente ({})", id, aceptar ? "aceptada" : "rechazada");
+            return propuestaCambioClinicoConverter.toDto(propuesta);
+        } catch (DatosClinicosValidationException | PropuestaCambioClinicoException
+                 | PropuestaCambioNoEncontradaException e) {
+            log.warn("No se pudo resolver la propuesta de cambio {}: {}", id, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al resolver la propuesta de cambio {}: {}", id, e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno al resolver la propuesta de cambio", e);
+        }
+    }
+
+    private String nifUsuarioAutenticado() {
+        String nif = SecurityUtils.getCurrentUserNif();
+        if (nif == null) {
+            throw new UsuarioNoAutenticadoException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
+        }
+        return nif;
     }
 
     // ===============================

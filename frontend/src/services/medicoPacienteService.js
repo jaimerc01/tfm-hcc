@@ -24,5 +24,12 @@ export default {
   },
   descargarArchivoPaciente(nif, id) {
     return api.get(`/medico/pacientes/${encodeURIComponent(nif)}/archivos/${encodeURIComponent(id)}`, { responseType: 'blob' })
+  },
+  // Propuestas de cambio sobre el historial de un paciente asignado (requieren confirmación del paciente)
+  proponerCambioClinico(nif, propuesta) {
+    return api.post(`/medico/pacientes/${encodeURIComponent(nif)}/propuestas-cambio`, propuesta, { headers: { 'Content-Type': 'application/json; charset=utf-8' } })
+  },
+  listarPropuestasCambio(nif) {
+    return api.get(`/medico/pacientes/${encodeURIComponent(nif)}/propuestas-cambio`)
   }
 }

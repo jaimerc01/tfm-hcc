@@ -38,6 +38,7 @@
               <th>{{ $t('parameter_col') }}</th>
               <th>{{ $t('value_col') }}</th>
               <th>{{ $t('date_col') }}</th>
+              <th v-if="actionable">{{ $t('actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -45,6 +46,14 @@
               <td>{{ e.tipo }}</td>
               <td>{{ e.valor }} <span class="unit-small">{{ e.unidad }}</span></td>
               <td>{{ formatDate(e.createdAt) }}</td>
+              <td v-if="actionable" class="row-actions">
+                <button type="button" class="btn-secondary btn-sm" @click="$emit('propose-edit', e)">
+                  {{ $t('propose_edit') }}
+                </button>
+                <button type="button" class="btn-secondary btn-sm" @click="$emit('propose-delete', e)">
+                  {{ $t('propose_delete') }}
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -74,8 +83,10 @@ export default {
   components: { AppPagination },
   props: {
     entries: { type: Array, default: () => [] },
-    domainLabel: { type: String, required: true }
+    domainLabel: { type: String, required: true },
+    actionable: { type: Boolean, default: false }
   },
+  emits: ['propose-edit', 'propose-delete'],
   data() {
     uidCounter += 1
     return {
@@ -192,6 +203,17 @@ export default {
 
 .results-table td {
   padding: 0.75rem 1rem;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  padding: 0.375rem 0.625rem;
+  font-size: 0.8125rem;
 }
 
 @media (max-width: 640px) {

@@ -28,11 +28,15 @@ import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.dto.ResponderPropuestaRequestDTO;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.HistorialClinicoException;
 import com.hcc.tfm_hcc.exception.DatosClinicosValidationException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioNoEncontradaException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -545,6 +549,72 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
             throw e;
         } catch (Exception e) {
             log.error("Error al eliminar dato clínico con ID {}: {}", id, e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Edita un dato clínico cuantitativo ya guardado del historial del usuario autenticado.</p>
+     */
+    @Override
+    @PutMapping(RestUrls.HISTORIA_DATOS_CLINICOS_ID)
+    public ResponseEntity<HistorialClinicoDTO> editarDatoClinico(@PathVariable("id") UUID id,
+            @RequestBody DatoClinicoEntradaDTO datos) throws HistorialClinicoException, DatosClinicosValidationException {
+        log.debug("Solicitando edición del dato clínico con ID: {}", id);
+        try {
+            HistorialClinicoDTO resultado = historialClinicoFacade.editarDatoClinico(id, datos);
+            log.info("Dato clínico editado exitosamente: ID {}", id);
+            return ResponseEntity.ok(resultado);
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al editar dato clínico {}: {}", id, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al editar dato clínico con ID {}: {}", id, e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Lista las propuestas de cambio pendientes de confirmar del usuario autenticado.</p>
+     */
+    @Override
+    @GetMapping(RestUrls.HISTORIA_PROPUESTAS_CAMBIO)
+    public ResponseEntity<List<PropuestaCambioClinicoDTO>> listarPropuestasCambio() throws HistorialClinicoException {
+        log.debug("Listando propuestas de cambio pendientes del usuario autenticado");
+        try {
+            return ResponseEntity.ok(historialClinicoFacade.listarPropuestasCambioPendientes());
+        } catch (Exception e) {
+            log.error("Error al listar propuestas de cambio pendientes: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Resuelve (acepta o rechaza) una propuesta de cambio sobre el historial del usuario
+     * autenticado. Aceptarla aplica el cambio y lo deja auditado con el médico como autor.</p>
+     */
+    @Override
+    @PostMapping(RestUrls.HISTORIA_PROPUESTA_CAMBIO_ID)
+    public ResponseEntity<PropuestaCambioClinicoDTO> responderPropuestaCambio(@PathVariable("id") UUID id,
+            @RequestBody ResponderPropuestaRequestDTO request) throws HistorialClinicoException {
+        boolean aceptar = request != null && Boolean.TRUE.equals(request.getAceptar());
+        log.debug("Resolviendo propuesta de cambio {} (aceptar={})", id, aceptar);
+        try {
+            PropuestaCambioClinicoDTO resultado = historialClinicoFacade.responderPropuestaCambio(id, aceptar);
+            log.info("Propuesta de cambio {} resuelta ({})", id, aceptar ? "aceptada" : "rechazada");
+            return ResponseEntity.ok(resultado);
+        } catch (DatosClinicosValidationException | PropuestaCambioClinicoException
+                 | PropuestaCambioNoEncontradaException e) {
+            log.warn("No se pudo resolver la propuesta de cambio {}: {}", id, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al resolver la propuesta de cambio {}: {}", id, e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }

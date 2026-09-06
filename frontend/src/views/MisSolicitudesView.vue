@@ -37,7 +37,14 @@
               <div class="info-content">
                 <span class="info-label">{{ $t('doctor') }}</span>
                 <span class="info-value">{{ nombreCompleto(m) }}</span>
-                <span v-if="m.especialidad" class="info-value">{{ m.especialidad }}</span>
+              </div>
+            </div>
+
+            <div v-if="m.especialidad" class="info-row">
+              <AppIcon name="activity" size="sm" />
+              <div class="info-content">
+                <span class="info-label">{{ $t('specialty') }}</span>
+                <span class="info-value">{{ m.especialidad }}</span>
               </div>
             </div>
           </div>

@@ -36,10 +36,12 @@ import com.hcc.tfm_hcc.mapper.ArchivoClinicoMapper;
 import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.converter.PropuestaCambioClinicoConverter;
 import com.hcc.tfm_hcc.service.AnotacionMedicaService;
 import com.hcc.tfm_hcc.service.ArchivoClinicoService;
 import com.hcc.tfm_hcc.service.HistorialClinicoService;
 import com.hcc.tfm_hcc.service.MedicoService;
+import com.hcc.tfm_hcc.service.PropuestaCambioClinicoService;
 import com.hcc.tfm_hcc.service.SolicitudAsignacionService;
 
 class MedicoFacadeImplTest {
@@ -52,6 +54,7 @@ class MedicoFacadeImplTest {
     private ArchivoClinicoService archivoClinicoService;
     private ArchivoClinicoMapper archivoClinicoMapper;
     private NotificacionFacade notificacionFacade;
+    private PropuestaCambioClinicoService propuestaCambioClinicoService;
     private MedicoFacadeImpl facade;
 
     @BeforeEach
@@ -64,8 +67,11 @@ class MedicoFacadeImplTest {
         archivoClinicoService = mock(ArchivoClinicoService.class);
         archivoClinicoMapper = mock(ArchivoClinicoMapper.class);
         notificacionFacade = mock(NotificacionFacade.class);
+        propuestaCambioClinicoService = mock(PropuestaCambioClinicoService.class);
         facade = new MedicoFacadeImpl(medicoService, solicitudAsignacionService, historialClinicoService,
-                anotacionMedicaService, anotacionMedicaConverter, archivoClinicoService, archivoClinicoMapper, notificacionFacade);
+                anotacionMedicaService, anotacionMedicaConverter, archivoClinicoService, archivoClinicoMapper, notificacionFacade,
+                propuestaCambioClinicoService,
+                new PropuestaCambioClinicoConverter(new com.fasterxml.jackson.databind.ObjectMapper()));
     }
 
     @AfterEach

@@ -25,6 +25,7 @@ const fillValid = (vm) => {
   vm.form.email = 'ana@example.com'
   vm.form.password = 'secret123'
   vm.form.password2 = 'secret123'
+  vm.form.aceptaTratamientoDatos = true
 }
 
 describe('RegisterView', () => {
@@ -73,6 +74,34 @@ describe('RegisterView', () => {
     const w = factory()
     await w.vm.handleSignup()
     expect(authService.signup).not.toHaveBeenCalled()
+  })
+
+  it('exige el consentimiento explícito para poder registrarse', async () => {
+    const w = factory()
+    fillValid(w.vm)
+    w.vm.form.aceptaTratamientoDatos = false
+    expect(w.vm.validateConsentimientoField()).toBe(false)
+    expect(w.vm.fieldErrors.aceptaTratamientoDatos).toBeTruthy()
+    await w.vm.handleSignup()
+    expect(authService.signup).not.toHaveBeenCalled()
+  })
+
+  it('rechaza fechas de nacimiento de menores de 14 años', () => {
+    const w = factory()
+    const hace13 = new Date()
+    hace13.setFullYear(hace13.getFullYear() - 13)
+    w.vm.form.fechaNacimiento = hace13.toISOString().slice(0, 10)
+    expect(w.vm.validateFechaNacimientoField()).toBe(false)
+    expect(w.vm.fieldErrors.fechaNacimiento).toBeTruthy()
+  })
+
+  it('envía aceptaTratamientoDatos en el payload', async () => {
+    authService.signup.mockResolvedValueOnce({ id: 1 })
+    const w = factory()
+    fillValid(w.vm)
+    await w.vm.handleSignup()
+    await flushPromises()
+    expect(authService.signup.mock.calls[0][0].aceptaTratamientoDatos).toBe(true)
   })
 
   it('handleSignup envía el payload sin password2 y con fecha ISO', async () => {

@@ -1,11 +1,13 @@
 package com.hcc.tfm_hcc.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -112,6 +114,31 @@ class UsuarioServiceImplTest {
 
         assertEquals("ACTIVO", resultado.getEstadoCuenta());
         verify(perfilUsuarioService, times(1)).asignarPerfil(nuevo.getId(), "PACIENTE");
+    }
+
+    @Test
+    void altaUsuario_registraElConsentimientoEnLaCuentaYEnLaAuditoria() {
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "versionPoliticaPrivacidad", "2026-09-03");
+        UsuarioDTO dto = usuarioDtoValido();
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.empty());
+        when(usuarioRepository.findByEmailHash("hash-usuario@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("contraseñaSegura1")).thenReturn("hash-bcrypt");
+        Usuario nuevo = new Usuario();
+        when(usuarioMapper.toEntity(dto)).thenReturn(nuevo);
+        when(usuarioRepository.save(nuevo)).thenAnswer(inv -> {
+            Usuario u = inv.getArgument(0);
+            u.setId(UUID.randomUUID());
+            return u;
+        });
+
+        service.altaUsuario(dto);
+
+        assertNotNull(nuevo.getFechaConsentimiento());
+        assertEquals("2026-09-03", nuevo.getVersionPoliticaPrivacidad());
+        verify(auditoriaCambioService, times(1)).registrarCambio(
+                anyString(), anyString(), isNull(), eq("CONSENTIMIENTO"), eq("usuario"),
+                anyString(), anyString(), anyString(),
+                eq(com.hcc.tfm_hcc.model.AuditoriaCambio.TipoOperacion.CREATE), anyString());
     }
 
     /**

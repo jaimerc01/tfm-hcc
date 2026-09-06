@@ -43,6 +43,7 @@ async function crearUsuarioYObtenerId(api: Awaited<ReturnType<typeof request.new
       email: u.email,
       password: PASSWORD,
       fechaNacimiento: u.fechaNacimiento,
+      aceptaTratamientoDatos: true,
     },
   })
 

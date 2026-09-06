@@ -22,5 +22,7 @@ public class UsuarioDTO {
     private LocalDateTime lastPasswordChange;
     private String estadoCuenta;
     private LocalDateTime fechaEliminacion;
+    private LocalDateTime fechaConsentimiento;
+    private String versionPoliticaPrivacidad;
 
 }

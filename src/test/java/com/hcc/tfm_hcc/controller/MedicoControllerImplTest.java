@@ -15,14 +15,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import org.springframework.http.MediaType;
+
 import com.hcc.tfm_hcc.controller.impl.MedicoControllerImpl;
 import com.hcc.tfm_hcc.converter.AnotacionMedicaConverter;
 import com.hcc.tfm_hcc.converter.SolicitudAsignacionConverter;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
 import com.hcc.tfm_hcc.exception.PacienteNoEncontradoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException;
 import com.hcc.tfm_hcc.exception.SolicitudExistenteException;
 import com.hcc.tfm_hcc.exception.UsuarioSinPermisoException;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import com.hcc.tfm_hcc.facade.MedicoFacade;
 import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
@@ -318,5 +324,48 @@ class MedicoControllerImplTest {
                 .thenReturn(new org.springframework.core.io.ByteArrayResource("contenido".getBytes()));
 
         mvc.perform(get("/medico/pacientes/22222222B/archivos/" + id)).andExpect(status().isOk());
+    }
+
+    // ---- propuestas de cambio clínico ----
+
+    private static final String CUERPO_PROPUESTA =
+            "{\"dominio\":\"ANALISIS_SANGRE\",\"operacion\":\"CREATE\",\"motivo\":\"m\","
+            + "\"medicion\":{\"label\":\"Glucosa\",\"value\":\"95\",\"unit\":\"mg/dL\"}}";
+
+    @Test
+    void proponerCambioClinico_conDatosValidos_devuelveOk() throws Exception {
+        when(medicoFacade.proponerCambioClinico(eq("22222222B"), any())).thenReturn(new PropuestaCambioClinicoDTO());
+
+        mvc.perform(post("/medico/pacientes/22222222B/propuestas-cambio")
+                        .contentType(MediaType.APPLICATION_JSON).content(CUERPO_PROPUESTA))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void proponerCambioClinico_sinRelacionActiva_devuelveForbidden() throws Exception {
+        when(medicoFacade.proponerCambioClinico(eq("22222222B"), any()))
+                .thenThrow(new UsuarioSinPermisoException("Acceso denegado"));
+
+        mvc.perform(post("/medico/pacientes/22222222B/propuestas-cambio")
+                        .contentType(MediaType.APPLICATION_JSON).content(CUERPO_PROPUESTA))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void proponerCambioClinico_conPeticionInvalida_devuelveBadRequest() throws Exception {
+        when(medicoFacade.proponerCambioClinico(eq("22222222B"), any()))
+                .thenThrow(new PropuestaCambioClinicoException("Debes indicar el motivo del cambio"));
+
+        mvc.perform(post("/medico/pacientes/22222222B/propuestas-cambio")
+                        .contentType(MediaType.APPLICATION_JSON).content(CUERPO_PROPUESTA))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void listarPropuestasCambio_devuelveLaLista() throws Exception {
+        when(medicoFacade.listarPropuestasCambioParaPaciente("22222222B"))
+                .thenReturn(List.of(new PropuestaCambioClinicoDTO()));
+
+        mvc.perform(get("/medico/pacientes/22222222B/propuestas-cambio")).andExpect(status().isOk());
     }
 }

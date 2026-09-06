@@ -109,7 +109,7 @@ export default {
       showToast: false,
       showToastMessage: '',
       showDeleteModal: false,
-      deleteIndex: null,
+      deleteId: null,
       showClearAllModal: false
     }
   },
@@ -142,22 +142,21 @@ export default {
       }
     },
 
-    removeEntry(idx) {
-      this.deleteIndex = idx
+    removeEntry(id) {
+      this.deleteId = id
       this.showDeleteModal = true
     },
 
     closeDeleteModal() {
       this.showDeleteModal = false
-      this.deleteIndex = null
+      this.deleteId = null
     },
 
     async confirmDelete() {
-      if (this.deleteIndex === null) return
+      if (!this.deleteId) return
 
       try {
-        const entry = this.entries[this.deleteIndex]
-        await this.deleteEntryById(entry && entry.id)
+        await this.deleteEntryById(this.deleteId)
         this.closeDeleteModal()
         this.msg = this.$t('analysis_result_deleted')
         this.showTemporaryToast(this.$t('analysis_toast_deleted'))

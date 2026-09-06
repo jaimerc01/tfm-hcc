@@ -10,6 +10,8 @@
       </div>
     </div>
 
+    <PropuestasCambioClinicoSection class="propuestas-cambio-wrapper" @applied="reloadHistorial" />
+
     <section class="tabs-section">
       <div class="tabs-nav" role="tablist" :aria-label="$t('clinical_history')">
         <button
@@ -135,7 +137,7 @@
           aria-labelledby="antecedentes-tab"
           tabindex="-1"
         >
-          <AntecedentesSection />
+          <AntecedentesSection :key="historialVersion" />
         </div>
 
         <div
@@ -147,7 +149,7 @@
           aria-labelledby="alergias-tab"
           tabindex="-1"
         >
-          <AlergiasSection />
+          <AlergiasSection :key="historialVersion" />
         </div>
 
         <div
@@ -159,7 +161,7 @@
           aria-labelledby="analisis-tab"
           tabindex="-1"
         >
-          <AnalisisSangreSection />
+          <AnalisisSangreSection :key="historialVersion" />
         </div>
 
         <div
@@ -171,7 +173,7 @@
           aria-labelledby="signos-vitales-tab"
           tabindex="-1"
         >
-          <SignosVitalesSection />
+          <SignosVitalesSection :key="historialVersion" />
         </div>
 
         <div
@@ -183,7 +185,7 @@
           aria-labelledby="analisis-orina-tab"
           tabindex="-1"
         >
-          <AnalisisOrinaSection />
+          <AnalisisOrinaSection :key="historialVersion" />
         </div>
 
         <div
@@ -303,13 +305,14 @@ import AnalisisSangreSection from '@/components/AnalisisSangreSection.vue'
 import SignosVitalesSection from '@/components/SignosVitalesSection.vue'
 import AnalisisOrinaSection from '@/components/AnalisisOrinaSection.vue'
 import AnotacionesMedicasSection from '@/components/AnotacionesMedicasSection.vue'
+import PropuestasCambioClinicoSection from '@/components/PropuestasCambioClinicoSection.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import FileDropZone from '@/components/FileDropZone.vue'
 import AppModal from '@/components/Modal.vue'
 
 export default {
   name: 'HistoriaClinicaView',
-  components: { AntecedentesSection, AlergiasSection, AnalisisSangreSection, SignosVitalesSection, AnalisisOrinaSection, AnotacionesMedicasSection, AppIcon, FileDropZone, AppModal },
+  components: { AntecedentesSection, AlergiasSection, AnalisisSangreSection, SignosVitalesSection, AnalisisOrinaSection, AnotacionesMedicasSection, PropuestasCambioClinicoSection, AppIcon, FileDropZone, AppModal },
   watch: {
     activeSection() {
       this.$nextTick(() => {
@@ -327,13 +330,19 @@ export default {
       removingId: null,
       error: null,
       activeSection: 'antecedentes',
-      deleteTarget: null
+      deleteTarget: null,
+      historialVersion: 0
     }
   },
   created() {
     this.load()
   },
   methods: {
+    reloadHistorial() {
+      // Fuerza el remontaje de las secciones de datos para que recarguen tras aplicarse un cambio.
+      this.historialVersion += 1
+    },
+
     getTabRefName(section) {
       const map = {
         antecedentes: 'tabAntecedentes',

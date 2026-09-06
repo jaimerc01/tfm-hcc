@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -707,5 +708,132 @@ class HistorialClinicoServiceImplTest {
         when(datoRepo.findById(datoId)).thenReturn(Optional.of(deOtroHistorial));
 
         assertThrows(IllegalArgumentException.class, () -> svc.borrarDatoClinico(datoId));
+    }
+
+    // ---- editarDatoClinico (paciente) ----
+
+    @Test
+    void editarDatoClinico_actualizaValoresYAuditaComoPacienteSinMedico() {
+        mockUsuarioAutenticado();
+        mockConstruccionDtoVacia();
+        UUID datoId = UUID.randomUUID();
+        DatoClinico d = new DatoClinico();
+        d.setId(datoId);
+        d.setTipo("Glucosa");
+        d.setValor("110");
+        d.setUnidad("mg/dL");
+        d.setHistorialClinico(h);
+        when(datoRepo.findById(datoId)).thenReturn(Optional.of(d));
+        when(datoRepo.save(any(DatoClinico.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        svc.editarDatoClinico(datoId, entrada("Glucosa", null, "95", "mg/dL", null));
+
+        assertEquals("95", d.getValor());
+        verify(datoRepo).save(d);
+        verify(auditoriaCambioService).registrarCambio(eq(u.getId().toString()), eq(u.getId().toString()),
+                isNull(), eq("Glucosa"), eq("dato_clinico"), eq(datoId.toString()),
+                anyString(), anyString(), eq(AuditoriaCambio.TipoOperacion.UPDATE), anyString());
+    }
+
+    @Test
+    void editarDatoClinico_conDatoDeOtroHistorial_lanzaIllegalArgumentException() {
+        mockUsuarioAutenticado();
+        UUID datoId = UUID.randomUUID();
+        DatoClinico deOtro = new DatoClinico();
+        deOtro.setId(datoId);
+        HistorialClinico otro = new HistorialClinico();
+        otro.setId(UUID.randomUUID());
+        deOtro.setHistorialClinico(otro);
+        when(datoRepo.findById(datoId)).thenReturn(Optional.of(deOtro));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> svc.editarDatoClinico(datoId, entrada("Glucosa", null, "95", "mg/dL", null)));
+    }
+
+    // ---- aplicación de propuestas (médico) ----
+
+    private void mockPacienteConHistorial() {
+        when(usuarioRepository.findById(u.getId())).thenReturn(Optional.of(u));
+        when(historiaRepo.findByUsuario(u)).thenReturn(Optional.of(h));
+        mockConstruccionDtoVacia();
+    }
+
+    @Test
+    void aplicarCambioMedicion_alta_auditaConElMedicoComoAutorYElMotivo() {
+        mockPacienteConHistorial();
+        UUID medicoId = UUID.randomUUID();
+        when(datoRepo.save(any(DatoClinico.class))).thenAnswer(inv -> {
+            DatoClinico dc = inv.getArgument(0);
+            dc.setId(UUID.randomUUID());
+            return dc;
+        });
+
+        svc.aplicarCambioMedicion(u.getId(), medicoId, com.hcc.tfm_hcc.model.PropuestaCambioClinico.Operacion.CREATE,
+                null, entrada("Glucosa", null, "95", "mg/dL", null), "Corrección tras consulta");
+
+        verify(auditoriaCambioService).registrarCambio(eq(medicoId.toString()), eq(u.getId().toString()),
+                eq(medicoId.toString()), eq("Glucosa"), eq("dato_clinico"), anyString(),
+                anyString(), anyString(), eq(AuditoriaCambio.TipoOperacion.CREATE), eq("Corrección tras consulta"));
+    }
+
+    @Test
+    void aplicarCambioAntecedente_borrado_auditaConElMedicoYElMotivo() {
+        mockPacienteConHistorial();
+        UUID medicoId = UUID.randomUUID();
+        UUID antId = UUID.randomUUID();
+        AntecedenteClinico ant = new AntecedenteClinico();
+        ant.setId(antId);
+        ant.setDescripcion("Dato erróneo");
+        ant.setHistorialClinico(h);
+        when(antecedenteClinicoRepository.findById(antId)).thenReturn(Optional.of(ant));
+
+        svc.aplicarCambioAntecedente(u.getId(), medicoId,
+                com.hcc.tfm_hcc.model.PropuestaCambioClinico.Operacion.DELETE, antId, null, "Antecedente registrado por error");
+
+        verify(antecedenteClinicoRepository).delete(ant);
+        verify(auditoriaCambioService).registrarCambio(eq(medicoId.toString()), eq(u.getId().toString()),
+                eq(medicoId.toString()), eq("ANTECEDENTE_CLINICO"), eq("antecedente_clinico"), eq(antId.toString()),
+                anyString(), anyString(), eq(AuditoriaCambio.TipoOperacion.DELETE), eq("Antecedente registrado por error"));
+    }
+
+    @Test
+    void aplicarCambioAlergia_edicion_lanzaIllegalArgumentException() {
+        when(usuarioRepository.findById(u.getId())).thenReturn(Optional.of(u));
+        when(historiaRepo.findByUsuario(u)).thenReturn(Optional.of(h));
+
+        assertThrows(IllegalArgumentException.class, () -> svc.aplicarCambioAlergia(u.getId(), UUID.randomUUID(),
+                com.hcc.tfm_hcc.model.PropuestaCambioClinico.Operacion.UPDATE, UUID.randomUUID(), new AlergiaDTO(), "motivo"));
+    }
+
+    @Test
+    void describirRecursoHistorial_conDatoDelPaciente_devuelveDescripcion() {
+        when(usuarioRepository.findById(u.getId())).thenReturn(Optional.of(u));
+        when(historiaRepo.findByUsuario(u)).thenReturn(Optional.of(h));
+        UUID datoId = UUID.randomUUID();
+        DatoClinico d = new DatoClinico();
+        d.setId(datoId);
+        d.setTipo("Glucosa");
+        d.setValor("110");
+        d.setUnidad("mg/dL");
+        d.setHistorialClinico(h);
+        when(datoRepo.findById(datoId)).thenReturn(Optional.of(d));
+
+        String descripcion = svc.describirRecursoHistorial(u.getId(),
+                com.hcc.tfm_hcc.model.PropuestaCambioClinico.Dominio.ANALISIS_SANGRE, datoId);
+
+        assertEquals("Glucosa: 110 mg/dL", descripcion);
+    }
+
+    @Test
+    void asegurarHistorial_cuandoNoExiste_loCrea() {
+        when(usuarioRepository.findById(u.getId())).thenReturn(Optional.of(u));
+        when(historiaRepo.findByUsuario(u)).thenReturn(Optional.empty());
+        when(historiaRepo.save(any(HistorialClinico.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        HistorialClinico creado = svc.asegurarHistorial(u.getId());
+
+        assertNotNull(creado);
+        assertEquals(u, creado.getUsuario());
+        verify(historiaRepo).save(any(HistorialClinico.class));
     }
 }

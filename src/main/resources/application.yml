@@ -2,7 +2,14 @@ spring:
   application:
     name: Historia Clinica Comun
   datasource:
-    url: jdbc:postgresql://localhost:5432/HCC_DEV
+    # sslmode controla el cifrado de la conexión con PostgreSQL (ver
+    # CONFIGURACION-SSL-TLS-POSTGRESQL.md):
+    #   prefer      -> usa TLS si el servidor lo ofrece, si no texto plano (por
+    #                  defecto; no rompe entornos sin certificados).
+    #   require     -> exige TLS pero no valida el certificado del servidor.
+    #   verify-full -> exige TLS y valida cadena + hostname (necesita DB_SSLROOTCERT).
+    # sslrootcert solo lo leen verify-ca / verify-full; con prefer/require se ignora.
+    url: "jdbc:postgresql://localhost:5432/HCC_DEV?sslmode=${DB_SSLMODE:prefer}&sslrootcert=${DB_SSLROOTCERT:}"
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
@@ -98,6 +105,15 @@ app:
     # Vida del enlace de restablecimiento de contraseña, en minutos. Pasado ese
     # tiempo el token deja de ser válido (y MongoDB lo elimina por su índice TTL).
     token-ttl-minutes: ${PASSWORD_RESET_TOKEN_TTL_MINUTES:30}
+  privacy:
+    # Identificador de la versión vigente de la política de privacidad. Se guarda junto a
+    # la fecha de consentimiento de cada usuario (RGPD art. 7.1: poder demostrar qué
+    # información aceptó). Actualizar cuando cambie el texto de la política.
+    policy-version: ${PRIVACY_POLICY_VERSION:2026-09-03}
+  registration:
+    # Edad mínima para registrarse. La LOPDGDD (art. 7) fija en 14 años la edad a partir
+    # de la cual el menor puede consentir por sí mismo el tratamiento de sus datos.
+    min-age: ${MIN_REGISTRATION_AGE:14}
   uploads:
     max-size-bytes: ${UPLOADS_MAX_SIZE_BYTES:10485760} # 10 MB
     # Lista blanca de tipos MIME y extensiones admitidos para los archivos clínicos:
@@ -122,6 +138,15 @@ spring:
   config:
     activate:
       on-profile: prod
+  datasource:
+    # En producción la conexión con PostgreSQL va cifrada y con validación
+    # completa del certificado del servidor por defecto. DB_SSLROOTCERT debe
+    # apuntar al certificado de la CA que firmó el certificado del servidor, y el
+    # host de DB_URL/este literal tiene que coincidir con el CN/SAN de ese
+    # certificado. Ajusta host, puerto y nombre de base de datos al despliegue
+    # real (o inyecta SPRING_DATASOURCE_URL con los mismos parámetros sslmode y
+    # sslrootcert).
+    url: "jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:HCC_DEV}?sslmode=${DB_SSLMODE:verify-full}&sslrootcert=${DB_SSLROOTCERT:/etc/tfm-hcc/certs/ca.crt}"
   jpa:
     hibernate:
       # En producción el esquema NUNCA lo toca Hibernate: se gestiona con los

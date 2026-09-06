@@ -19,6 +19,7 @@ test('registro de un usuario nuevo y primer login', async ({ page }) => {
   await page.locator('#email').fill(email)
   await page.locator('#password').fill(PASSWORD)
   await page.locator('#password2').fill(PASSWORD)
+  await page.locator('#aceptaTratamientoDatos').check()
 
   await page.getByRole('button', { name: 'Crear Cuenta' }).click()
 
