@@ -59,7 +59,7 @@ export default defineConfig({
       cwd: '../frontend',
       url: FRONTEND_URL,
       reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
+      timeout: 240_000,
       env: { VUE_APP_API_URL: BACKEND_URL },
     },
   ],

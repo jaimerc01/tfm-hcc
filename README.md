@@ -135,29 +135,42 @@ Disponible en `http://localhost:8080`.
 ### 5. Siembra de datos de prueba
 
 Con las bases de datos levantadas y el esquema ya creado (tras arrancar el backend
-al menos una vez), cargar en este orden:
+al menos una vez), cargar en este orden, dentro de una transacción para que un fallo
+no deje carga parcial:
 
 ```bash
-docker exec -i tfm-hcc-postgres-1 psql -U hcc -d HCC_DEV < scripts/inserts.sql
-docker exec -i tfm-hcc-postgres-1 psql -U hcc -d HCC_DEV < scripts/insert_rangos_referencia.sql
-docker exec -i tfm-hcc-postgres-1 psql -U hcc -d HCC_DEV < scripts/inserts_datos_clinicos.sql
+for f in inserts.sql insert_rangos_referencia.sql inserts_datos_clinicos.sql; do
+  docker exec -i tfm-hcc-postgres-1 psql -U hcc -d HCC_DEV \
+    -v ON_ERROR_STOP=1 --single-transaction < scripts/$f
+done
 ```
 
 - `inserts.sql`: 100 pacientes, sus médicos y un administrador, con el historial vacío.
 - `insert_rangos_referencia.sql`: rangos de referencia de cada parámetro.
 - `inserts_datos_clinicos.sql`: entre 5 y 10 analíticas por usuario a partir de
   perfiles reales de NHANES (más un pH de orina sintético). Ver
-  [scripts/nhanes/README.md](scripts/nhanes/README.md) para regenerarlo.
+  [scripts/nhanes/README.md](scripts/nhanes/README.md).
 
 Todas las cuentas de prueba usan la contraseña `password`. El administrador tiene el
 NIF `00000000T`. Los NIF de los demás usuarios están en
 `scripts/usuarios_generados.csv`.
 
-Si la base de datos no se sembró con `inserts.sql` (por ejemplo, ya tenía usuarios de
-otra ejecución), regenera solo los datos clínicos leyendo los identificadores de la
-propia base de datos:
+**Los tres ficheros son un conjunto acoplado.** `inserts_datos_clinicos.sql` enlaza
+cada dato con el historial del paciente mediante subconsultas por `id_paciente`, y
+esos identificadores tienen que ser los del `inserts.sql` versionado (que van a la
+par con `usuarios_generados.csv`). Si cargas un `inserts_datos_clinicos.sql` generado
+contra otra base de datos verás
+`null value in column "id_historial_clinico" ... violates not-null`.
+
+Regenera `inserts_datos_clinicos.sql` (necesita `pip install pandas pycryptodome
+bcrypt` y que `TFM_HCC_ENCRYPTION_KEY` coincida con la de tu `.env`):
 
 ```bash
+# A) para la siembra versionada (usuarios de usuarios_generados.csv):
+python scripts/generar_datos_clinicos.py --seed 42
+
+# B) si tu base de datos ya tenía usuarios de otra ejecución (no del inserts.sql
+#    versionado), lee los identificadores de la propia base de datos:
 python scripts/generar_datos_clinicos.py --from-db --seed 42
 ```
 
