@@ -3,75 +3,77 @@ package com.hcc.tfm_hcc.facade;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.http.ResponseEntity;
-
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 
 /**
  * Facade de administración para el sistema HCC.
  * Proporciona una interfaz unificada para las operaciones administrativas
  * relacionadas con la gestión de usuarios y perfiles médicos del sistema.
- * 
+ *
  * <p>Este facade encapsula:</p>
  * <ul>
  *   <li>Gestión completa de médicos (CRUD)</li>
  *   <li>Asignación y revocación de perfiles médicos</li>
  *   <li>Búsqueda de usuarios por identificadores</li>
- *   <li>Respuestas HTTP estandarizadas para operaciones administrativas</li>
  * </ul>
- * 
+ *
+ * <p>Devuelve DTOs y modelos de dominio, no {@code ResponseEntity}: la traducción a
+ * respuesta HTTP (código de estado incluido) es responsabilidad exclusiva del
+ * controlador.</p>
+ *
  * @author Sistema HCC
  * @version 1.0
  * @since 1.0
  */
 public interface AdminFacade {
-    
+
     /**
      * Lista todos los usuarios con perfil de médico en el sistema.
-     * 
-     * @return ResponseEntity con la lista de UsuarioDTO que tienen perfil médico
+     *
+     * @return lista de UsuarioDTO que tienen perfil médico
      */
-    ResponseEntity<List<UsuarioDTO>> listarMedicos();
-    
+    List<UsuarioDTO> listarMedicos();
+
     /**
      * Crea un nuevo usuario con perfil de médico en el sistema.
-     * 
+     *
      * @param medicoDTO Datos del médico a crear
-     * @return ResponseEntity con el UsuarioDTO del médico creado
+     * @return el UsuarioDTO del médico creado
      */
-    ResponseEntity<UsuarioDTO> crearMedico(UsuarioDTO medicoDTO);
-    
+    UsuarioDTO crearMedico(UsuarioDTO medicoDTO);
+
     /**
      * Actualiza la información de un médico existente.
-     * 
+     *
      * @param id ID único del médico a actualizar
      * @param medicoDTO Nuevos datos del médico
-     * @return ResponseEntity con el UsuarioDTO actualizado del médico
+     * @return el UsuarioDTO actualizado del médico
      */
-    ResponseEntity<UsuarioDTO> actualizarMedico(UUID id, UsuarioDTO medicoDTO);
-    
+    UsuarioDTO actualizarMedico(UUID id, UsuarioDTO medicoDTO);
+
     /**
      * Elimina un médico del sistema.
-     * 
+     *
      * @param id ID único del médico a eliminar
-     * @return ResponseEntity con el ID del médico eliminado para confirmación
+     * @return el ID del médico eliminado, para confirmación
      */
-    ResponseEntity<UUID> eliminarMedico(UUID id);
-    
+    UUID eliminarMedico(UUID id);
+
     /**
      * Asigna o revoca el perfil de médico a un usuario existente.
-     * 
+     *
      * @param id ID único del usuario al cual asignar o revocar el perfil médico
      * @param asignar true para asignar el perfil médico, false para revocarlo
-     * @return ResponseEntity con el ID del usuario afectado para confirmación
+     * @return el ID del usuario afectado, para confirmación
      */
-    ResponseEntity<UUID> setPerfilMedico(UUID id, boolean asignar);
-    
+    UUID setPerfilMedico(UUID id, boolean asignar);
+
     /**
      * Busca un usuario específico por su NIF.
-     * 
+     *
      * @param nif NIF (Número de Identificación Fiscal) del usuario a buscar
-     * @return ResponseEntity con el UsuarioDTO del usuario encontrado
+     * @return el UsuarioDTO del usuario encontrado
+     * @throws com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException si no existe ningún usuario con ese NIF
      */
-    ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(String nif);
+    UsuarioDTO buscarUsuarioPorNif(String nif);
 }

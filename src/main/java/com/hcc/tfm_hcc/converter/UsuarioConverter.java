@@ -4,9 +4,15 @@ import org.springframework.stereotype.Component;
 
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.model.Usuario;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
+@RequiredArgsConstructor
 public class UsuarioConverter {
+
+    private final HmacSearchIndexService hmacSearchIndexService;
 
     /**
      * Convierte un usuario a UsuarioDTO.
@@ -44,8 +50,10 @@ public class UsuarioConverter {
         usuario.setApellido1(dto.getApellido1());
         usuario.setApellido2(dto.getApellido2());
         usuario.setNif(dto.getNif());
+        usuario.setNifHash(hmacSearchIndexService.indexar(dto.getNif()));
         usuario.setFechaNacimiento(dto.getFechaNacimiento());
         usuario.setEmail(dto.getEmail());
+        usuario.setEmailHash(hmacSearchIndexService.indexar(dto.getEmail()));
         usuario.setTelefono(dto.getTelefono());
         usuario.setEspecialidad(dto.getEspecialidad());
         usuario.setEstadoCuenta(dto.getEstadoCuenta());

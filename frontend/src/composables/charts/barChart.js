@@ -1,5 +1,6 @@
 import * as d3 from 'd3'
 import { getThemeColor } from '@/utils/themeColors'
+import { isOutOfRecommendedRange } from './chartUtils'
 
 /**
  * Dibuja un gráfico de barras con comparación
@@ -10,6 +11,8 @@ import { getThemeColor } from '@/utils/themeColors'
 export function drawBarChart(container, data, options = {}) {
   const defaultColor = getThemeColor('--chart-default')
   const recommendedBandColor = getThemeColor('--chart-recommended-band')
+  const outOfRangeColor = getThemeColor('--chart-out-of-range')
+  const gridColor = getThemeColor('--chart-grid')
 
   const {
     label = '',
@@ -35,6 +38,7 @@ export function drawBarChart(container, data, options = {}) {
   const margin = { top: 20, right: 30, bottom: 60, left: 50 }
   const innerW = width - margin.left - margin.right
   const innerH = height - margin.top - margin.bottom
+  const barRadius = 5
 
   const svg = d3.select(container)
     .append('svg')
@@ -43,6 +47,26 @@ export function drawBarChart(container, data, options = {}) {
     .attr('role', 'img')
     .attr('aria-label', ariaLabel)
 
+  const barGradientId = `bar-gradient-${Math.random().toString(36).slice(2)}`
+  const outOfRangeGradientId = `bar-gradient-oor-${Math.random().toString(36).slice(2)}`
+  const defs = svg.append('defs')
+  ;[[barGradientId, color], [outOfRangeGradientId, outOfRangeColor]].forEach(([id, barColor]) => {
+    defs.append('linearGradient')
+      .attr('id', id)
+      .attr('x1', '0').attr('y1', '0')
+      .attr('x2', '0').attr('y2', '1')
+      .selectAll('stop')
+      .data([
+        { offset: '0%', opacity: 0.85 },
+        { offset: '100%', opacity: 1 }
+      ])
+      .enter()
+      .append('stop')
+      .attr('offset', d => d.offset)
+      .attr('stop-color', barColor)
+      .attr('stop-opacity', d => d.opacity)
+  })
+
   const g = svg.append('g')
     .attr('transform', `translate(${margin.left},${margin.top})`)
 
@@ -50,7 +74,7 @@ export function drawBarChart(container, data, options = {}) {
   const x = d3.scaleBand()
     .domain(data.map((d, i) => i))
     .range([0, innerW])
-    .padding(0.2)
+    .padding(0.3)
 
   const dataMax = d3.max(data, d => d.value)
   let domainMin = 0
@@ -61,6 +85,13 @@ export function drawBarChart(container, data, options = {}) {
     .domain([domainMin, domainMax])
     .nice()
     .range([innerH, 0])
+
+  // Cuadrícula horizontal recesiva
+  g.append('g')
+    .attr('class', 'chart-grid-lines')
+    .call(d3.axisLeft(y).tickSize(-innerW).tickFormat(''))
+    .call(sel => sel.select('.domain').remove())
+    .call(sel => sel.selectAll('line').attr('stroke', gridColor).attr('stroke-dasharray', '2,3'))
 
   // Banda de rango recomendado
   if (recommendedMin != null && recommendedMax != null) {
@@ -79,35 +110,34 @@ export function drawBarChart(container, data, options = {}) {
   const tooltip = d3.select(container)
     .append('div')
     .attr('class', 'chart-tooltip')
-    .style('position', 'absolute')
-    .style('visibility', 'hidden')
-    .style('background', 'rgba(0, 0, 0, 0.8)')
-    .style('color', 'white')
-    .style('padding', '8px 12px')
-    .style('border-radius', '6px')
-    .style('font-size', '13px')
-    .style('pointer-events', 'none')
-    .style('z-index', '1000')
 
-  // Barras
+  // Barras (con esquinas superiores redondeadas mediante un path)
+  function barPath(xPos, yPos, w, h, r) {
+    const radius = Math.min(r, w / 2, h)
+    if (h <= 0) return `M${xPos},${yPos + h} h${w} v0 h-${w} Z`
+    return `M${xPos},${yPos + h}
+      L${xPos},${yPos + radius}
+      Q${xPos},${yPos} ${xPos + radius},${yPos}
+      L${xPos + w - radius},${yPos}
+      Q${xPos + w},${yPos} ${xPos + w},${yPos + radius}
+      L${xPos + w},${yPos + h}
+      Z`
+  }
+
   g.selectAll('.bar')
     .data(data)
     .enter()
-    .append('rect')
+    .append('path')
     .attr('class', 'bar')
-    .attr('x', (d, i) => x(i))
-    .attr('y', innerH)
-    .attr('width', x.bandwidth())
-    .attr('height', 0)
-    .attr('fill', color)
+    .attr('d', d => barPath(x(data.indexOf(d)), innerH, x.bandwidth(), 0, barRadius))
+    .attr('fill', d => `url(#${isOutOfRecommendedRange(d.value, recommendedMin, recommendedMax) ? outOfRangeGradientId : barGradientId})`)
     .style('cursor', 'pointer')
     .on('mouseover', function(event, d) {
-      d3.select(this).attr('opacity', 0.7)
       tooltip
         .style('visibility', 'visible')
-        .html(`<strong>${label}</strong><br/>${d.value}<br/>${d.date.toLocaleDateString('es-ES', { 
-          year: 'numeric', 
-          month: 'short', 
+        .html(`<strong>${label}</strong>${d.value}<br/>${d.date.toLocaleDateString('es-ES', {
+          year: 'numeric',
+          month: 'short',
           day: 'numeric'
         })}`)
     })
@@ -117,13 +147,20 @@ export function drawBarChart(container, data, options = {}) {
         .style('left', (event.pageX + 10) + 'px')
     })
     .on('mouseout', function() {
-      d3.select(this).attr('opacity', 1)
       tooltip.style('visibility', 'hidden')
     })
     .transition()
     .duration(800)
-    .attr('y', d => y(d.value))
-    .attr('height', d => innerH - y(d.value))
+    .attrTween('d', function (d) {
+      const i = data.indexOf(d)
+      const targetY = y(d.value)
+      const targetH = innerH - targetY
+      const interpolateH = d3.interpolate(0, targetH)
+      return t => {
+        const h = interpolateH(t)
+        return barPath(x(i), innerH - h, x.bandwidth(), h, barRadius)
+      }
+    })
 
   // Ejes
   g.append('g')

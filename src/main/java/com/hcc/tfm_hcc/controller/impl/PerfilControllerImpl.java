@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hcc.tfm_hcc.constants.RestUrls;
 import com.hcc.tfm_hcc.controller.PerfilController;
+import com.hcc.tfm_hcc.dto.PerfilDTO;
 import com.hcc.tfm_hcc.facade.PerfilFacade;
 import com.hcc.tfm_hcc.model.Perfil;
 import com.hcc.tfm_hcc.exception.PerfilNotFoundException;
@@ -48,7 +49,7 @@ public class PerfilControllerImpl implements PerfilController {
      */
     @Override
     @GetMapping(RestUrls.PERFIL_ROL)
-    public ResponseEntity<Perfil> getPerfilByRol(@PathVariable("rol") String rol) {
+    public ResponseEntity<PerfilDTO> getPerfilByRol(@PathVariable("rol") String rol) {
         log.info("Consultando perfil para rol: {}", rol);
         
         try {
@@ -68,7 +69,7 @@ public class PerfilControllerImpl implements PerfilController {
             }
             
             log.info("Perfil encontrado exitosamente para rol: {}, ID: {}", rolNormalizado, perfil.getId());
-            return ResponseEntity.ok(perfil);
+            return ResponseEntity.ok(toDto(perfil));
             
         } catch (PerfilValidationException e) {
             log.warn("Parámetro inválido para consulta de perfil, rol: {}, error: {}", rol, e.getMessage());
@@ -81,5 +82,16 @@ public class PerfilControllerImpl implements PerfilController {
             log.error("Error interno al consultar perfil para rol: {}, error: {}", rol, e.getMessage(), e);
             throw new PerfilOperacionException("Error interno al consultar perfil", e);
         }
+    }
+
+    /**
+     * Convierte la entidad {@link Perfil} en el DTO que expone la API, dejando fuera los
+     * campos de auditoría heredados de {@code BaseEntity}.
+     */
+    private PerfilDTO toDto(Perfil perfil) {
+        PerfilDTO dto = new PerfilDTO();
+        dto.setId(perfil.getId() != null ? perfil.getId().toString() : null);
+        dto.setRol(perfil.getRol());
+        return dto;
     }
 }

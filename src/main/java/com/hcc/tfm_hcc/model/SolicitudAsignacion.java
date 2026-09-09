@@ -5,8 +5,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.NoArgsConstructor;
 
 /**
@@ -26,10 +27,11 @@ import lombok.NoArgsConstructor;
  * @version 1.0
  * @since 1.0
  */
-@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @Entity
-@Data
+@Getter
+@Setter
+@ToString
 @Table(name = "solicitud_asignacion")
 public class SolicitudAsignacion extends BaseEntity {
 
@@ -51,9 +53,22 @@ public class SolicitudAsignacion extends BaseEntity {
     @JoinColumn(name = "id_medico", referencedColumnName = "id", nullable = false)
     private Usuario medico;
 
+    /** Solicitud enviada por el médico, a la espera de que el paciente responda. */
+    public static final String ESTADO_PENDIENTE = "PENDIENTE";
+
+    /** El paciente ha aceptado la solicitud (se crea la relación médico-paciente). */
+    public static final String ESTADO_ACEPTADA = "ACEPTADA";
+
+    /** El paciente ha rechazado la solicitud. */
+    public static final String ESTADO_RECHAZADA = "RECHAZADA";
+
+    /** Solicitud anulada (p. ej. al retirar el perfil médico del solicitante). */
+    public static final String ESTADO_REVOCADA = "REVOCADA";
+
     /**
      * Estado actual de la solicitud de asignación.
-     * Valores posibles: "PENDIENTE", "ACEPTADA", "RECHAZADA", "REVOCADA".
+     * Valores posibles: {@link #ESTADO_PENDIENTE}, {@link #ESTADO_ACEPTADA},
+     * {@link #ESTADO_RECHAZADA}, {@link #ESTADO_REVOCADA}.
      */
     @Column(name = "estado", nullable = false)
     private String estado;

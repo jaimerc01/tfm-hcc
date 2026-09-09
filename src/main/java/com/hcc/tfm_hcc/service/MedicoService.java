@@ -56,7 +56,9 @@ public interface MedicoService {
      * 
      * @param id ID único del médico a eliminar
      * @return UUID con el ID del médico eliminado
-     * @throws IllegalArgumentException si el ID es inválido o el médico no existe
+     * @throws IllegalArgumentException si el ID es inválido
+     * @throws com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException si no existe un usuario con
+     *         ese ID o si existe pero no tiene actualmente el perfil MEDICO
      */
     UUID eliminarMedico(UUID id);
 
@@ -70,14 +72,26 @@ public interface MedicoService {
      * @throws RuntimeException si el paciente no es encontrado
      */
     PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento);
-    
+
+    /**
+     * Lista los pacientes con una relación médico-paciente activa para un médico dado.
+     *
+     * @param nifMedico NIF del médico del cual listar los pacientes asignados
+     * @return Lista de PacienteDTO con los pacientes actualmente asignados al médico
+     * @throws IllegalArgumentException si el médico no existe
+     */
+    List<PacienteDTO> listarMisPacientes(String nifMedico);
+
     /**
      * Asigna o revoca el perfil de médico a un usuario existente.
      * 
      * @param id ID único del usuario al cual asignar o revocar el perfil médico
      * @param asignar true para asignar el perfil médico, false para revocarlo
      * @return UUID con el ID del usuario afectado para confirmación
-     * @throws IllegalArgumentException si el ID es inválido o el usuario no existe
+     * @throws IllegalArgumentException si el ID es inválido
+     * @throws com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException si no existe un usuario con
+     *         ese ID, o si {@code asignar} es {@code false} y el usuario no tiene actualmente
+     *         el perfil MEDICO
      */
     UUID setPerfilMedico(UUID id, boolean asignar);
 }

@@ -7,8 +7,12 @@ import java.util.UUID;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.hcc.tfm_hcc.dto.AlergiaDTO;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
 
 /**
  * Facade para la gestión integral de historiales clínicos en el sistema HCC.
@@ -77,74 +81,126 @@ public interface HistorialClinicoFacade {
     HistorialClinicoDTO obtenerMiHistoria();
     
     /**
-     * Actualiza la información de identificación en el historial clínico.
-     * 
-     * @param historialClinicoDTO Datos de identificación
+     * Crea un nuevo antecedente clínico (personal o familiar) en el historial.
+     *
+     * @param antecedenteDTO categoría y descripción del antecedente
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarIdentificacion(HistorialClinicoDTO historialClinicoDTO);
-    
+    HistorialClinicoDTO crearAntecedente(AntecedenteClinicoDTO antecedenteDTO);
+
     /**
-     * Actualiza los antecedentes familiares en el historial clínico.
-     * 
-     * @param antecedentesFamiliares Texto con los antecedentes familiares del paciente
+     * Edita un antecedente clínico existente.
+     *
+     * @param id ID del antecedente a editar
+     * @param antecedenteDTO categoría y descripción actualizadas
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarAntecedentes(String antecedentesFamiliares);
-    
+    HistorialClinicoDTO editarAntecedente(UUID id, AntecedenteClinicoDTO antecedenteDTO);
+
     /**
-     * Actualiza la información de alergias en el historial clínico.
-     * 
-     * @param alergiasJson Datos de alergias en formato JSON
+     * Elimina un antecedente clínico específico.
+     *
+     * @param id ID del antecedente a eliminar
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarAlergias(String alergiasJson);
-    
+    HistorialClinicoDTO borrarAntecedente(UUID id);
+
     /**
-     * Añade nuevas alergias sin eliminar las existentes.
-     * 
-     * @param alergiasJson Datos de alergias en formato texto (una por línea)
+     * Crea una nueva alergia o intolerancia en el historial clínico.
+     *
+     * @param alergiaDTO descripción de la alergia
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO anadirAlergias(String alergiasJson);
-    
+    HistorialClinicoDTO crearAlergia(AlergiaDTO alergiaDTO);
+
     /**
-     * Actualiza los análisis de sangre en el historial clínico.
-     * 
-     * @param analisisJson Datos de análisis de sangre en formato JSON
+     * Elimina una alergia específica.
+     *
+     * @param id ID de la alergia a eliminar
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO actualizarAnalisisSangre(String analisisJson);
-    
+    HistorialClinicoDTO borrarAlergia(UUID id);
+
+    /**
+     * Actualiza los análisis de sangre en el historial clínico (reemplaza los existentes).
+     *
+     * @param analisis Mediciones de análisis de sangre
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO actualizarAnalisisSangre(List<DatoClinicoEntradaDTO> analisis);
+
     /**
      * Añade nuevos análisis de sangre sin eliminar los existentes.
-     * 
-     * @param analisisJson Datos de análisis de sangre en formato JSON
+     *
+     * @param analisis Mediciones de análisis de sangre
      * @return HistorialClinicoDTO actualizado
      */
-    HistorialClinicoDTO anadirAnalisisSangre(String analisisJson);
-    
+    HistorialClinicoDTO anadirAnalisisSangre(List<DatoClinicoEntradaDTO> analisis);
+
+    /**
+     * Actualiza los signos vitales en el historial clínico (reemplaza los existentes).
+     *
+     * @param signosVitales Mediciones de signos vitales
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO actualizarSignosVitales(List<DatoClinicoEntradaDTO> signosVitales);
+
+    /**
+     * Añade nuevos signos vitales sin eliminar los existentes.
+     *
+     * @param signosVitales Mediciones de signos vitales
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO anadirSignosVitales(List<DatoClinicoEntradaDTO> signosVitales);
+
+    /**
+     * Actualiza el análisis de orina en el historial clínico (reemplaza los existentes).
+     *
+     * @param analisisOrina Mediciones de análisis de orina
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO actualizarAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina);
+
+    /**
+     * Añade nuevos datos de análisis de orina sin eliminar los existentes.
+     *
+     * @param analisisOrina Mediciones de análisis de orina
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO anadirAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina);
+
+    /**
+     * Edita un dato clínico cuantitativo ya guardado del historial del usuario autenticado.
+     *
+     * @param id ID del dato clínico a editar
+     * @param datos nuevos valores de la medición
+     * @return HistorialClinicoDTO actualizado
+     */
+    HistorialClinicoDTO editarDatoClinico(UUID id, DatoClinicoEntradaDTO datos);
+
     /**
      * Elimina un dato clínico específico del historial.
-     * 
+     *
      * @param id ID único del dato clínico a eliminar
      */
     void borrarDatoClinico(UUID id);
-    
+
     /**
-     * Elimina un antecedente específico por su índice en la lista.
-     * 
-     * @param index Índice del antecedente a eliminar (basado en cero)
-     * @return HistorialClinicoDTO actualizado
+     * Lista todas las propuestas de cambio sobre el historial del usuario autenticado que un
+     * médico ha enviado: las que siguen pendientes de confirmar y también las ya resueltas
+     * (aceptadas, rechazadas o anuladas), de la más reciente a la más antigua.
+     *
+     * @return lista de PropuestaCambioClinicoDTO ordenada por fecha de creación descendente
      */
-    HistorialClinicoDTO borrarAntecedente(int index);
-    
+    List<PropuestaCambioClinicoDTO> listarPropuestasCambio();
+
     /**
-     * Edita un antecedente específico por su índice en la lista.
-     * 
-     * @param index Índice del antecedente a editar (basado en cero)
-     * @param texto Nuevo texto para el antecedente
-     * @return HistorialClinicoDTO actualizado
+     * Resuelve una propuesta de cambio en el historial del usuario autenticado. Si la acepta, el
+     * cambio se aplica y queda auditado con el médico como autor; si la rechaza, se descarta.
+     *
+     * @param id ID de la propuesta
+     * @param aceptar {@code true} para aceptar y aplicar el cambio, {@code false} para rechazarlo
+     * @return la propuesta resuelta
      */
-    HistorialClinicoDTO editarAntecedente(int index, String texto);
+    PropuestaCambioClinicoDTO responderPropuestaCambio(UUID id, boolean aceptar);
 }

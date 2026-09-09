@@ -4,13 +4,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+import com.hcc.tfm_hcc.constants.ErrorMessages;
+import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException;
 import com.hcc.tfm_hcc.facade.UsuarioFacade;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
+import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
+import com.hcc.tfm_hcc.service.AnotacionMedicaService;
 import com.hcc.tfm_hcc.service.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
@@ -40,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0
  */
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class UsuarioFacadeImpl implements UsuarioFacade {
 
@@ -57,6 +62,11 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
      * Mapper para conversión entre entidades y DTOs de usuario.
      */
     private final UsuarioMapper usuarioMapper;
+
+    /**
+     * Servicio para la consulta de anotaciones médicas recibidas por el usuario.
+     */
+    private final AnotacionMedicaService anotacionMedicaService;
 
     // ===============================
     // MÉTODOS DE GESTIÓN DE USUARIOS
@@ -199,21 +209,73 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
 
     /**
      * Elimina la cuenta del usuario autenticado actualmente.
-     * 
+     *
+     * @param currentPassword contraseña actual del usuario, exigida como confirmación
+     * @throws ReautenticacionRequeridaException Si la contraseña falta o no coincide
      * @throws RuntimeException Si ocurre un error durante la eliminación
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public void deleteCuentaActual() {
+    public void deleteCuentaActual(String currentPassword) {
         log.debug("Iniciando eliminación de cuenta del usuario autenticado");
-        
+
         try {
-            usuarioService.deleteCuentaActual();
-            
+            usuarioService.deleteCuentaActual(currentPassword);
+
             log.info("Cuenta de usuario eliminada exitosamente");
+        } catch (ReautenticacionRequeridaException e) {
+            log.warn("Reautenticación requerida para eliminar la cuenta");
+            throw e;
         } catch (Exception e) {
             log.error("Error inesperado durante eliminación de cuenta: {}", e.getMessage(), e);
             throw new RuntimeException("Error interno durante la eliminación de cuenta", e);
+        }
+    }
+
+    /**
+     * Limita el tratamiento de los datos del usuario autenticado (derecho de limitación
+     * del tratamiento, art. 18 RGPD).
+     *
+     * @throws IllegalStateException Si el usuario no está autenticado o su cuenta ya está eliminada
+     * @throws RuntimeException Si ocurre un error inesperado
+     */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public void limitarTratamiento() {
+        log.debug("Limitando el tratamiento de datos del usuario autenticado");
+
+        try {
+            usuarioService.limitarTratamiento();
+            log.info("Tratamiento de datos limitado exitosamente");
+        } catch (IllegalStateException e) {
+            log.warn("Error de validación al limitar el tratamiento: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al limitar el tratamiento: {}", e.getMessage(), e);
+            throw new RuntimeException("Error interno al limitar el tratamiento de datos", e);
+        }
+    }
+
+    /**
+     * Revierte la limitación del tratamiento del usuario autenticado.
+     *
+     * @throws IllegalStateException Si el usuario no está autenticado o su cuenta ya está eliminada
+     * @throws RuntimeException Si ocurre un error inesperado
+     */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public void reanudarTratamiento() {
+        log.debug("Reanudando el tratamiento de datos del usuario autenticado");
+
+        try {
+            usuarioService.reanudarTratamiento();
+            log.info("Tratamiento de datos reanudado exitosamente");
+        } catch (IllegalStateException e) {
+            log.warn("Error de validación al reanudar el tratamiento: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al reanudar el tratamiento: {}", e.getMessage(), e);
+            throw new RuntimeException("Error interno al reanudar el tratamiento de datos", e);
         }
     }
 
@@ -255,20 +317,25 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
 
     /**
      * Exporta todos los datos del usuario autenticado.
-     * 
+     *
+     * @param currentPassword contraseña actual del usuario, exigida como confirmación
      * @return UserExportDTO Los datos completos del usuario para exportación
+     * @throws ReautenticacionRequeridaException Si la contraseña falta o no coincide
      * @throws RuntimeException Si ocurre un error durante la exportación
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public UserExportDTO exportUsuario() {
+    public UserExportDTO exportUsuario(String currentPassword) {
         log.debug("Iniciando exportación de datos del usuario autenticado");
-        
+
         try {
-            UserExportDTO exportData = usuarioService.exportUsuario();
-            
+            UserExportDTO exportData = usuarioService.exportUsuario(currentPassword);
+
             log.info("Datos de usuario exportados exitosamente");
             return exportData;
+        } catch (ReautenticacionRequeridaException e) {
+            log.warn("Reautenticación requerida para exportar los datos del usuario");
+            throw e;
         } catch (Exception e) {
             log.error("Error inesperado durante exportación de usuario: {}", e.getMessage(), e);
             throw new RuntimeException("Error interno durante la exportación de datos", e);
@@ -330,6 +397,82 @@ public class UsuarioFacadeImpl implements UsuarioFacade {
         } catch (Exception e) {
             log.error("Error inesperado durante actualización de solicitud: {}", e.getMessage(), e);
             throw new RuntimeException("Error interno durante la actualización de solicitud", e);
+        }
+    }
+
+    // ===============================
+    // MÉTODOS DE SEGUNDO FACTOR (TOTP)
+    // ===============================
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public TotpSetupResponseDTO setupTotp() {
+        log.debug("Iniciando configuración de segundo factor para usuario autenticado");
+        TotpSetupResponseDTO resultado = usuarioService.setupTotp();
+        log.info("Secreto de segundo factor generado, pendiente de confirmar");
+        return resultado;
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public void confirmTotp(String code) {
+        log.debug("Confirmando activación de segundo factor para usuario autenticado");
+        usuarioService.confirmTotp(code);
+        log.info("Segundo factor activado exitosamente");
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public void disableTotp(String code) {
+        log.debug("Desactivando segundo factor para usuario autenticado");
+        usuarioService.disableTotp(code);
+        log.info("Segundo factor desactivado exitosamente");
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public boolean isTotpEnabled() {
+        return usuarioService.isTotpEnabled();
+    }
+
+    // ===============================
+    // MÉTODOS DE ANOTACIONES MÉDICAS
+    // ===============================
+
+    /**
+     * Lista las anotaciones médicas recibidas por el usuario autenticado.
+     *
+     * @param nifMedicoFiltro NIF del médico por el que filtrar (opcional)
+     * @param desde fecha de inicio del rango (opcional)
+     * @param hasta fecha de fin del rango (opcional)
+     * @return List<AnotacionMedica> Anotaciones recibidas por el usuario actual
+     * @throws IllegalArgumentException Si el rango de fechas no es válido
+     * @throws RuntimeException Si ocurre un error durante la consulta
+     */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public List<AnotacionMedica> listarMisAnotaciones(String nifMedicoFiltro, LocalDateTime desde, LocalDateTime hasta) {
+        log.debug("Obteniendo anotaciones médicas del usuario autenticado");
+
+        try {
+            validarRangoFechas(desde, hasta);
+
+            UsuarioDTO usuarioActual = usuarioService.getUsuarioActual();
+            if (usuarioActual == null) {
+                throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
+            }
+
+            List<AnotacionMedica> anotaciones =
+                anotacionMedicaService.listarAnotacionesPaciente(usuarioActual.getNif(), nifMedicoFiltro, desde, hasta);
+
+            log.info("Anotaciones médicas obtenidas: {} registros", anotaciones != null ? anotaciones.size() : 0);
+            return anotaciones;
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("Error de validación al consultar anotaciones médicas: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error inesperado al consultar anotaciones médicas: {}", e.getMessage(), e);
+            throw new RuntimeException("Error interno durante la consulta de anotaciones médicas", e);
         }
     }
 

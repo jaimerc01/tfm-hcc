@@ -1,0 +1,50 @@
+# Capa local que añade TLS al PostgreSQL de desarrollo.
+#
+# Docker Compose fusiona este archivo sobre compose.yaml de forma automática al
+# ejecutar `docker compose up -d` (no hay que pasar `-f`).
+#
+# Va versionado, pero los certificados NO (certs/postgres/*.crt y *.key están en
+# .gitignore). Si al arrancar el contenedor no encuentra los certificados, se
+# arranca PostgreSQL SIN cifrar, como el compose.yaml base: así un clon recién
+# hecho funciona igual. Para activar TLS:
+#
+#     bash certs/postgres/generar.sh
+#     docker compose up -d
+#
+# Ver CONFIGURACION-SSL-TLS-POSTGRESQL.md.
+
+services:
+  postgres:
+    volumes:
+      - hcc-postgres:/var/lib/postgresql/data
+      - ./certs/postgres:/etc/postgresql/certs:ro
+    # PostgreSQL exige que la clave privada TLS sea 0600 y de su propio usuario.
+    # Un bind mount desde el host (sobre todo en Windows) no conserva dueño ni
+    # permisos, así que el entrypoint copia los certificados a una ruta efímera
+    # dentro del contenedor, corrige dueño/permisos y arranca el servidor con TLS
+    # y con el pg_hba que solo admite `hostssl`. Si no hay certificados, arranca
+    # sin cifrar. El script no usa variables de shell a propósito: Docker Compose
+    # interpola `$VAR` en todo el archivo y se las comería.
+    entrypoint:
+      - sh
+      - -c
+      - |
+        set -e
+        if [ ! -f /etc/postgresql/certs/server.crt ] || [ ! -f /etc/postgresql/certs/server.key ]; then
+          echo "-------------------------------------------------------------------"
+          echo "AVISO: no hay certificados en certs/postgres/ (server.crt/server.key)."
+          echo "PostgreSQL arranca SIN cifrado TLS. Para activarlo:"
+          echo "    bash certs/postgres/generar.sh && docker compose up -d"
+          echo "-------------------------------------------------------------------"
+          exec docker-entrypoint.sh postgres
+        fi
+        install -d -o postgres -g postgres -m 750 /var/lib/postgresql/certs
+        cp /etc/postgresql/certs/server.crt /etc/postgresql/certs/server.key /etc/postgresql/certs/pg_hba.conf /var/lib/postgresql/certs/
+        chown postgres:postgres /var/lib/postgresql/certs/server.crt /var/lib/postgresql/certs/server.key /var/lib/postgresql/certs/pg_hba.conf
+        chmod 600 /var/lib/postgresql/certs/server.key
+        chmod 644 /var/lib/postgresql/certs/server.crt /var/lib/postgresql/certs/pg_hba.conf
+        exec docker-entrypoint.sh postgres \
+          -c ssl=on \
+          -c ssl_cert_file=/var/lib/postgresql/certs/server.crt \
+          -c ssl_key_file=/var/lib/postgresql/certs/server.key \
+          -c hba_file=/var/lib/postgresql/certs/pg_hba.conf

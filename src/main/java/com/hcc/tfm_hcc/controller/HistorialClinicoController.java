@@ -11,8 +11,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.hcc.tfm_hcc.dto.AlergiaDTO;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.dto.ResponderPropuestaRequestDTO;
 
 /**
  * Controlador REST para la gestión integral de historiales clínicos.
@@ -76,36 +81,53 @@ public interface HistorialClinicoController {
     ResponseEntity<HistorialClinicoDTO> getMiHistoria();
     
     /**
-     * Actualiza la información de identificación en el historial clínico.
-     * 
-     * @param historialClinicoDTO Datos de identificación
+     * Crea un nuevo antecedente clínico (personal o familiar) en el historial.
+     *
+     * @param antecedenteDTO Categoría y descripción del antecedente
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody HistorialClinicoDTO historialClinicoDTO);
-    
+    ResponseEntity<HistorialClinicoDTO> crearAntecedente(@RequestBody AntecedenteClinicoDTO antecedenteDTO);
+
     /**
-     * Actualiza los antecedentes familiares en el historial clínico.
-     * 
-     * @param antecedentesFamiliares Texto con los antecedentes familiares
+     * Edita un antecedente clínico existente.
+     *
+     * @param id ID del antecedente a editar
+     * @param antecedenteDTO Categoría y descripción actualizadas
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarAntecedentes(@RequestBody String antecedentesFamiliares);
-    
+    ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("id") UUID id, @RequestBody AntecedenteClinicoDTO antecedenteDTO);
+
     /**
-     * Actualiza la información de alergias en el historial clínico.
-     * 
-     * @param alergiasJson Datos de alergias en formato JSON
+     * Elimina un antecedente clínico específico.
+     *
+     * @param id ID del antecedente a eliminar
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarAlergias(@RequestBody String alergiasJson);
-    
+    ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("id") UUID id);
+
+    /**
+     * Crea una nueva alergia o intolerancia en el historial clínico.
+     *
+     * @param alergiaDTO Descripción de la alergia
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> crearAlergia(@RequestBody AlergiaDTO alergiaDTO);
+
+    /**
+     * Elimina una alergia específica.
+     *
+     * @param id ID de la alergia a eliminar
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> borrarAlergia(@PathVariable("id") UUID id);
+
     /**
      * Actualiza los análisis de sangre en el historial clínico.
      * 
-     * @param analisisJson Datos de análisis de sangre en formato JSON
+     * @param analisis Mediciones de análisis de sangre
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody String analisisJson);
+    ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody List<DatoClinicoEntradaDTO> analisis);
     
     /**
      * Crea nuevos análisis de sangre en el historial clínico.
@@ -115,35 +137,76 @@ public interface HistorialClinicoController {
      * y se asignan automáticamente los rangos de referencia correspondientes
      * cuando están disponibles en el sistema.</p>
      * 
-     * @param analisisJson Datos de análisis de sangre en formato JSON
+     * @param analisis Mediciones de análisis de sangre
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
-    ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson);
-    
+    ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody List<DatoClinicoEntradaDTO> analisis);
+
+    /**
+     * Actualiza los signos vitales en el historial clínico.
+     *
+     * @param signosVitales Mediciones de signos vitales
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> actualizarSignosVitales(@RequestBody List<DatoClinicoEntradaDTO> signosVitales);
+
+    /**
+     * Crea nuevos signos vitales en el historial clínico sin eliminar los existentes.
+     *
+     * @param signosVitales Mediciones de signos vitales
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> crearSignosVitales(@RequestBody List<DatoClinicoEntradaDTO> signosVitales);
+
+    /**
+     * Actualiza el análisis de orina en el historial clínico.
+     *
+     * @param analisisOrina Mediciones de análisis de orina
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> actualizarAnalisisOrina(@RequestBody List<DatoClinicoEntradaDTO> analisisOrina);
+
+    /**
+     * Crea nuevos datos de análisis de orina en el historial clínico sin eliminar los existentes.
+     *
+     * @param analisisOrina Mediciones de análisis de orina
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> crearAnalisisOrina(@RequestBody List<DatoClinicoEntradaDTO> analisisOrina);
+
+    /**
+     * Edita un dato clínico cuantitativo ya guardado del historial del usuario autenticado.
+     *
+     * @param id ID del dato clínico a editar
+     * @param datos nuevos valores de la medición (parámetro, valor, unidad, fecha)
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    ResponseEntity<HistorialClinicoDTO> editarDatoClinico(@PathVariable("id") UUID id,
+                                                          @RequestBody DatoClinicoEntradaDTO datos);
+
     /**
      * Elimina un dato clínico específico del historial.
-     * 
+     *
      * @param id ID único del dato clínico a eliminar
      * @return ResponseEntity con el ID del dato clínico eliminado para confirmación
      */
     ResponseEntity<UUID> borrarDatoClinico(@PathVariable("id") UUID id);
-    
 
-    //TODO: revisar por qué se utiliza el índice para editar y eliminar antecedentes, en lugar de un ID único como el resto de datos clínicos. Posible refactorización a futuro para unificar criterios de identificación.
     /**
-     * Elimina un antecedente específico por su índice.
-     * 
-     * @param index Índice del antecedente a eliminar
-     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     * Lista las propuestas de cambio que un médico ha enviado sobre el historial del usuario
+     * autenticado: las pendientes de confirmar y el histórico de las ya resueltas.
+     *
+     * @return ResponseEntity con la lista de PropuestaCambioClinicoDTO, de la más reciente a la más antigua
      */
-    ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("index") int index);
-    
+    ResponseEntity<List<PropuestaCambioClinicoDTO>> listarPropuestasCambio();
+
     /**
-     * Edita un antecedente específico por su índice.
-     * 
-     * @param index Índice del antecedente a editar
-     * @param texto Nuevo texto para el antecedente
-     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     * Resuelve una propuesta de cambio sobre el historial del usuario autenticado.
+     *
+     * @param id ID de la propuesta
+     * @param request cuerpo con {@code aceptar = true} para aplicar el cambio o {@code false} para rechazarlo
+     * @return ResponseEntity con la PropuestaCambioClinicoDTO resuelta
      */
-    ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("index") int index, @RequestBody String texto);
+    ResponseEntity<PropuestaCambioClinicoDTO> responderPropuestaCambio(@PathVariable("id") UUID id,
+                                                                       @RequestBody ResponderPropuestaRequestDTO request);
 }

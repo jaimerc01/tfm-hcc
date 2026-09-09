@@ -1,12 +1,10 @@
 package com.hcc.tfm_hcc.facade.impl;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
 import com.hcc.tfm_hcc.model.Notificacion;
@@ -15,7 +13,9 @@ import com.hcc.tfm_hcc.exception.NotificacionValidationException;
 import com.hcc.tfm_hcc.exception.NotificacionOperacionException;
 import com.hcc.tfm_hcc.converter.NotificacionConverter;
 import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.dto.NotificacionPageDTO;
 import com.hcc.tfm_hcc.exception.NotificacionAccesoException;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0
  */
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class NotificacionFacadeImpl implements NotificacionFacade {
 
@@ -91,20 +91,21 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      */
     @Override
     public NotificacionDTO crearNotificacionParaUsuario(String usuarioNif, String mensaje) {
-        log.debug("Creando notificación para usuario NIF: {} - mensaje: {}", usuarioNif, mensaje);
+        String usuarioNifLog = LogMaskUtil.enmascarar(usuarioNif);
+        log.debug("Creando notificación para usuario NIF: {} - mensaje: {}", usuarioNifLog, mensaje);
         try {
             Notificacion notificacion = notificacionService.crearNotificacionParaUsuario(usuarioNif, mensaje);
             NotificacionDTO notificacionDTO = notificacionConverter.toDto(notificacion);
-            log.info("Notificación creada para NIF: {}", usuarioNif);
+            log.info("Notificación creada para NIF: {}", usuarioNifLog);
             return notificacionDTO;
         } catch (IllegalArgumentException e) {
-            log.warn("Validación al crear notificación para {}: {}", usuarioNif, e.getMessage());
+            log.warn("Validación al crear notificación para {}: {}", usuarioNifLog, e.getMessage());
             throw new NotificacionValidationException(e.getMessage(), e);
         } catch (SecurityException e) {
-            log.warn("Acceso denegado al crear notificación para {}: {}", usuarioNif, e.getMessage());
+            log.warn("Acceso denegado al crear notificación para {}: {}", usuarioNifLog, e.getMessage());
             throw new NotificacionAccesoException(e.getMessage(), e);
         } catch (Exception e) {
-            log.error("Error inesperado al crear notificación para {}: {}", usuarioNif, e.getMessage(), e);
+            log.error("Error inesperado al crear notificación para {}: {}", usuarioNifLog, e.getMessage(), e);
             throw new NotificacionOperacionException("Error interno al crear notificación", e);
         }
     }
@@ -114,22 +115,20 @@ public class NotificacionFacadeImpl implements NotificacionFacade {
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public Map<String, NotificacionDTO> listarNotificacionesUsuarioActual(int page, int size) {
-        log.debug("Obteniendo notificaciones paginadas del usuario autenticado - Página: {}, Tamaño: {}", 
+    public NotificacionPageDTO listarNotificacionesUsuarioActual(int page, int size) {
+        log.debug("Obteniendo notificaciones paginadas del usuario autenticado - Página: {}, Tamaño: {}",
                 page, size);
-        
+
         try {
             validarParametrosPaginacion(page, size);
-            
+
             Page<Notificacion> pageNotificaciones = notificacionService.listarNotificacionesUsuarioActual(page, size);
-            
+
             List<NotificacionDTO> items = notificacionConverter.toDtoList(pageNotificaciones.getContent());
-            Map<String, NotificacionDTO> resultado = items.stream()
-                    .collect(Collectors.toMap(NotificacionDTO::getId, n -> n));
-            
-            log.info("Notificaciones paginadas obtenidas: {} de {} registros", 
+
+            log.info("Notificaciones paginadas obtenidas: {} de {} registros",
                     items.size(), pageNotificaciones.getTotalElements());
-            return resultado;
+            return new NotificacionPageDTO(items, pageNotificaciones.getTotalElements());
         } catch (IllegalArgumentException e) {
             log.warn("Error de validación en paginación de notificaciones: {}", e.getMessage());
             throw new NotificacionValidationException(e.getMessage(), e);

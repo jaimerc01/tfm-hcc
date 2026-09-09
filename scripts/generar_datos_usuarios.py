@@ -1,20 +1,42 @@
 #!/usr/bin/env python3
 """
-Generador de datos sintéticos para tablas:
- - public.usuario
- - public.perfil_usuario
- - public.historial_clinico
+Generador de datos sintéticos para el Historial Clínico Compartido (tfm-hcc).
 
-Además genera un archivo CSV con todos los datos en texto plano:
+Puebla las tablas:
+ - public.perfil            (PACIENTE / MEDICO / ADMINISTRADOR, con UUID fijos)
+ - public.usuario           (con el consentimiento del alta registrado, ver abajo)
+ - public.perfil_usuario
+ - public.historial_clinico (uno por usuario, vacío)
+ - public.medico_paciente   (cada médico generado queda con entre 1 y 5 pacientes
+   asignados en estado ACTIVA, elegidos al azar entre los pacientes generados)
+
+Genera N pacientes + N//15 médicos + 1 administrador (NIF fijo, ver ADMIN_NIF).
+NO siembra datos clínicos (antecedentes, alergias, análisis, signos vitales): los
+usuarios arrancan con el historial vacío, igual que tras registrarse.
+
+y escribe además un CSV con los datos en claro para poder iniciar sesión:
     usuarios_generados.csv
 
-Características:
- - Cifra columnas sensibles con AES-128 ECB + PKCS7 + Base64 (igual a AESEncryptionConverter de Java)
- - Hashea la contraseña con bcrypt (compatible con Spring Security). La contraseña es fija: "password"
- - Regla de perfiles: por cada 15 pacientes, 1 médico; los médicos también tendrán perfil de PACIENTE
- - Crea historial_clinico para cada usuario con perfil PACIENTE (incluye médicos)
- - Exporta INSERTs SQL listos para PostgreSQL
- - Exporta CSV con datos originales para login: nif, email, teléfono, etc.
+Compatibilidad con el esquema ACTUAL del backend
+------------------------------------------------
+El cifrado de columnas pasó de AES/ECB determinista a **AES/GCM no determinista**
+(ver `converter/AESEncryptionConverter.java`), y las búsquedas por igualdad ya no
+se hacen sobre la columna cifrada sino sobre un **índice HMAC-SHA256** guardado en
+`usuario.nif_hash` / `usuario.email_hash` (ver `service/impl/HmacSearchIndexServiceImpl.java`).
+Este script replica ambos algoritmos para que los usuarios insertados por SQL sean
+funcionales (login, búsqueda de pacientes, etc.) sin pasar por la API.
+
+La clave tiene que ser la MISMA que use el backend en `TFM_HCC_ENCRYPTION_KEY`
+(ver `.env` / `.env.example`). El valor por defecto de abajo coincide con el de la
+plantilla `.env.example` para desarrollo local.
+
+Columnas de `usuario` cubiertas explícitamente: `email_hash`, `nif_hash`,
+`totp_secret` (NULL), `totp_enabled` (false), y el registro del consentimiento
+del alta que exige el RGPD (art. 7.1): `fecha_consentimiento` (= fecha de alta) y
+`version_politica_privacidad` (= POLICY_VERSION, debe coincidir con
+`app.privacy.policy-version` de application.yml). En `historial_clinico` se
+eliminaron hace tiempo los antiguos campos de texto libre (los antecedentes y
+alergias viven ahora en sus propias tablas).
 
 Requisitos:
     pip install pycryptodome bcrypt
@@ -22,247 +44,376 @@ Requisitos:
 
 import argparse
 import base64
-import bcrypt
+import binascii
 import csv
+import hashlib
+import hmac
+import os
 import random
 import string
+import sys
+import unicodedata
 import uuid
-from datetime import datetime, timedelta
 from dataclasses import dataclass
+from datetime import datetime
 
+import bcrypt
 from Crypto.Cipher import AES
 
-# ====== CONSTANTES: IDs de perfil existentes en tu BD ======
-PERFIL_PACIENTE = "a208c3c9-78a4-4182-9cf5-a872e86ff0cc"
-PERFIL_MEDICO   = "650f90b0-26dc-4799-beb5-9f485eb56baa"
+# La consola de Windows suele ser cp1252 y rompería al imprimir acentos.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except (AttributeError, ValueError):
+    pass
 
-# ====== CONFIG ENCRIPTACIÓN ======
-AES_KEY = b"1234567890123456"  # 16 bytes
+# ===========================================================================
+# CONFIGURACIÓN DE CIFRADO
+# ===========================================================================
 
-# Contraseña hasheada con BCrypt - ya encriptada con AES
-# Esta contraseña ya está procesada y lista para insertar en la BD
-BCRYPT_PASSWORD_HASH = "uLrtuOSJk2Z8Z65Lyt8oWGfceHBxRAAQmH1FOf3K7FsSWqGmST7NPk4SHs+vF6KeG3n3lwr1NKPilSMWicqv1Q=="
+# Clave maestra AES. Debe decodificar (Base64 o hexadecimal) a 16, 24 o 32 bytes,
+# igual que `converter/EncryptionKeyProvider.java`, y coincidir con el valor de
+# TFM_HCC_ENCRYPTION_KEY que use el backend. Se puede sobreescribir por entorno.
+ENCRYPTION_KEY_RAW = os.environ.get(
+    "TFM_HCC_ENCRYPTION_KEY",
+    "SENDLWRldiBBRVMga2V5IC0gbm90IGEgcmVhbCBzZWM=",  # 32 bytes, = .env.example
+)
 
-def _pkcs7_pad(data: bytes, block_size: int = 16) -> bytes:
-    pad_len = block_size - (len(data) % block_size)
-    return data + bytes([pad_len]) * pad_len
+# Contexto de separación de dominio del índice de búsqueda (idéntico al backend:
+# HmacSearchIndexServiceImpl.INDEX_KEY_CONTEXT).
+INDEX_KEY_CONTEXT = b"hcc:search-index:v1"
 
-def aes_encrypt_to_b64(plaintext: str) -> str:
+# UUID fijos para las filas de `perfil`. Sobre una base de datos recién creada por
+# Hibernate (ddl-auto=update en desarrollo) la tabla `perfil` está vacía, así que
+# el script la siembra. Si tu base de datos ya tiene perfiles con otros UUID,
+# ajústalos aquí (o borra el bloque de INSERT de `perfil` del SQL generado).
+PERFIL_PACIENTE_ID = "a208c3c9-78a4-4182-9cf5-a872e86ff0cc"
+PERFIL_MEDICO_ID = "650f90b0-26dc-4799-beb5-9f485eb56baa"
+PERFIL_ADMIN_ID = "b7d1f6e2-4c3a-4b8e-9a1d-2f5c6e7a8b90"
+
+# Idéntico a MedicoPaciente.ESTADO_ACTIVA en el backend.
+ESTADO_RELACION_ACTIVA = "ACTIVA"
+
+# Cuántos pacientes, como mínimo y máximo, se asignan a cada médico generado.
+MIN_PACIENTES_POR_MEDICO = 1
+MAX_PACIENTES_POR_MEDICO = 5
+
+# Versión vigente de la política de privacidad. Se guarda en
+# usuario.version_politica_privacidad junto a la fecha de consentimiento (RGPD
+# art. 7.1). Tiene que coincidir con `app.privacy.policy-version` de
+# application.yml (por defecto 2026-09-03).
+POLICY_VERSION = os.environ.get("PRIVACY_POLICY_VERSION", "2026-09-03")
+
+# NIF fijo del único administrador que genera el script. La aplicación no tiene
+# ningún flujo para crear administradores, así que la siembra es la vía para
+# tener uno. Contraseña: 'password', como el resto.
+ADMIN_NIF = "00000000T"
+
+
+def _parse_key(raw: str) -> bytes:
+    """Replica EncryptionKeyProvider: primero Base64, luego hexadecimal; exige 16/24/32 bytes."""
+    raw = raw.strip()
+    try:
+        b = base64.b64decode(raw, validate=True)
+        if len(b) in (16, 24, 32):
+            return b
+    except (binascii.Error, ValueError):
+        pass
+    try:
+        b = bytes.fromhex(raw)
+        if len(b) in (16, 24, 32):
+            return b
+    except ValueError:
+        pass
+    raise SystemExit(
+        f"TFM_HCC_ENCRYPTION_KEY inválida: debe ser Base64 o hexadecimal de 16, 24 o 32 bytes "
+        f"(recibido {len(raw)} caracteres)."
+    )
+
+
+MASTER_KEY = _parse_key(ENCRYPTION_KEY_RAW)
+_INDEX_KEY = hmac.new(MASTER_KEY, INDEX_KEY_CONTEXT, hashlib.sha256).digest()
+
+
+def aes_gcm_encrypt(plaintext: str | None) -> str | None:
+    """AES/GCM/NoPadding con IV de 12 bytes y tag de 128 bits, codificado como
+    Base64(IV || ciphertext || tag). Idéntico a AESEncryptionConverter.encryptToBase64."""
     if plaintext is None:
         return None
-    cipher = AES.new(AES_KEY, AES.MODE_ECB)
-    padded = _pkcs7_pad(plaintext.encode("utf-8"))
-    ct = cipher.encrypt(padded)
-    return base64.b64encode(ct).decode("ascii")
+    iv = os.urandom(12)
+    cipher = AES.new(MASTER_KEY, AES.MODE_GCM, nonce=iv, mac_len=16)
+    ciphertext, tag = cipher.encrypt_and_digest(plaintext.encode("utf-8"))
+    return base64.b64encode(iv + ciphertext + tag).decode("ascii")
 
-# ====== UTILIDADES ======
-FIRST_NAMES = ["Luis","María","Carlos","Ana","Jorge","Lucía","Pablo","Laura","Miguel","Sara"]
-LAST_NAMES  = ["García","Fernández","González","López","Martínez","Sánchez","Pérez","Gómez","Martín","Jiménez"]
-ESPECIALIDADES = ["Medicina general","Cardiología","Neurología","Pediatría","Dermatología","Traumatología","Endocrinología"]
+
+def search_index(value: str | None) -> str | None:
+    """Índice de búsqueda determinista: Base64(HMAC-SHA256(indexKey, value)).
+    Idéntico a HmacSearchIndexServiceImpl.indexar."""
+    if value is None:
+        return None
+    return base64.b64encode(
+        hmac.new(_INDEX_KEY, value.encode("utf-8"), hashlib.sha256).digest()
+    ).decode("ascii")
+
+
+# ===========================================================================
+# GENERACIÓN DE DATOS
+# ===========================================================================
+
+FIRST_NAMES = ["Luis", "María", "Carlos", "Ana", "Jorge", "Lucía", "Pablo", "Laura", "Miguel", "Sara"]
+LAST_NAMES = ["García", "Fernández", "González", "López", "Martínez", "Sánchez", "Pérez", "Gómez", "Martín", "Jiménez"]
+ESPECIALIDADES = ["Medicina general", "Cardiología", "Neurología", "Pediatría", "Dermatología", "Traumatología", "Endocrinología"]
+
+ESTADO_CUENTA_ACTIVO = "ACTIVO"
+
 
 @dataclass
 class Usuario:
-    id: uuid.UUID
+    id: str
+    # Cifrado / hasheado, listo para insertar
     nombre: str
     apellido1: str
     apellido2: str | None
     email: str
+    email_hash: str
     password_hash: str
-    fecha_nacimiento: str
+    fecha_nacimiento: str  # texto cifrado (AES/GCM del ISO-8601)
     nif: str
+    nif_hash: str
     telefono: str | None
     especialidad: str | None
-    fecha_creacion: str
-    fecha_ultima_modificacion: str | None
-    last_password_change: str | None
     estado_cuenta: str
-    fecha_eliminacion: str | None
-
-    # Datos sin cifrar para CSV
+    fecha_creacion: str
+    rol: str  # "paciente" | "medico" | "admin" (para el CSV y perfil_usuario)
+    # Datos en claro (para el CSV y las pruebas de login)
     nombre_raw: str
     apellido1_raw: str
     apellido2_raw: str | None
     email_raw: str
     nif_raw: str
     telefono_raw: str
-
-
-def random_spanish_nif() -> str:
-    letras = "TRWAGMYFPDXBNJZSQVHLCKE"
-    numero = random.randint(10000000, 99999999)
-    letra = letras[numero % 23]
-    return f"{numero}{letra}"
-
-
-def random_phone_es() -> str:
-    start = random.choice([6,7])
-    rest = ''.join(random.choices(string.digits, k=8))
-    return f"{start}{rest}"
-
-
-def make_email(nombre: str, apellido1: str, idx: int) -> str:
-    base = f"{nombre}.{apellido1}".lower().replace(" ", "")
-    dominio = random.choice(["example.com","mail.com","demo.es","udc.es"])
-    return f"{base}{idx}@{dominio}"
+    fecha_nacimiento_raw: str
 
 
 def hash_password_bcrypt(plain: str) -> str:
-    """
-    Retorna un hash bcrypt fijo para reproducibilidad.
-    Siempre retorna el mismo hash para la contraseña "password".
-    Compatible con Spring Security BCryptPasswordEncoder (10 rounds).
-    """
-    if plain == "password":
-        return BCRYPT_PASSWORD_HASH
-    # Si por alguna razón se pasa otra contraseña, generarla con salt aleatorio
-    salt = bcrypt.gensalt(rounds=10)
-    return bcrypt.hashpw(plain.encode("utf-8"), salt).decode("utf-8")
+    """Hash BCrypt (10 rondas) compatible con Spring Security. La columna `password`
+    NO se cifra con AES: guarda el hash BCrypt tal cual."""
+    return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt(rounds=10)).decode("utf-8")
 
 
-def ts_between(days_back: int = 365) -> datetime:
-    now = datetime.now()
-    delta = timedelta(days=random.randint(0, days_back), seconds=random.randint(0,86400))
-    return now - delta
+def random_spanish_nif(usados: set) -> str:
+    letras = "TRWAGMYFPDXBNJZSQVHLCKE"
+    while True:
+        numero = random.randint(10000000, 99999999)
+        nif = f"{numero}{letras[numero % 23]}"
+        if nif not in usados:
+            usados.add(nif)
+            return nif
 
 
-def sql_escape(v: str) -> str:
-    return v.replace("'","''")
+def random_phone_es() -> str:
+    return f"{random.choice([6, 7])}{''.join(random.choices(string.digits, k=8))}"
 
 
-def build_usuario(idx: int, as_medico: bool) -> Usuario:
-    uid = uuid.uuid4()
+def _sin_acentos(texto: str) -> str:
+    """Quita tildes y diacríticos (María -> Maria) para que la local-part del email
+    sea ASCII: un correo con caracteres no ASCII es técnicamente inválido sin
+    SMTPUTF8 y rompería cualquier validación de formato posterior."""
+    descompuesto = unicodedata.normalize("NFKD", texto)
+    return "".join(c for c in descompuesto if not unicodedata.combining(c))
+
+
+def make_email(nombre: str, apellido1: str, idx: int) -> str:
+    base = _sin_acentos(f"{nombre}.{apellido1}").lower().replace(" ", "")
+    dominio = random.choice(["example.com", "mail.com", "demo.es", "udc.es"])
+    return f"{base}{idx}@{dominio}"
+
+
+def build_usuario(idx: int, rol: str, nifs_usados: set, password_hash: str,
+                  nif_fijo: str | None = None) -> Usuario:
+    uid = str(uuid.uuid4())
     nombre_raw = random.choice(FIRST_NAMES)
     ap1_raw = random.choice(LAST_NAMES)
     ap2_raw = random.choice(LAST_NAMES) if random.random() < 0.5 else None
     email_raw = make_email(nombre_raw, ap1_raw, idx)
-    nif_raw = random_spanish_nif()
+    if nif_fijo:
+        nif_raw = nif_fijo
+        nifs_usados.add(nif_fijo)
+    else:
+        nif_raw = random_spanish_nif(nifs_usados)
     tel_raw = random_phone_es()
 
-    # Fechas
-    fnac = f"{random.randint(1955,2007)}-{random.randint(1,12):02d}-{random.randint(1,28):02d}"
-    fcrea_dt = datetime.now()  # Fecha actual siempre
-    fcrea = fcrea_dt.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-
-    # Cifrado
-    nombre_c = aes_encrypt_to_b64(nombre_raw)
-    ap1_c = aes_encrypt_to_b64(ap1_raw)
-    ap2_c = aes_encrypt_to_b64(ap2_raw) if ap2_raw else None
-    email_c = aes_encrypt_to_b64(email_raw)
-    nif_c = aes_encrypt_to_b64(nif_raw)
-    tel_c = aes_encrypt_to_b64(tel_raw)
+    fnac_raw = f"{random.randint(1955, 2007)}-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}"
+    fnac_iso = f"{fnac_raw}T00:00:00"  # el backend guarda LocalDateTime en ISO-8601
+    fcrea = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
     return Usuario(
         id=uid,
-        nombre=nombre_c,
-        apellido1=ap1_c,
-        apellido2=ap2_c,
-        email=email_c,
-        password_hash=hash_password_bcrypt("password"),
-        fecha_nacimiento=fnac,
-        nif=nif_c,
-        telefono=tel_c,
-        especialidad=(random.choice(ESPECIALIDADES) if as_medico else None),
+        nombre=aes_gcm_encrypt(nombre_raw),
+        apellido1=aes_gcm_encrypt(ap1_raw),
+        apellido2=aes_gcm_encrypt(ap2_raw) if ap2_raw else None,
+        email=aes_gcm_encrypt(email_raw),
+        email_hash=search_index(email_raw),
+        password_hash=password_hash,
+        fecha_nacimiento=aes_gcm_encrypt(fnac_iso),
+        nif=aes_gcm_encrypt(nif_raw),
+        nif_hash=search_index(nif_raw),
+        telefono=aes_gcm_encrypt(tel_raw),
+        especialidad=(random.choice(ESPECIALIDADES) if rol == "medico" else None),
+        estado_cuenta=ESTADO_CUENTA_ACTIVO,
         fecha_creacion=fcrea,
-        fecha_ultima_modificacion=fcrea,
-        last_password_change=fcrea,
-        estado_cuenta="ACTIVO",
-        fecha_eliminacion=None,
+        rol=rol,
         nombre_raw=nombre_raw,
         apellido1_raw=ap1_raw,
         apellido2_raw=ap2_raw,
         email_raw=email_raw,
         nif_raw=nif_raw,
         telefono_raw=tel_raw,
+        fecha_nacimiento_raw=fnac_raw,
     )
 
 
-def make_inserts(pacientes: int, seed: int|None=None):
+def sql_str(v: str | None) -> str:
+    """Literal SQL: 'texto con '' escapado' o NULL."""
+    if v is None:
+        return "NULL"
+    return "'" + v.replace("'", "''") + "'"
+
+
+def make_inserts(pacientes: int, seed: int | None = None):
     if seed is not None:
         random.seed(seed)
 
-    usuarios = []
-
+    password_hash = hash_password_bcrypt("password")
     medicos = pacientes // 15
+    nifs_usados: set = set()
 
-    for i in range(pacientes):
-        usuarios.append(build_usuario(i+1, False))
-    for i in range(medicos):
-        usuarios.append(build_usuario(pacientes+i+1, True))
+    usuarios_pacientes = [build_usuario(i + 1, "paciente", nifs_usados, password_hash) for i in range(pacientes)]
+    usuarios_medicos = [build_usuario(pacientes + i + 1, "medico", nifs_usados, password_hash) for i in range(medicos)]
+    usuario_admin = build_usuario(pacientes + medicos + 1, "admin", nifs_usados, password_hash, nif_fijo=ADMIN_NIF)
+    usuarios = usuarios_pacientes + usuarios_medicos + [usuario_admin]
 
-    sql_lines = []
+    lines: list[str] = []
 
+    # --- perfiles (idempotente sobre una BD que ya los tenga) ---
+    ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    lines.append(
+        "INSERT INTO public.perfil (id, rol, fecha_creacion, fecha_ultima_modificacion) VALUES\n"
+        f"  ('{PERFIL_PACIENTE_ID}', 'PACIENTE',      '{ahora}', '{ahora}'),\n"
+        f"  ('{PERFIL_MEDICO_ID}', 'MEDICO',        '{ahora}', '{ahora}'),\n"
+        f"  ('{PERFIL_ADMIN_ID}', 'ADMINISTRADOR', '{ahora}', '{ahora}')\n"
+        "ON CONFLICT (rol) DO NOTHING;"
+    )
+
+    # --- usuarios ---
     for u in usuarios:
-        sql_lines.append(
-            f"INSERT INTO public.usuario (id,nombre,apellido1,apellido2,email,password,fecha_nacimiento,nif,telefono,especialidad,fecha_creacion,fecha_ultima_modificacion,last_password_change,estado_cuenta,fecha_eliminacion) VALUES ('{u.id}','{sql_escape(u.nombre)}','{sql_escape(u.apellido1)}',{('NULL' if not u.apellido2 else "'"+sql_escape(u.apellido2)+"'")},'{sql_escape(u.email)}','{sql_escape(u.password_hash)}','{u.fecha_nacimiento}','{sql_escape(u.nif)}',{('NULL' if not u.telefono else "'"+sql_escape(u.telefono)+"'")},{('NULL' if not u.especialidad else "'"+sql_escape(u.especialidad)+"'")},'{u.fecha_creacion}','{u.fecha_ultima_modificacion}','{u.last_password_change}','{u.estado_cuenta}',NULL);"
+        lines.append(
+            "INSERT INTO public.usuario "
+            "(id, nombre, apellido1, apellido2, email, email_hash, password, fecha_nacimiento, "
+            "nif, nif_hash, telefono, especialidad, estado_cuenta, totp_secret, totp_enabled, "
+            "fecha_consentimiento, version_politica_privacidad, "
+            "fecha_creacion, fecha_ultima_modificacion, last_password_change, fecha_eliminacion) VALUES ("
+            f"'{u.id}', {sql_str(u.nombre)}, {sql_str(u.apellido1)}, {sql_str(u.apellido2)}, "
+            f"{sql_str(u.email)}, {sql_str(u.email_hash)}, {sql_str(u.password_hash)}, {sql_str(u.fecha_nacimiento)}, "
+            f"{sql_str(u.nif)}, {sql_str(u.nif_hash)}, {sql_str(u.telefono)}, {sql_str(u.especialidad)}, "
+            f"{sql_str(u.estado_cuenta)}, NULL, false, "
+            f"'{u.fecha_creacion}', {sql_str(POLICY_VERSION)}, "
+            f"'{u.fecha_creacion}', '{u.fecha_creacion}', '{u.fecha_creacion}', NULL);"
         )
 
-    # perfiles + historial
+    # --- perfil_usuario + historial_clinico ---
+    # Todo usuario tiene el perfil PACIENTE (igual que el alta real: registrarse y
+    # el alta administrativa de médicos asignan siempre PACIENTE primero). Médicos y
+    # administradores llevan además su perfil específico.
+    perfil_extra = {"medico": PERFIL_MEDICO_ID, "admin": PERFIL_ADMIN_ID}
     for u in usuarios:
-        pid = uuid.uuid4()
-        sql_lines.append(f"INSERT INTO public.perfil_usuario VALUES ('{u.id}','{PERFIL_PACIENTE}','{u.fecha_creacion}',NULL,'{pid}');")
-
-        if u.especialidad:
-            pid2 = uuid.uuid4()
-            sql_lines.append(f"INSERT INTO public.perfil_usuario VALUES ('{u.id}','{PERFIL_MEDICO}','{u.fecha_creacion}',NULL,'{pid2}');")
-
-        hid = uuid.uuid4()
-        sql_lines.append(
-            f"INSERT INTO public.historial_clinico VALUES ('{hid}','Sin datos relevantes',NULL,'{u.id}','{u.fecha_creacion}');"
+        lines.append(
+            "INSERT INTO public.perfil_usuario (id, id_perfil, id_usuario, fecha_creacion, fecha_ultima_modificacion) "
+            f"VALUES ('{uuid.uuid4()}', '{PERFIL_PACIENTE_ID}', '{u.id}', '{u.fecha_creacion}', '{u.fecha_creacion}');"
+        )
+        if u.rol in perfil_extra:
+            lines.append(
+                "INSERT INTO public.perfil_usuario (id, id_perfil, id_usuario, fecha_creacion, fecha_ultima_modificacion) "
+                f"VALUES ('{uuid.uuid4()}', '{perfil_extra[u.rol]}', '{u.id}', '{u.fecha_creacion}', '{u.fecha_creacion}');"
+            )
+        lines.append(
+            "INSERT INTO public.historial_clinico (id, id_paciente, fecha_creacion, fecha_ultima_modificacion) "
+            f"VALUES ('{uuid.uuid4()}', '{u.id}', '{u.fecha_creacion}', '{u.fecha_creacion}');"
         )
 
-    return sql_lines, usuarios
+    # --- medico_paciente: cada médico generado queda con entre 1 y 5 pacientes ---
+    lines.extend(build_asignaciones(usuarios_pacientes, usuarios_medicos))
+
+    return lines, usuarios
 
 
-def write_csv(usuarios, path="usuarios_generados.csv"):
+def build_asignaciones(pacientes: list[Usuario], medicos: list[Usuario]) -> list[str]:
+    """Asigna a cada médico entre MIN_ y MAX_PACIENTES_POR_MEDICO pacientes al azar,
+    insertando la relación en medico_paciente con estado ACTIVA (salta el flujo real
+    de solicitud/aceptación, igual que hace un alta administrativa directa)."""
+    lines: list[str] = []
+    if not pacientes:
+        return lines
+
+    ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    for medico in medicos:
+        n = min(random.randint(MIN_PACIENTES_POR_MEDICO, MAX_PACIENTES_POR_MEDICO), len(pacientes))
+        for paciente in random.sample(pacientes, k=n):
+            lines.append(
+                "INSERT INTO public.medico_paciente "
+                "(id, id_medico, id_paciente, estado, fecha_creacion, fecha_ultima_modificacion) "
+                f"VALUES ('{uuid.uuid4()}', '{medico.id}', '{paciente.id}', "
+                f"'{ESTADO_RELACION_ACTIVA}', '{ahora}', '{ahora}');"
+            )
+    return lines
+
+
+def write_csv(usuarios, path):
     with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f, delimiter=';')
-        w.writerow(["id","nombre","apellido1","apellido2","email","nif","telefono","especialidad"])
+        w = csv.writer(f, delimiter=";")
+        w.writerow(["id", "nombre", "apellido1", "apellido2", "email", "nif", "telefono", "fecha_nacimiento", "especialidad", "rol", "password"])
         for u in usuarios:
             w.writerow([
-                u.id,
-                u.nombre_raw,
-                u.apellido1_raw,
-                u.apellido2_raw or "",
-                u.email_raw,
-                u.nif_raw,
-                u.telefono_raw,
-                u.especialidad or ""
+                u.id, u.nombre_raw, u.apellido1_raw, u.apellido2_raw or "", u.email_raw,
+                u.nif_raw, u.telefono_raw, u.fecha_nacimiento_raw, u.especialidad or "", u.rol, "password",
             ])
 
 
 def main():
-    p = argparse.ArgumentParser()
+    p = argparse.ArgumentParser(description="Genera datos sintéticos para tfm-hcc.")
     p.add_argument("--pacientes", type=int, default=100, help="Número de pacientes a generar")
     p.add_argument("--seed", type=int, default=None, help="Semilla para reproducibilidad")
-    p.add_argument("--out", type=str, default="inserts.sql", help="Archivo de salida SQL")
+    p.add_argument("--out", type=str, default="inserts.sql", help="Archivo SQL de salida")
     p.add_argument("--csv", type=str, default="usuarios_generados.csv", help="Archivo CSV de salida")
     args = p.parse_args()
 
-    print(f"Generando {args.pacientes} pacientes...")
-    if args.seed:
-        print(f"Usando semilla: {args.seed}")
-    
-    sql_lines, usuarios = make_inserts(args.pacientes, args.seed)
-    
-    # Escribir SQL
+    print(f"Generando {args.pacientes} pacientes + {args.pacientes // 15} médicos + 1 administrador...")
+    if args.seed is not None:
+        print(f"Semilla: {args.seed}")
+    print(f"Clave AES: {len(MASTER_KEY) * 8} bits | Política de privacidad: {POLICY_VERSION}")
+
+    lines, usuarios = make_inserts(args.pacientes, args.seed)
+
     with open(args.out, "w", encoding="utf-8") as f:
         f.write("-- Datos generados por generar_datos_usuarios.py\n")
-        f.write(f"-- Pacientes: {args.pacientes}\n")
-        f.write(f"-- Seed: {args.seed}\n")
-        f.write(f"-- Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        for line in sql_lines:
-            f.write(line + "\n")
-    
-    print(f"✓ Archivo SQL generado: {args.out}")
-    print(f"  - Total de usuarios: {len(usuarios)}")
-    print(f"  - Pacientes: {args.pacientes}")
-    print(f"  - Médicos: {args.pacientes // 15}")
-    print(f"  - Total de inserts: {len(sql_lines)}")
-    
-    # Escribir CSV
+        f.write(f"-- Pacientes: {args.pacientes} | Médicos: {args.pacientes // 15} | Administradores: 1 | Seed: {args.seed}\n")
+        f.write(f"-- Fecha: {datetime.now():%Y-%m-%d %H:%M:%S}\n")
+        f.write("-- Cifrado AES/GCM + índice HMAC-SHA256; requiere que el backend use la misma\n")
+        f.write("-- TFM_HCC_ENCRYPTION_KEY con la que se generó este fichero.\n")
+        f.write(f"-- Consentimiento del alta registrado (RGPD art. 7.1), política v{POLICY_VERSION}.\n")
+        f.write(f"-- Administrador: NIF {ADMIN_NIF}, contraseña 'password'.\n")
+        f.write(f"-- Cada médico queda con entre {MIN_PACIENTES_POR_MEDICO} y {MAX_PACIENTES_POR_MEDICO} "
+                "pacientes asignados (medico_paciente, estado ACTIVA).\n\n")
+        f.write("\n".join(lines) + "\n")
+
     write_csv(usuarios, args.csv)
-    print(f"✓ Archivo CSV generado: {args.csv}")
-    print(f"\n📝 Nota: Todos los usuarios tienen contraseña: 'password'")
+
+    n_asignaciones = sum(1 for l in lines if l.startswith("INSERT INTO public.medico_paciente"))
+    print(f"[OK] Asignaciones médico-paciente: {n_asignaciones} "
+          f"(entre {MIN_PACIENTES_POR_MEDICO} y {MAX_PACIENTES_POR_MEDICO} pacientes por médico)")
+    print(f"[OK] SQL:  {args.out}  ({len(lines)} sentencias)")
+    print(f"[OK] CSV:  {args.csv}  ({len(usuarios)} usuarios)")
+    print(f"[OK] Administrador: NIF {ADMIN_NIF}")
+    print("Todos los usuarios tienen la contrasena: 'password'")
 
 
 if __name__ == "__main__":

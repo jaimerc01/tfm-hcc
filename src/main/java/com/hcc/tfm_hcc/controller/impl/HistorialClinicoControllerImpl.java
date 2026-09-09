@@ -1,7 +1,6 @@
 package com.hcc.tfm_hcc.controller.impl;
 
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -20,21 +19,25 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hcc.tfm_hcc.controller.HistorialClinicoController;
 import com.hcc.tfm_hcc.constants.RestUrls;
+import com.hcc.tfm_hcc.dto.AlergiaDTO;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.dto.ResponderPropuestaRequestDTO;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.HistorialClinicoException;
 import com.hcc.tfm_hcc.exception.DatosClinicosValidationException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioNoEncontradaException;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -252,98 +255,117 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
 
     /**
      * {@inheritDoc}
-     * 
-     * <p>Implementación que actualiza la información de identificación
-     * del paciente en su historial clínico.</p>
-     * 
-     * @param historialClinicoDTO Datos de identificación 
+     *
+     * <p>Implementación que crea un nuevo antecedente clínico (personal o familiar)
+     * del paciente.</p>
+     *
+     * @param antecedenteDTO Categoría y descripción del antecedente
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping(RestUrls.HISTORIA_IDENTIFICACION)
-    public ResponseEntity<HistorialClinicoDTO> actualizarIdentificacion(@RequestBody HistorialClinicoDTO historialClinicoDTO) throws HistorialClinicoException {
-        log.debug("Actualizando información de identificación del usuario");
-        
+    @PostMapping(RestUrls.HISTORIA_ANTECEDENTES)
+    public ResponseEntity<HistorialClinicoDTO> crearAntecedente(@RequestBody AntecedenteClinicoDTO antecedenteDTO) throws HistorialClinicoException {
+        log.debug("Creando antecedente clínico del usuario");
+
         try {
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarIdentificacion(historialClinicoDTO);
-            log.info("Información de identificación actualizada exitosamente");
+            HistorialClinicoDTO resultado = historialClinicoFacade.crearAntecedente(antecedenteDTO);
+            log.info("Antecedente clínico creado exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            log.error("Error al actualizar información de identificación: {}", e.getMessage(), e);
+            log.error("Error al crear antecedente clínico: {}", e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
     /**
      * {@inheritDoc}
-     * 
-     * <p>Implementación que actualiza los antecedentes familiares del paciente
-     * con soporte para contenido URL-encoded y validación de entrada.</p>
-     * 
-     * @param antecedentesFamiliares Texto con los antecedentes familiares
+     *
+     * <p>Implementación que edita un antecedente clínico existente del paciente.</p>
+     *
+     * @param id ID del antecedente a editar
+     * @param antecedenteDTO Categoría y descripción actualizadas
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping(RestUrls.HISTORIA_ANTECEDENTES)
-    public ResponseEntity<HistorialClinicoDTO> actualizarAntecedentes(@RequestBody String antecedentesFamiliares) throws HistorialClinicoException {
-        log.debug("Actualizando antecedentes familiares del usuario");
-        
+    @PutMapping(RestUrls.HISTORIA_ANTECEDENTE_ID)
+    public ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("id") UUID id, @RequestBody AntecedenteClinicoDTO antecedenteDTO) throws HistorialClinicoException {
+        log.debug("Editando antecedente clínico: {}", id);
+
         try {
-            String payload = procesarContenidoUrlEncoded(antecedentesFamiliares);
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAntecedentes(payload);
-            log.info("Antecedentes familiares actualizados exitosamente");
+            HistorialClinicoDTO resultado = historialClinicoFacade.editarAntecedente(id, antecedenteDTO);
+            log.info("Antecedente clínico editado exitosamente: {}", id);
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            log.error("Error al actualizar antecedentes familiares: {}", e.getMessage(), e);
+            log.error("Error al editar antecedente clínico {}: {}", id, e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
     /**
      * {@inheritDoc}
-     * 
-     * <p>Implementación que actualiza la información de alergias del paciente
-     * con procesamiento de datos JSON y validación de entrada.</p>
-     * 
-     * @param alergiasJson Datos de alergias en formato JSON
+     *
+     * <p>Implementación que elimina un antecedente clínico específico del paciente.</p>
+     *
+     * @param id ID del antecedente a eliminar
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
     @Override
-    @PutMapping(RestUrls.HISTORIA_ALERGIAS)
-    public ResponseEntity<HistorialClinicoDTO> actualizarAlergias(@RequestBody String alergiasJson) throws HistorialClinicoException {
-        log.debug("Actualizando información de alergias del usuario");
-        
+    @DeleteMapping(RestUrls.HISTORIA_ANTECEDENTE_ID)
+    public ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("id") UUID id) throws HistorialClinicoException {
+        log.debug("Eliminando antecedente clínico: {}", id);
+
         try {
-            String payload = procesarContenidoUrlEncoded(alergiasJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAlergias(payload);
-            log.info("Información de alergias actualizada exitosamente");
+            HistorialClinicoDTO resultado = historialClinicoFacade.borrarAntecedente(id);
+            log.info("Antecedente clínico eliminado exitosamente: {}", id);
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            log.error("Error al actualizar información de alergias: {}", e.getMessage(), e);
+            log.error("Error al eliminar antecedente clínico {}: {}", id, e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
     /**
-     * Añade nuevas alergias sin eliminar las existentes.
-     * 
-     * <p>Este endpoint permite añadir nuevas alergias
-     * sin eliminar las alergias previas del historial clínico.</p>
-     * 
-     * @param alergiasJson Datos de alergias en formato texto plano (una por línea)
+     * {@inheritDoc}
+     *
+     * <p>Implementación que crea una nueva alergia o intolerancia del paciente.</p>
+     *
+     * @param alergiaDTO Descripción de la alergia
      * @return ResponseEntity con el HistorialClinicoDTO actualizado
      */
+    @Override
     @PostMapping(RestUrls.HISTORIA_ALERGIAS)
-    public ResponseEntity<HistorialClinicoDTO> anadirAlergias(@RequestBody String alergiasJson) throws HistorialClinicoException {
-        log.debug("Añadiendo nuevas alergias del usuario");
-        
+    public ResponseEntity<HistorialClinicoDTO> crearAlergia(@RequestBody AlergiaDTO alergiaDTO) throws HistorialClinicoException {
+        log.debug("Creando alergia del usuario");
+
         try {
-            String payload = procesarContenidoUrlEncoded(alergiasJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAlergias(payload);
-            log.info("Alergias añadidas exitosamente");
+            HistorialClinicoDTO resultado = historialClinicoFacade.crearAlergia(alergiaDTO);
+            log.info("Alergia creada exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (Exception e) {
-            log.error("Error al añadir alergias: {}", e.getMessage(), e);
+            log.error("Error al crear alergia: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Implementación que elimina una alergia específica del paciente.</p>
+     *
+     * @param id ID de la alergia a eliminar
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @Override
+    @DeleteMapping(RestUrls.HISTORIA_ALERGIA_ID)
+    public ResponseEntity<HistorialClinicoDTO> borrarAlergia(@PathVariable("id") UUID id) throws HistorialClinicoException {
+        log.debug("Eliminando alergia: {}", id);
+
+        try {
+            HistorialClinicoDTO resultado = historialClinicoFacade.borrarAlergia(id);
+            log.info("Alergia eliminada exitosamente: {}", id);
+            return ResponseEntity.ok(resultado);
+        } catch (Exception e) {
+            log.error("Error al eliminar alergia {}: {}", id, e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
@@ -359,12 +381,11 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
      */
     @Override
     @PutMapping(RestUrls.HISTORIA_ANALISIS_SANGRE)
-    public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody String analisisJson) throws HistorialClinicoException, DatosClinicosValidationException {
+    public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisSangre(@RequestBody List<DatoClinicoEntradaDTO> analisis) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Actualizando análisis de sangre del usuario");
         
         try {
-            String payload = procesarContenidoUrlEncoded(analisisJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisSangre(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisSangre(analisis);
             log.info("Análisis de sangre actualizados exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (DatosClinicosValidationException e) {
@@ -377,21 +398,17 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
     }
 
     /**
-     * Añade nuevos análisis de sangre sin eliminar los existentes.
-     * 
-     * <p>Este endpoint permite añadir nuevos datos de análisis de sangre
-     * sin eliminar los análisis previos del historial clínico.</p>
-     * 
-     * @param analisisJson Datos de análisis de sangre en formato JSON
-     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     * {@inheritDoc}
+     *
+     * <p>Añade nuevos análisis de sangre sin eliminar los previos del historial clínico.</p>
      */
+    @Override
     @PostMapping(RestUrls.HISTORIA_ANALISIS_SANGRE)
-    public ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody String analisisJson) throws HistorialClinicoException, DatosClinicosValidationException {
+    public ResponseEntity<HistorialClinicoDTO> crearAnalisisSangre(@RequestBody List<DatoClinicoEntradaDTO> analisis) throws HistorialClinicoException, DatosClinicosValidationException {
         log.debug("Añadiendo nuevos análisis de sangre del usuario");
         
         try {
-            String payload = procesarContenidoUrlEncoded(analisisJson);
-            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAnalisisSangre(payload);
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAnalisisSangre(analisis);
             log.info("Análisis de sangre añadidos exitosamente");
             return ResponseEntity.ok(resultado);
         } catch (DatosClinicosValidationException e) {
@@ -405,7 +422,113 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
 
     /**
      * {@inheritDoc}
-     * 
+     *
+     * <p>Implementación que actualiza los signos vitales del paciente
+     * con procesamiento de datos JSON y validación de entrada.</p>
+     *
+     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @Override
+    @PutMapping(RestUrls.HISTORIA_SIGNOS_VITALES)
+    public ResponseEntity<HistorialClinicoDTO> actualizarSignosVitales(@RequestBody List<DatoClinicoEntradaDTO> signosVitales) throws HistorialClinicoException, DatosClinicosValidationException {
+        log.debug("Actualizando signos vitales del usuario");
+
+        try {
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarSignosVitales(signosVitales);
+            log.info("Signos vitales actualizados exitosamente");
+            return ResponseEntity.ok(resultado);
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al actualizar signos vitales: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al actualizar signos vitales: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Implementación que añade nuevos signos vitales sin eliminar los existentes.</p>
+     *
+     * @param signosVitalesJson Datos de signos vitales en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @Override
+    @PostMapping(RestUrls.HISTORIA_SIGNOS_VITALES)
+    public ResponseEntity<HistorialClinicoDTO> crearSignosVitales(@RequestBody List<DatoClinicoEntradaDTO> signosVitales) throws HistorialClinicoException, DatosClinicosValidationException {
+        log.debug("Añadiendo nuevos signos vitales del usuario");
+
+        try {
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirSignosVitales(signosVitales);
+            log.info("Signos vitales añadidos exitosamente");
+            return ResponseEntity.ok(resultado);
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al añadir signos vitales: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al añadir signos vitales: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Implementación que actualiza el análisis de orina del paciente
+     * con procesamiento de datos JSON y validación de entrada.</p>
+     *
+     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @Override
+    @PutMapping(RestUrls.HISTORIA_ANALISIS_ORINA)
+    public ResponseEntity<HistorialClinicoDTO> actualizarAnalisisOrina(@RequestBody List<DatoClinicoEntradaDTO> analisisOrina) throws HistorialClinicoException, DatosClinicosValidationException {
+        log.debug("Actualizando análisis de orina del usuario");
+
+        try {
+            HistorialClinicoDTO resultado = historialClinicoFacade.actualizarAnalisisOrina(analisisOrina);
+            log.info("Análisis de orina actualizado exitosamente");
+            return ResponseEntity.ok(resultado);
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al actualizar análisis de orina: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al actualizar análisis de orina: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Implementación que añade nuevos datos de análisis de orina sin eliminar los existentes.</p>
+     *
+     * @param analisisOrinaJson Datos de análisis de orina en formato JSON
+     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     */
+    @Override
+    @PostMapping(RestUrls.HISTORIA_ANALISIS_ORINA)
+    public ResponseEntity<HistorialClinicoDTO> crearAnalisisOrina(@RequestBody List<DatoClinicoEntradaDTO> analisisOrina) throws HistorialClinicoException, DatosClinicosValidationException {
+        log.debug("Añadiendo nuevos datos de análisis de orina del usuario");
+
+        try {
+            HistorialClinicoDTO resultado = historialClinicoFacade.anadirAnalisisOrina(analisisOrina);
+            log.info("Análisis de orina añadido exitosamente");
+            return ResponseEntity.ok(resultado);
+        } catch (DatosClinicosValidationException e) {
+            log.warn("Error de validación al añadir análisis de orina: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error al añadir análisis de orina: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * <p>Implementación que elimina un dato clínico específico del historial
      * del usuario autenticado.</p>
      * 
@@ -432,56 +555,67 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
 
     /**
      * {@inheritDoc}
-     * 
-     * <p>Implementación que elimina un antecedente específico por su índice
-     * y retorna el historial actualizado.</p>
-     * 
-     * @param index Índice del antecedente a eliminar
-     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     *
+     * <p>Edita un dato clínico cuantitativo ya guardado del historial del usuario autenticado.</p>
      */
     @Override
-    @DeleteMapping(RestUrls.HISTORIA_ANTECEDENTE_INDEX)
-    public ResponseEntity<HistorialClinicoDTO> borrarAntecedente(@PathVariable("index") int index) throws HistorialClinicoException, DatosClinicosValidationException {
-        log.debug("Solicitando eliminación de antecedente en índice: {}", index);
-        
+    @PutMapping(RestUrls.HISTORIA_DATOS_CLINICOS_ID)
+    public ResponseEntity<HistorialClinicoDTO> editarDatoClinico(@PathVariable("id") UUID id,
+            @RequestBody DatoClinicoEntradaDTO datos) throws HistorialClinicoException, DatosClinicosValidationException {
+        log.debug("Solicitando edición del dato clínico con ID: {}", id);
         try {
-            HistorialClinicoDTO resultado = historialClinicoFacade.borrarAntecedente(index);
-            log.info("Antecedente eliminado exitosamente en índice: {}", index);
+            HistorialClinicoDTO resultado = historialClinicoFacade.editarDatoClinico(id, datos);
+            log.info("Dato clínico editado exitosamente: ID {}", id);
             return ResponseEntity.ok(resultado);
         } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al eliminar antecedente en índice {}: {}", index, e.getMessage());
+            log.warn("Error de validación al editar dato clínico {}: {}", id, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error al eliminar antecedente en índice {}: {}", index, e.getMessage(), e);
+            log.error("Error al editar dato clínico con ID {}: {}", id, e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
 
     /**
      * {@inheritDoc}
-     * 
-     * <p>Implementación que edita un antecedente específico por su índice
-     * con procesamiento de contenido URL-encoded.</p>
-     * 
-     * @param index Índice del antecedente a editar
-     * @param texto Nuevo texto para el antecedente
-     * @return ResponseEntity con el HistorialClinicoDTO actualizado
+     *
+     * <p>Lista las propuestas de cambio del usuario autenticado: las pendientes de confirmar y
+     * también el histórico de las ya resueltas.</p>
      */
     @Override
-    @PutMapping(RestUrls.HISTORIA_ANTECEDENTE_INDEX)
-    public ResponseEntity<HistorialClinicoDTO> editarAntecedente(@PathVariable("index") int index, @RequestBody String texto) throws HistorialClinicoException, DatosClinicosValidationException {
-        log.debug("Solicitando edición de antecedente en índice: {}", index);
-        
+    @GetMapping(RestUrls.HISTORIA_PROPUESTAS_CAMBIO)
+    public ResponseEntity<List<PropuestaCambioClinicoDTO>> listarPropuestasCambio() throws HistorialClinicoException {
+        log.debug("Listando propuestas de cambio del usuario autenticado");
         try {
-            String payload = procesarContenidoUrlEncoded(texto);
-            HistorialClinicoDTO resultado = historialClinicoFacade.editarAntecedente(index, payload);
-            log.info("Antecedente editado exitosamente en índice: {}", index);
+            return ResponseEntity.ok(historialClinicoFacade.listarPropuestasCambio());
+        } catch (Exception e) {
+            log.error("Error al listar propuestas de cambio: {}", e.getMessage(), e);
+            throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Resuelve (acepta o rechaza) una propuesta de cambio sobre el historial del usuario
+     * autenticado. Aceptarla aplica el cambio y lo deja auditado con el médico como autor.</p>
+     */
+    @Override
+    @PostMapping(RestUrls.HISTORIA_PROPUESTA_CAMBIO_ID)
+    public ResponseEntity<PropuestaCambioClinicoDTO> responderPropuestaCambio(@PathVariable("id") UUID id,
+            @RequestBody ResponderPropuestaRequestDTO request) throws HistorialClinicoException {
+        boolean aceptar = request != null && Boolean.TRUE.equals(request.getAceptar());
+        log.debug("Resolviendo propuesta de cambio {} (aceptar={})", id, aceptar);
+        try {
+            PropuestaCambioClinicoDTO resultado = historialClinicoFacade.responderPropuestaCambio(id, aceptar);
+            log.info("Propuesta de cambio {} resuelta ({})", id, aceptar ? "aceptada" : "rechazada");
             return ResponseEntity.ok(resultado);
-        } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al editar antecedente en índice {}: {}", index, e.getMessage());
+        } catch (DatosClinicosValidationException | PropuestaCambioClinicoException
+                 | PropuestaCambioNoEncontradaException e) {
+            log.warn("No se pudo resolver la propuesta de cambio {}: {}", id, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error al editar antecedente en índice {}: {}", index, e.getMessage(), e);
+            log.error("Error al resolver la propuesta de cambio {}: {}", id, e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
@@ -550,34 +684,5 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
             }
         }
         return mediaType;
-    }
-
-    /**
-     * Procesa contenido que puede estar URL-encoded.
-     * 
-     * @param contenido Contenido a procesar
-     * @return Contenido decodificado si corresponde
-     */
-    private String procesarContenidoUrlEncoded(String contenido) {
-        if (contenido == null) {
-            return null;
-        }
-        
-        String payload = contenido;
-        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        HttpServletRequest req = attrs != null ? attrs.getRequest() : null;
-        String contentType = req != null ? req.getContentType() : null;
-        
-        if (contentType != null && contentType.contains(MediaType.APPLICATION_FORM_URLENCODED_VALUE)) {
-            payload = URLDecoder.decode(contenido, StandardCharsets.UTF_8);
-        } else if (contenido.contains("%") || contenido.contains("+")) {
-            try {
-                payload = URLDecoder.decode(contenido, StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                log.debug("No se pudo decodificar contenido URL-encoded: {}", e.getMessage());
-            }
-        }
-        
-        return payload;
     }
 }

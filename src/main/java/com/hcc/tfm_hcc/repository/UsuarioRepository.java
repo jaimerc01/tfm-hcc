@@ -27,40 +27,44 @@ import com.hcc.tfm_hcc.model.Usuario;
 public interface UsuarioRepository extends CrudRepository<Usuario, UUID> {
 
     /**
-     * Busca un usuario por su NIF (Número de Identificación Fiscal).
-     * El NIF es un identificador único en el sistema para cada usuario.
-     * 
-     * @param nif NIF del usuario a buscar
+     * Busca un usuario por el índice de búsqueda de su NIF (Número de Identificación Fiscal).
+     * El NIF en sí está cifrado de forma no determinista, así que la búsqueda por igualdad
+     * se hace contra {@code nifHash} (ver {@link com.hcc.tfm_hcc.service.HmacSearchIndexService}),
+     * no contra el NIF cifrado. El NIF es un identificador único en el sistema para cada usuario.
+     *
+     * @param nifHash índice de búsqueda (HMAC) del NIF del usuario a buscar
      * @return Optional con el Usuario si existe, empty() en caso contrario
      */
-    Optional<Usuario> findByNif(String nif);
+    Optional<Usuario> findByNifHash(String nifHash);
 
     /**
-     * Busca un usuario por su dirección de email.
-     * El email es un identificador único alternativo en el sistema.
-     * 
-     * @param email Dirección de email del usuario a buscar
+     * Busca un usuario por el índice de búsqueda de su dirección de email.
+     * El email en sí está cifrado de forma no determinista, así que la búsqueda por igualdad
+     * se hace contra {@code emailHash}, no contra el email cifrado. El email es un
+     * identificador único alternativo en el sistema.
+     *
+     * @param emailHash índice de búsqueda (HMAC) del email del usuario a buscar
      * @return Optional con el Usuario si existe, empty() en caso contrario
      */
-    Optional<Usuario> findByEmail(String email);
+    Optional<Usuario> findByEmailHash(String emailHash);
 
     /**
      * Verifica si existe otro usuario con el mismo NIF, excluyendo un ID específico.
      * Útil para validar unicidad durante actualizaciones de perfil de usuario.
-     * 
-     * @param nif NIF a verificar
+     *
+     * @param nifHash índice de búsqueda (HMAC) del NIF a verificar
      * @param id ID del usuario a excluir de la verificación
      * @return true si existe otro usuario con el mismo NIF, false en caso contrario
      */
-    boolean existsByNifAndIdNot(String nif, UUID id);
-    
+    boolean existsByNifHashAndIdNot(String nifHash, UUID id);
+
     /**
      * Verifica si existe otro usuario con el mismo email, excluyendo un ID específico.
      * Útil para validar unicidad durante actualizaciones de perfil de usuario.
-     * 
-     * @param email Email a verificar
+     *
+     * @param emailHash índice de búsqueda (HMAC) del email a verificar
      * @param id ID del usuario a excluir de la verificación
      * @return true si existe otro usuario con el mismo email, false en caso contrario
      */
-    boolean existsByEmailAndIdNot(String email, UUID id);
+    boolean existsByEmailHashAndIdNot(String emailHash, UUID id);
 }

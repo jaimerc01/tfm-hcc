@@ -1,9 +1,9 @@
 package com.hcc.tfm_hcc.facade;
 
 import java.util.List;
-import java.util.Map;
 
 import com.hcc.tfm_hcc.dto.NotificacionDTO;
+import com.hcc.tfm_hcc.dto.NotificacionPageDTO;
 
 /**
  * Facade para la gestión de notificaciones en el sistema HCC.
@@ -68,9 +68,9 @@ public interface NotificacionFacade {
      * 
      * @param page Número de página a consultar (comenzando desde 0)
      * @param size Tamaño de la página (número de notificaciones por página)
-     * @return Map con los datos paginados de las notificaciones
+     * @return Página con las notificaciones de la página solicitada y el total de notificaciones vigentes
      */
-    Map<String, NotificacionDTO> listarNotificacionesUsuarioActual(int page, int size);
+    NotificacionPageDTO listarNotificacionesUsuarioActual(int page, int size);
     
     /**
      * Cuenta el número de notificaciones no leídas del usuario autenticado.

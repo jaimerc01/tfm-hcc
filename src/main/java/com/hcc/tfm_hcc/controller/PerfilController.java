@@ -3,7 +3,7 @@ package com.hcc.tfm_hcc.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 
-import com.hcc.tfm_hcc.model.Perfil;
+import com.hcc.tfm_hcc.dto.PerfilDTO;
 
 /**
  * Controlador REST para la gestión de perfiles de usuario en el sistema HCC.
@@ -31,9 +31,9 @@ public interface PerfilController {
      * y características asociadas a un rol determinado del sistema.
      *
      * @param rol Nombre del rol del perfil a buscar (ADMINISTRADOR, MEDICO, PACIENTE)
-     * @return ResponseEntity con el Perfil correspondiente al rol especificado
+     * @return ResponseEntity con el PerfilDTO correspondiente al rol especificado
      * @throws IllegalArgumentException si el rol especificado no es válido
      * @throws NullPointerException si el rol es null
      */
-    ResponseEntity<Perfil> getPerfilByRol(@PathVariable("rol") String rol);
+    ResponseEntity<PerfilDTO> getPerfilByRol(@PathVariable("rol") String rol);
 }

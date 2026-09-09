@@ -34,4 +34,19 @@ public class LoginResponse {
      * El cliente debe renovar el token antes de esta fecha.
      */
     private long expirationTime;
+
+    /**
+     * Indica que el NIF y la contraseña eran correctos pero el usuario tiene
+     * activado el segundo factor (TOTP): el login todavía no ha terminado.
+     * Cuando vale {@code true}, {@link #token} viene vacío y el cliente debe
+     * completar el segundo paso ({@code /authentication/login/2fa}) usando
+     * {@link #challengeId} y el código de su aplicación autenticadora.
+     */
+    private boolean requiresTwoFactor;
+
+    /**
+     * Identificador del reto de segundo factor pendiente, emitido solo cuando
+     * {@link #requiresTwoFactor} es {@code true}.
+     */
+    private String challengeId;
 }

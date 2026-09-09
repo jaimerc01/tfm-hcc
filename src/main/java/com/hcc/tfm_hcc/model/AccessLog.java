@@ -21,7 +21,23 @@ import lombok.NoArgsConstructor;
  *   <li>Detalles técnicos de la solicitud HTTP</li>
  *   <li>Métricas de rendimiento y estado de respuesta</li>
  * </ul>
- * 
+ *
+ * <p><b>Cifrado en reposo:</b> a diferencia de {@code AuditoriaCambio} (que sí cifra
+ * {@code valorAnterior}/{@code valorNuevo} porque pueden contener datos clínicos
+ * completos), los campos de este documento ({@code ip}, {@code ruta}, {@code userAgent}...)
+ * no se cifran a nivel de campo. Ninguno contiene datos de salud, y cifrarlos impediría
+ * filtrar/depurar accesos por IP o ruta sin una necesidad concreta que lo justifique hoy.
+ * Su protección en reposo se apoya en el cifrado nativo del proveedor de MongoDB (p. ej.
+ * MongoDB Atlas). Si en el futuro se requiere protección adicional, revisar de nuevo esta
+ * decisión.</p>
+ *
+ * <p><b>Excepción — NIF en la ruta:</b> algunas rutas incluyen el NIF del paciente como
+ * variable de path (p. ej. {@code /pacientes/{nif}/historial}), que sí es un dato personal
+ * identificativo cifrado en el resto de la aplicación ({@code Usuario.nif}). Por eso
+ * {@link com.hcc.tfm_hcc.config.AccessLogFilter} enmascara cualquier NIF/NIE detectado en
+ * {@code ruta} antes de guardarla (se conservan los últimos caracteres, igual que en el
+ * resto de logs de la aplicación, para poder correlacionar accesos del mismo paciente).</p>
+ *
  * @author Sistema HCC
  * @version 1.0
  * @since 1.0

@@ -6,19 +6,30 @@ import java.util.UUID;
 
 import org.springframework.core.io.Resource;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.hcc.tfm_hcc.constants.ErrorMessages;
+import com.hcc.tfm_hcc.dto.AlergiaDTO;
+import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
 import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
+import com.hcc.tfm_hcc.dto.DatoClinicoEntradaDTO;
 import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.converter.PropuestaCambioClinicoConverter;
 import com.hcc.tfm_hcc.facade.HistorialClinicoFacade;
 import com.hcc.tfm_hcc.mapper.ArchivoClinicoMapper;
 import com.hcc.tfm_hcc.model.ArchivoClinico;
 import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.DatosClinicosValidationException;
 import com.hcc.tfm_hcc.exception.HistorialClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioNoEncontradaException;
+import com.hcc.tfm_hcc.exception.UsuarioNoAutenticadoException;
 import com.hcc.tfm_hcc.service.ArchivoClinicoService;
 import com.hcc.tfm_hcc.service.HistorialClinicoService;
+import com.hcc.tfm_hcc.service.PropuestaCambioClinicoService;
+import com.hcc.tfm_hcc.util.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +58,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 1.0
  */
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
 
@@ -69,6 +80,16 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
      * Servicio para operaciones del historial clínico.
      */
     private final HistorialClinicoService historiaClinicaService;
+
+    /**
+     * Servicio de propuestas de cambio clínico (médico propone, paciente confirma).
+     */
+    private final PropuestaCambioClinicoService propuestaCambioClinicoService;
+
+    /**
+     * Convierte las propuestas de cambio clínico a DTO antes de exponerlas en la API.
+     */
+    private final PropuestaCambioClinicoConverter propuestaCambioClinicoConverter;
 
     // ===============================
     // MÉTODOS DE ARCHIVOS CLÍNICOS
@@ -260,167 +281,216 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
         }
     }
 
+
     /**
-     * Actualiza la información de identificación en el historial clínico.
-     * 
-     * @param historialClinicoDTO Datos de identificación
+     * Crea un nuevo antecedente clínico (personal o familiar) en el historial.
+     *
+     * @param antecedenteDTO categoría y descripción del antecedente
      * @return HistorialClinicoDTO El historial clínico actualizado
-    * @throws DatosClinicosValidationException Si el JSON de identificación es inválido
-    * @throws HistorialClinicoException Si ocurre un error durante la actualización
+     * @throws DatosClinicosValidationException Si los datos son inválidos
+     * @throws HistorialClinicoException Si ocurre un error durante la creación
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public HistorialClinicoDTO actualizarIdentificacion(HistorialClinicoDTO historialClinicoDTO) {
-        log.debug("Actualizando identificación en historial clínico");
-        
-        try {            
-            HistorialClinicoDTO resultado = historiaClinicaService.actualizarIdentificacion(historialClinicoDTO);
-            
-            log.info("Identificación actualizada exitosamente en historial clínico");
+    public HistorialClinicoDTO crearAntecedente(AntecedenteClinicoDTO antecedenteDTO) {
+        log.debug("Creando antecedente clínico en historial clínico");
+
+        try {
+            validarAntecedenteDTO(antecedenteDTO);
+
+            HistorialClinicoDTO resultado = historiaClinicaService.crearAntecedente(antecedenteDTO);
+
+            log.info("Antecedente clínico creado exitosamente en historial clínico");
             return resultado;
         } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al actualizar identificación: {}", e.getMessage());
+            log.warn("Error de validación al crear antecedente: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al actualizar identificación: {}", e.getMessage(), e);
-            throw new HistorialClinicoException("Error interno durante la actualización de identificación", e);
+            log.error("Error inesperado al crear antecedente: {}", e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la creación del antecedente", e);
         }
     }
 
     /**
-     * Actualiza los antecedentes familiares en el historial clínico.
-     * 
-     * @param antecedentesFamiliares Datos de antecedentes familiares
+     * Edita un antecedente clínico existente.
+     *
+     * @param id ID del antecedente a editar
+     * @param antecedenteDTO categoría y descripción actualizadas
      * @return HistorialClinicoDTO El historial clínico actualizado
-    * @throws DatosClinicosValidationException Si los datos son inválidos
-    * @throws HistorialClinicoException Si ocurre un error durante la actualización
+     * @throws DatosClinicosValidationException Si el ID o los datos son inválidos
+     * @throws HistorialClinicoException Si ocurre un error durante la edición
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public HistorialClinicoDTO actualizarAntecedentes(String antecedentesFamiliares) {
-        log.debug("Actualizando antecedentes familiares en historial clínico");
-        
+    public HistorialClinicoDTO editarAntecedente(UUID id, AntecedenteClinicoDTO antecedenteDTO) {
+        log.debug("Editando antecedente clínico: {}", id);
+
         try {
-            validarTexto(antecedentesFamiliares, "antecedentes familiares");
-            
-            HistorialClinicoDTO resultado = historiaClinicaService.actualizarAntecedentes(antecedentesFamiliares);
-            
-            log.info("Antecedentes familiares actualizados exitosamente en historial clínico");
+            validarId(id);
+            validarAntecedenteDTO(antecedenteDTO);
+
+            HistorialClinicoDTO resultado = historiaClinicaService.editarAntecedente(id, antecedenteDTO);
+
+            log.info("Antecedente clínico editado exitosamente: {}", id);
             return resultado;
         } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al actualizar antecedentes: {}", e.getMessage());
+            log.warn("Error de validación al editar antecedente {}: {}", id, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al actualizar antecedentes: {}", e.getMessage(), e);
-            throw new HistorialClinicoException("Error interno durante la actualización de antecedentes", e);
+            log.error("Error inesperado al editar antecedente {}: {}", id, e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la edición del antecedente", e);
         }
     }
 
     /**
-     * Actualiza la información de alergias en el historial clínico.
-     * 
-     * @param alergiasJson JSON con los datos de alergias
+     * Elimina un antecedente clínico específico.
+     *
+     * @param id ID del antecedente a eliminar
      * @return HistorialClinicoDTO El historial clínico actualizado
-    * @throws DatosClinicosValidationException Si el JSON de alergias es inválido
-    * @throws HistorialClinicoException Si ocurre un error durante la actualización
+     * @throws DatosClinicosValidationException Si el ID es inválido
+     * @throws HistorialClinicoException Si ocurre un error durante la eliminación
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public HistorialClinicoDTO actualizarAlergias(String alergiasJson) {
-        log.debug("Actualizando alergias en historial clínico");
-        
+    public HistorialClinicoDTO borrarAntecedente(UUID id) {
+        log.debug("Borrando antecedente clínico: {}", id);
+
         try {
-            validarJson(alergiasJson, "alergias");
-            
-            HistorialClinicoDTO resultado = historiaClinicaService.actualizarAlergias(alergiasJson);
-            
-            log.info("Alergias actualizadas exitosamente en historial clínico");
+            validarId(id);
+
+            HistorialClinicoDTO resultado = historiaClinicaService.borrarAntecedente(id);
+
+            log.info("Antecedente clínico borrado exitosamente: {}", id);
             return resultado;
         } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al actualizar alergias: {}", e.getMessage());
+            log.warn("Error de validación al borrar antecedente {}: {}", id, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al actualizar alergias: {}", e.getMessage(), e);
-            throw new HistorialClinicoException("Error interno durante la actualización de alergias", e);
+            log.error("Error inesperado al borrar antecedente {}: {}", id, e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la eliminación del antecedente", e);
         }
     }
 
     /**
-     * Añade nuevas alergias sin eliminar las existentes.
-     * 
-     * @param alergiasJson Texto con las nuevas alergias (una por línea)
+     * Crea una nueva alergia o intolerancia en el historial clínico.
+     *
+     * @param alergiaDTO descripción de la alergia
      * @return HistorialClinicoDTO El historial clínico actualizado
-    * @throws DatosClinicosValidationException Si los datos de alergias son inválidos
-    * @throws HistorialClinicoException Si ocurre un error durante la operación
+     * @throws DatosClinicosValidationException Si los datos son inválidos
+     * @throws HistorialClinicoException Si ocurre un error durante la creación
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public HistorialClinicoDTO anadirAlergias(String alergiasJson) {
-        log.debug("Añadiendo nuevas alergias en historial clínico");
-        
+    public HistorialClinicoDTO crearAlergia(AlergiaDTO alergiaDTO) {
+        log.debug("Creando alergia en historial clínico");
+
         try {
-            validarJson(alergiasJson, "alergias");
-            
-            HistorialClinicoDTO resultado = historiaClinicaService.añadirAlergias(alergiasJson);
-            
-            log.info("Alergias añadidas exitosamente en historial clínico");
+            validarAlergiaDTO(alergiaDTO);
+
+            HistorialClinicoDTO resultado = historiaClinicaService.crearAlergia(alergiaDTO);
+
+            log.info("Alergia creada exitosamente en historial clínico");
             return resultado;
         } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al añadir alergias: {}", e.getMessage());
+            log.warn("Error de validación al crear alergia: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al añadir alergias: {}", e.getMessage(), e);
-            throw new HistorialClinicoException("Error interno durante la adición de alergias", e);
+            log.error("Error inesperado al crear alergia: {}", e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la creación de la alergia", e);
         }
     }
 
     /**
-     * Actualiza los análisis de sangre en el historial clínico.
-     * 
-     * @param analisisJson JSON con los datos de análisis de sangre
+     * Elimina una alergia específica.
+     *
+     * @param id ID de la alergia a eliminar
      * @return HistorialClinicoDTO El historial clínico actualizado
-     * @throws DatosClinicosValidationException Si el JSON de análisis es inválido
-     * @throws HistorialClinicoException Si ocurre un error durante la actualización
+     * @throws DatosClinicosValidationException Si el ID es inválido
+     * @throws HistorialClinicoException Si ocurre un error durante la eliminación
      */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public HistorialClinicoDTO actualizarAnalisisSangre(String analisisJson) {
-        log.debug("Actualizando análisis de sangre en historial clínico");
-        
+    public HistorialClinicoDTO borrarAlergia(UUID id) {
+        log.debug("Borrando alergia: {}", id);
+
         try {
-            validarJson(analisisJson, "análisis de sangre");
-            
-            HistorialClinicoDTO resultado = historiaClinicaService.actualizarAnalisisSangre(analisisJson);
-            
-            log.info("Análisis de sangre actualizados exitosamente en historial clínico");
+            validarId(id);
+
+            HistorialClinicoDTO resultado = historiaClinicaService.borrarAlergia(id);
+
+            log.info("Alergia borrada exitosamente: {}", id);
             return resultado;
         } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al actualizar análisis de sangre: {}", e.getMessage());
+            log.warn("Error de validación al borrar alergia {}: {}", id, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al actualizar análisis de sangre: {}", e.getMessage(), e);
-            throw new HistorialClinicoException("Error interno durante la actualización de análisis", e);
+            log.error("Error inesperado al borrar alergia {}: {}", id, e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la eliminación de la alergia", e);
         }
     }
-    
+
     @Override
     @PreAuthorize("isAuthenticated()")
-    public HistorialClinicoDTO anadirAnalisisSangre(String analisisJson) {
-        log.debug("Añadiendo nuevos análisis de sangre al historial clínico");
-        
+    public HistorialClinicoDTO actualizarAnalisisSangre(List<DatoClinicoEntradaDTO> analisis) {
+        return guardarMediciones("análisis de sangre", analisis, historiaClinicaService::actualizarAnalisisSangre);
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public HistorialClinicoDTO anadirAnalisisSangre(List<DatoClinicoEntradaDTO> analisis) {
+        return guardarMediciones("análisis de sangre", analisis, historiaClinicaService::añadirAnalisisSangre);
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public HistorialClinicoDTO actualizarSignosVitales(List<DatoClinicoEntradaDTO> signosVitales) {
+        return guardarMediciones("signos vitales", signosVitales, historiaClinicaService::actualizarSignosVitales);
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public HistorialClinicoDTO anadirSignosVitales(List<DatoClinicoEntradaDTO> signosVitales) {
+        return guardarMediciones("signos vitales", signosVitales, historiaClinicaService::añadirSignosVitales);
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public HistorialClinicoDTO actualizarAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina) {
+        return guardarMediciones("análisis de orina", analisisOrina, historiaClinicaService::actualizarAnalisisOrina);
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public HistorialClinicoDTO anadirAnalisisOrina(List<DatoClinicoEntradaDTO> analisisOrina) {
+        return guardarMediciones("análisis de orina", analisisOrina, historiaClinicaService::añadirAnalisisOrina);
+    }
+
+    /**
+     * Flujo común de los seis endpoints de datos clínicos cuantitativos: valida la entrada,
+     * delega en el servicio y normaliza el manejo de errores (validación → se propaga tal
+     * cual; cualquier otro fallo → {@link HistorialClinicoException}).
+     *
+     * @param etiqueta  nombre del dominio para los mensajes de log ("análisis de sangre"...)
+     * @param datos     mediciones recibidas del cliente
+     * @param operacion método del servicio que persiste las mediciones
+     */
+    private HistorialClinicoDTO guardarMediciones(String etiqueta, List<DatoClinicoEntradaDTO> datos,
+            java.util.function.Function<List<DatoClinicoEntradaDTO>, HistorialClinicoDTO> operacion) {
+        log.debug("Guardando {} en historial clínico", etiqueta);
+
         try {
-            validarJson(analisisJson, "análisis de sangre");
-            
-            HistorialClinicoDTO resultado = historiaClinicaService.añadirAnalisisSangre(analisisJson);
-            
-            log.info("Análisis de sangre añadidos exitosamente al historial clínico");
+            validarMediciones(datos, etiqueta);
+
+            HistorialClinicoDTO resultado = operacion.apply(datos);
+
+            log.info("{} guardados exitosamente en historial clínico", etiqueta);
             return resultado;
         } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al añadir análisis de sangre: {}", e.getMessage());
+            log.warn("Error de validación al guardar {}: {}", etiqueta, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al añadir análisis de sangre: {}", e.getMessage(), e);
-            throw new HistorialClinicoException("Error interno durante la adición de análisis", e);
+            log.error("Error inesperado al guardar {}: {}", etiqueta, e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante el guardado de " + etiqueta, e);
         }
     }
 
@@ -455,65 +525,71 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
         }
     }
 
-    /**
-     * Borra un antecedente específico por su índice.
-     * 
-     * @param index Índice del antecedente a borrar
-     * @return HistorialClinicoDTO El historial clínico actualizado
-     * @throws DatosClinicosValidationException Si el índice es inválido
-     * @throws HistorialClinicoException Si ocurre un error durante la eliminación
-     */
     @Override
     @PreAuthorize("isAuthenticated()")
-    public HistorialClinicoDTO borrarAntecedente(int index) {
-        log.debug("Borrando antecedente en índice: {}", index);
-        
+    public HistorialClinicoDTO editarDatoClinico(UUID id, DatoClinicoEntradaDTO datos) {
+        log.debug("Editando dato clínico {} del historial del usuario autenticado", id);
         try {
-            validarIndice(index);
-            
-            HistorialClinicoDTO resultado = historiaClinicaService.borrarAntecedente(index);
-            
-            log.info("Antecedente borrado exitosamente en índice: {}", index);
+            validarId(id);
+            if (datos == null) {
+                throw new DatosClinicosValidationException(ErrorMessages.ERROR_ANALISIS_VALUE_REQUERIDO);
+            }
+            HistorialClinicoDTO resultado = historiaClinicaService.editarDatoClinico(id, datos);
+            log.info("Dato clínico {} editado exitosamente", id);
             return resultado;
         } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al borrar antecedente: índice {} - Error: {}", index, e.getMessage());
+            log.warn("Error de validación al editar dato clínico {}: {}", id, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al borrar antecedente: índice {} - Error: {}", index, e.getMessage(), e);
-            throw new HistorialClinicoException("Error interno durante la eliminación del antecedente", e);
+            log.error("Error inesperado al editar dato clínico {}: {}", id, e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno durante la edición del dato clínico", e);
         }
     }
 
-    /**
-     * Edita un antecedente específico por su índice.
-     * 
-     * @param index Índice del antecedente a editar
-     * @param texto Nuevo texto para el antecedente
-     * @return HistorialClinicoDTO El historial clínico actualizado
-     * @throws DatosClinicosValidationException Si el índice o texto son inválidos
-     * @throws HistorialClinicoException Si ocurre un error durante la edición
-     */
+    // ===============================
+    // MÉTODOS DE PROPUESTAS DE CAMBIO CLÍNICO
+    // ===============================
+
     @Override
     @PreAuthorize("isAuthenticated()")
-    public HistorialClinicoDTO editarAntecedente(int index, String texto) {
-        log.debug("Editando antecedente en índice: {} con texto: {}", index, 
-                texto != null && texto.length() > 50 ? texto.substring(0, 50) + "..." : texto);
-        
+    public List<PropuestaCambioClinicoDTO> listarPropuestasCambio() {
+        log.debug("Listando propuestas de cambio del usuario autenticado");
+        String nif = nifUsuarioAutenticado();
         try {
-            validarIndice(index);
-            validarTexto(texto, "texto del antecedente");
-            
-            HistorialClinicoDTO resultado = historiaClinicaService.editarAntecedente(index, texto);
-            
-            log.info("Antecedente editado exitosamente en índice: {}", index);
-            return resultado;
-        } catch (DatosClinicosValidationException e) {
-            log.warn("Error de validación al editar antecedente: índice {} - Error: {}", index, e.getMessage());
+            return propuestaCambioClinicoConverter.toDtoList(
+                    propuestaCambioClinicoService.listarPropuestasParaPaciente(nif));
+        } catch (Exception e) {
+            log.error("Error inesperado al listar propuestas de cambio: {}", e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno al listar las propuestas de cambio", e);
+        }
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public PropuestaCambioClinicoDTO responderPropuestaCambio(UUID id, boolean aceptar) {
+        log.debug("Resolviendo propuesta de cambio {} (aceptar={})", id, aceptar);
+        String nif = nifUsuarioAutenticado();
+        try {
+            validarId(id);
+            var propuesta = propuestaCambioClinicoService.resolver(nif, id, aceptar);
+            log.info("Propuesta de cambio {} resuelta por el paciente ({})", id, aceptar ? "aceptada" : "rechazada");
+            return propuestaCambioClinicoConverter.toDto(propuesta);
+        } catch (DatosClinicosValidationException | PropuestaCambioClinicoException
+                 | PropuestaCambioNoEncontradaException e) {
+            log.warn("No se pudo resolver la propuesta de cambio {}: {}", id, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al editar antecedente: índice {} - Error: {}", index, e.getMessage(), e);
-            throw new HistorialClinicoException("Error interno durante la edición del antecedente", e);
+            log.error("Error inesperado al resolver la propuesta de cambio {}: {}", id, e.getMessage(), e);
+            throw new HistorialClinicoException("Error interno al resolver la propuesta de cambio", e);
         }
+    }
+
+    private String nifUsuarioAutenticado() {
+        String nif = SecurityUtils.getCurrentUserNif();
+        if (nif == null) {
+            throw new UsuarioNoAutenticadoException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
+        }
+        return nif;
     }
 
     // ===============================
@@ -559,21 +635,15 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
     }
 
     /**
-     * Valida un JSON y su tipo.
-     * 
-     * @param json JSON a validar
-     * @param tipo Tipo de datos que representa el JSON
-     * @throws DatosClinicosValidationException Si el JSON es inválido
+     * Valida que la lista de mediciones no sea nula ni vacía.
+     *
+     * @param datos mediciones a validar
+     * @param tipo  nombre del dominio para el mensaje de error ("análisis de sangre"...)
+     * @throws DatosClinicosValidationException si no hay ninguna medición
      */
-    private void validarJson(String json, String tipo) {
-        if (json == null || json.trim().isEmpty()) {
-            throw new DatosClinicosValidationException("Los datos de " + tipo + " no pueden ser nulos o vacíos");
-        }
-        
-        // Validación básica de formato JSON
-        String trimmed = json.trim();
-        if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
-            throw new DatosClinicosValidationException("Los datos de " + tipo + " deben tener formato JSON válido");
+    private void validarMediciones(List<DatoClinicoEntradaDTO> datos, String tipo) {
+        if (datos == null || datos.isEmpty()) {
+            throw new DatosClinicosValidationException("Los datos de " + tipo + " no pueden estar vacíos");
         }
     }
 
@@ -595,14 +665,29 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
     }
 
     /**
-     * Valida un índice para operaciones de array.
-     * 
-     * @param index Índice a validar
-     * @throws DatosClinicosValidationException Si el índice es inválido
+     * Valida los datos de un antecedente clínico.
+     *
+     * @param antecedenteDTO DTO a validar
+     * @throws DatosClinicosValidationException Si los datos son inválidos
      */
-    private void validarIndice(int index) {
-        if (index < 0) {
-            throw new DatosClinicosValidationException("El índice no puede ser negativo");
+    private void validarAntecedenteDTO(AntecedenteClinicoDTO antecedenteDTO) {
+        if (antecedenteDTO == null) {
+            throw new DatosClinicosValidationException("Los datos del antecedente no pueden ser nulos");
         }
+        validarTexto(antecedenteDTO.getCategoria(), "categoría del antecedente");
+        validarTexto(antecedenteDTO.getDescripcion(), "descripción del antecedente");
+    }
+
+    /**
+     * Valida los datos de una alergia.
+     *
+     * @param alergiaDTO DTO a validar
+     * @throws DatosClinicosValidationException Si los datos son inválidos
+     */
+    private void validarAlergiaDTO(AlergiaDTO alergiaDTO) {
+        if (alergiaDTO == null) {
+            throw new DatosClinicosValidationException("Los datos de la alergia no pueden ser nulos");
+        }
+        validarTexto(alergiaDTO.getDescripcion(), "descripción de la alergia");
     }
 }

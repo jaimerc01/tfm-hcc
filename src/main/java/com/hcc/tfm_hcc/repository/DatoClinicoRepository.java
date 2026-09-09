@@ -27,39 +27,24 @@ import com.hcc.tfm_hcc.model.HistorialClinico;
 public interface DatoClinicoRepository extends JpaRepository<DatoClinico, UUID> {
     
     /**
-     * Busca todos los datos clínicos asociados a un historial clínico específico.
-     * Incluye alergias, análisis de sangre y otros datos médicos del paciente.
-     * 
+     * Busca todos los datos clínicos cuantitativos asociados a un historial clínico específico
+     * (análisis de sangre, signos vitales, análisis de orina).
+     *
      * @param historial HistorialClinico del cual obtener los datos clínicos
      * @return Lista de DatoClinico asociados al historial especificado
      */
     List<DatoClinico> findByHistorialClinico(HistorialClinico historial);
-    
-    /**
-     * Elimina todos los datos clínicos de un tipo específico asociados a un historial.
-     * Útil para limpiar datos obsoletos o realizar actualizaciones masivas por categoría.
-     * 
-     * @param historial HistorialClinico del cual eliminar los datos
-     * @param tipo Tipo específico de dato clínico a eliminar (ej: "ALERGIA", "ANALISIS")
-     */
-    void deleteByHistorialClinicoAndTipo(HistorialClinico historial, String tipo);
-    
-    /**
-     * Busca todos los datos clínicos de un tipo específico asociados a un historial.
-     * 
-     * @param historial HistorialClinico del cual obtener los datos clínicos
-     * @param tipo Tipo específico de dato clínico a buscar
-     * @return Lista de DatoClinico que coinciden con el tipo especificado
-     */
-    List<DatoClinico> findByHistorialClinicoAndTipo(HistorialClinico historial, String tipo);
-    
+
     /**
      * Busca todos los datos clínicos asociados a un historial que pertenezcan a un conjunto de tipos.
      * Útil para obtener múltiples tipos de análisis de sangre de una vez.
-     * 
+     *
+     * <p>El tipo está cifrado de forma no determinista, así que el filtro se aplica sobre
+     * {@code tipoHash}, no sobre el tipo cifrado (ver {@link com.hcc.tfm_hcc.service.HmacSearchIndexService}).</p>
+     *
      * @param historial HistorialClinico del cual obtener los datos clínicos
-     * @param tipos Lista de tipos de datos clínicos a buscar
+     * @param tipoHashes Lista de índices de búsqueda (HMAC) de los tipos de dato clínico a buscar
      * @return Lista de DatoClinico que coinciden con los tipos especificados
      */
-    List<DatoClinico> findByHistorialClinicoAndTipoIn(HistorialClinico historial, List<String> tipos);
+    List<DatoClinico> findByHistorialClinicoAndTipoHashIn(HistorialClinico historial, List<String> tipoHashes);
 }

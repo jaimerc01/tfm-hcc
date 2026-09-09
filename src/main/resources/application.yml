@@ -2,19 +2,68 @@ spring:
   application:
     name: Historia Clinica Comun
   datasource:
-    url: jdbc:postgresql://localhost:5432/HCC_DEV
+    # sslmode controla el cifrado de la conexión con PostgreSQL (ver
+    # CONFIGURACION-SSL-TLS-POSTGRESQL.md):
+    #   prefer      -> usa TLS si el servidor lo ofrece, si no texto plano (por
+    #                  defecto; no rompe entornos sin certificados).
+    #   require     -> exige TLS pero no valida el certificado del servidor.
+    #   verify-full -> exige TLS y valida cadena + hostname (necesita DB_SSLROOTCERT).
+    # sslrootcert solo lo leen verify-ca / verify-full; con prefer/require se ignora.
+    url: "jdbc:postgresql://localhost:5432/HCC_DEV?sslmode=${DB_SSLMODE:prefer}&sslrootcert=${DB_SSLROOTCERT:}"
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   data:
     mongodb:
-      # Si usas Atlas o una conexión compartida desde la extensión, exporta aquí la URI completa.
-      # La contraseña debe ir por variable de entorno para no dejar secretos en el repositorio.
-      uri: ${MONGODB_URI:mongodb+srv://jaimerc01:${MONGODB_PASSWORD}@hcc.u68mkjv.mongodb.net/hcc_logs?appName=hcc&retryWrites=true&w=majority&authSource=admin}
+      # URI completa de MongoDB. En producción / Atlas se inyecta por la variable de entorno
+      # MONGODB_URI (con usuario y contraseña dentro de la propia URI); el repositorio no
+      # contiene ningún host ni credencial reales. El valor por defecto solo sirve para
+      # desarrollo local contra un mongod sin autenticación.
+      uri: ${MONGODB_URI:mongodb://localhost:27017/hcc_logs}
       auto-index-creation: true
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-  
+    hibernate:
+      # Desarrollo: Hibernate crea/actualiza el esquema a partir de las entidades
+      # sobre la base de datos desechable de compose.yaml (mismo enfoque que el
+      # perfil e2e, que usa create-drop). "update" nunca borra datos, así que la
+      # siembra de scripts/ persiste entre arranques. En producción se fuerza a
+      # "none" (el esquema se gestiona a mano; ver src/main/resources/db/manual-migrations/).
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+  docker:
+    compose:
+      # spring-boot-docker-compose arranca compose.yaml al lanzar la app en desarrollo.
+      # start-only: los contenedores se dejan en marcha al parar la app (arranques
+      # posteriores más rápidos y datos disponibles entre sesiones); se paran a mano
+      # con `docker compose down`. Durante los tests se omite automáticamente
+      # (spring.docker.compose.skip.in-tests=true por defecto).
+      lifecycle-management: start-only
+  mail:
+    # Servidor SMTP para el correo transaccional (por ahora, solo el enlace de
+    # restablecimiento de contraseña). En desarrollo apunta a un SMTP de captura
+    # local (MailHog/Mailpit en el puerto 1025); en producción se inyectan host,
+    # puerto y credenciales reales por variables de entorno. El envío efectivo se
+    # controla aparte con app.mail.enabled: mientras esté a false, EmailService
+    # se limita a registrar el enlace en el log y nunca abre una conexión SMTP.
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
+  servlet:
+    multipart:
+      # Por defecto Spring Boot limita la subida a 1MB, muy por debajo del límite
+      # real de la aplicación (app.uploads.max-size-bytes, 10MB por defecto). Sin
+      # este ajuste, cualquier archivo de más de 1MB se rechaza antes de llegar
+      # al controlador con un MaxUploadSizeExceededException.
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 server:
   port: 8081 # Puerto HTTPS (cuando SSL habilitado)
   # Puerto HTTP adicional para redirigir a HTTPS (configurado en HttpToHttpsRedirectConfig)
@@ -31,29 +80,93 @@ server:
 security:
   jwt:
     secret-key: ${JWT_SECRET}
-    expiration-time: 3600000 # 1 hour in milliseconds 
-  enforce-https: false # Cambiar a true en producción para redirigir HTTP->HTTPS
-  tfm:
-    hcc:
-      encryption:
-        key: ${TFM_HCC_ENCRYPTION_KEY} # Clave para cifrado de datos sensibles (NIF, teléfono)
+    expiration-time: 3600000 # 1 hour in milliseconds
+  cors:
+    # Orígenes permitidos por CORS, separados por comas. En producción, sustituir por
+    # el origen real del frontend desplegado (vía la variable de entorno).
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8080,https://localhost:8080}
+
+tfm:
+  hcc:
+    encryption:
+      key: ${TFM_HCC_ENCRYPTION_KEY} # Clave para cifrado de datos sensibles (NIF, teléfono)
+
+app:
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:8080} # Origen del SPA, usado para las redirecciones del login con Google
+  mail:
+    # Interruptor de envío real de correo. A false (por defecto en desarrollo y en
+    # los tests), EmailService no contacta con ningún servidor SMTP: solo registra
+    # el contenido en el log. Poner a true en los entornos donde spring.mail esté
+    # configurado con un servidor real.
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_FROM:no-reply@historiaclinicacomun.local} # Remitente de los correos transaccionales
+  password-reset:
+    # Vida del enlace de restablecimiento de contraseña, en minutos. Pasado ese
+    # tiempo el token deja de ser válido (y MongoDB lo elimina por su índice TTL).
+    token-ttl-minutes: ${PASSWORD_RESET_TOKEN_TTL_MINUTES:30}
+  privacy:
+    # Identificador de la versión vigente de la política de privacidad. Se guarda junto a
+    # la fecha de consentimiento de cada usuario (RGPD art. 7.1: poder demostrar qué
+    # información aceptó). Actualizar cuando cambie el texto de la política.
+    policy-version: ${PRIVACY_POLICY_VERSION:2026-09-03}
+  registration:
+    # Edad mínima para registrarse. La LOPDGDD (art. 7) fija en 14 años la edad a partir
+    # de la cual el menor puede consentir por sí mismo el tratamiento de sus datos.
+    min-age: ${MIN_REGISTRATION_AGE:14}
+  uploads:
+    max-size-bytes: ${UPLOADS_MAX_SIZE_BYTES:10485760} # 10 MB
+    # Lista blanca de tipos MIME y extensiones admitidos para los archivos clínicos:
+    # informes en PDF/Word, analíticas en Excel, notas en texto plano e imágenes (fotos
+    # de lesiones/pruebas, escaneos de documentos...). Un historial clínico solo necesita
+    # documentos e imágenes; restringirlo evita almacenar (y luego servir) contenido activo
+    # como HTML o SVG. Configurable por entorno.
+    allowed-types: ${UPLOADS_ALLOWED_TYPES:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,image/png,image/jpeg,image/webp,image/gif}
+    allowed-extensions: ${UPLOADS_ALLOWED_EXTENSIONS:pdf,doc,docx,xls,xlsx,txt,png,jpg,jpeg,webp,gif}
+
+logging:
+  level:
+    root: INFO
+    com.hcc.tfm_hcc: INFO
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN
+    org.mongodb.driver: WARN
 
 ---
 spring:
   config:
     activate:
-      on-profile: oauth-google
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
-            scope:
-              - openid
-              - profile
-              - email
-        provider:
-          google:
-            issuer-uri: https://accounts.google.com
+      on-profile: prod
+  datasource:
+    # En producción la conexión con PostgreSQL va cifrada y con validación
+    # completa del certificado del servidor por defecto. DB_SSLROOTCERT debe
+    # apuntar al certificado de la CA que firmó el certificado del servidor, y el
+    # host de DB_URL/este literal tiene que coincidir con el CN/SAN de ese
+    # certificado. Ajusta host, puerto y nombre de base de datos al despliegue
+    # real (o inyecta SPRING_DATASOURCE_URL con los mismos parámetros sslmode y
+    # sslrootcert).
+    url: "jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:HCC_DEV}?sslmode=${DB_SSLMODE:verify-full}&sslrootcert=${DB_SSLROOTCERT:/etc/tfm-hcc/certs/ca.crt}"
+  jpa:
+    hibernate:
+      # En producción el esquema NUNCA lo toca Hibernate: se gestiona con los
+      # scripts de src/main/resources/db/manual-migrations/.
+      ddl-auto: none
+logging:
+  file:
+    name: ${LOG_PATH:/var/log/tfm-hcc}/tfm-hcc.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 30
+      total-size-cap: 1GB
+
+# El registro OAuth2 de Google (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET) ya NO se declara aquí
+# como spring.security.oauth2.client.*: ese árbol de propiedades hace que la auto-configuración
+# de Spring Boot intente construir el ClientRegistration de forma incondicional y falle el
+# arranque en cuanto el client-id está en blanco. Antes se evitaba activándolo solo bajo un
+# profile `oauth-google`, pero resultó frágil con springboot3-dotenv (carga el .env después de
+# que Spring ya haya decidido qué profiles activar, así que SPRING_PROFILES_ACTIVE puesto en
+# .env llegaba tarde). Ahora WebSecurityConfig construye el ClientRegistration a mano a partir
+# de @Value("${GOOGLE_CLIENT_ID:}")/@Value("${GOOGLE_CLIENT_SECRET:}") sueltas, igual que
+# TFM_HCC_ENCRYPTION_KEY: sin depender de ningún profile, funcionan estén donde estén definidas.

@@ -4,12 +4,7 @@
       <section class="register-card" aria-labelledby="register-title">
         <header class="register-header">
           <div class="icon-wrapper" aria-hidden="true">
-            <svg class="register-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <line x1="19" y1="8" x2="19" y2="14"></line>
-              <line x1="22" y1="11" x2="16" y2="11"></line>
-            </svg>
+            <AppIcon class="register-icon" name="user-plus" size="3xl" />
           </div>
           <h1 id="register-title">{{$t('register_title')}}</h1>
           <p class="subtitle">{{$t('register_subtitle')}}</p>
@@ -24,19 +19,12 @@
           aria-live="assertive"
           tabindex="-1"
         >
-          <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
+          <AppIcon class="alert-icon" name="alert-circle" size="lg" />
           <span>{{ error }}</span>
         </div>
 
         <div v-if="success" class="alert alert-success" role="status" aria-live="polite">
-          <svg class="alert-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-          </svg>
+          <AppIcon class="alert-icon" name="check-circle" size="lg" />
           <span>{{ $t('register_success') }}</span>
         </div>
 
@@ -129,6 +117,45 @@
             <legend class="section-title">{{ $t('identification_data') }}</legend>
             <div class="form-grid">
               <div class="form-group">
+                <label for="email" class="form-label">
+                  {{$t('email_label')}} <span class="required" aria-hidden="true">*</span>
+                </label>
+                <input
+                  id="email"
+                  ref="emailInput"
+                  v-model.trim="form.email"
+                  type="email"
+                  class="form-input"
+                  :placeholder="$t('email_placeholder')"
+                  required
+                  autocomplete="email"
+                  :aria-invalid="fieldErrors.email ? 'true' : 'false'"
+                  :aria-describedby="buildDescribedBy('email')"
+                  @blur="validateEmailField"
+                />
+                <p v-if="fieldErrors.email" id="email-error" class="field-error">{{ fieldErrors.email }}</p>
+              </div>
+
+              <div class="form-group">
+                <label for="telefono" class="form-label">
+                  {{ $t('phone') }}
+                </label>
+                <input
+                  id="telefono"
+                  v-model.trim="form.telefono"
+                  type="tel"
+                  class="form-input"
+                  :placeholder="$t('phone_placeholder')"
+                  autocomplete="tel"
+                />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-section">
+            <legend class="section-title">{{ $t('access_data') }}</legend>
+            <div class="form-grid">
+              <div class="form-group full-width">
                 <label for="nif" class="form-label">
                   {{$t('nif_label')}} <span class="required" aria-hidden="true">*</span>
                 </label>
@@ -152,45 +179,6 @@
               </div>
 
               <div class="form-group">
-                <label for="telefono" class="form-label">
-                  {{ $t('phone') }}
-                </label>
-                <input
-                  id="telefono"
-                  v-model.trim="form.telefono"
-                  type="tel"
-                  class="form-input"
-                  :placeholder="$t('phone_placeholder')"
-                  autocomplete="tel"
-                />
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="form-section">
-            <legend class="section-title">{{ $t('access_data') }}</legend>
-            <div class="form-grid">
-              <div class="form-group full-width">
-                <label for="email" class="form-label">
-                  {{$t('email_label')}} <span class="required" aria-hidden="true">*</span>
-                </label>
-                <input
-                  id="email"
-                  ref="emailInput"
-                  v-model.trim="form.email"
-                  type="email"
-                  class="form-input"
-                  :placeholder="$t('email_placeholder')"
-                  required
-                  autocomplete="email"
-                  :aria-invalid="fieldErrors.email ? 'true' : 'false'"
-                  :aria-describedby="buildDescribedBy('email')"
-                  @blur="validateEmailField"
-                />
-                <p v-if="fieldErrors.email" id="email-error" class="field-error">{{ fieldErrors.email }}</p>
-              </div>
-
-              <div class="form-group">
                 <label for="password" class="form-label">
                   {{ $t('password') }} <span class="required" aria-hidden="true">*</span>
                 </label>
@@ -202,7 +190,7 @@
                   class="form-input"
                   :placeholder="$t('password_min_placeholder')"
                   required
-                  minlength="6"
+                  minlength="8"
                   autocomplete="new-password"
                   :aria-invalid="fieldErrors.password ? 'true' : 'false'"
                   :aria-describedby="buildDescribedBy('password', true)"
@@ -224,7 +212,7 @@
                   class="form-input"
                   :placeholder="$t('repeat_password_placeholder')"
                   required
-                  minlength="6"
+                  minlength="8"
                   autocomplete="new-password"
                   :aria-invalid="fieldErrors.password2 ? 'true' : 'false'"
                   :aria-describedby="buildDescribedBy('password2')"
@@ -235,83 +223,51 @@
             </div>
           </fieldset>
 
+          <div class="consent-group">
+            <label class="consent-check" for="aceptaTratamientoDatos">
+              <input
+                id="aceptaTratamientoDatos"
+                ref="consentInput"
+                v-model="form.aceptaTratamientoDatos"
+                type="checkbox"
+                :aria-invalid="fieldErrors.aceptaTratamientoDatos ? 'true' : 'false'"
+                :aria-describedby="buildDescribedBy('aceptaTratamientoDatos')"
+              />
+              <span>
+                <i18n-t keypath="register_consent_label" tag="span">
+                  <template #link>
+                    <router-link :to="{ name: 'PoliticaPrivacidad' }" target="_blank">{{ $t('privacy') }}</router-link>
+                  </template>
+                </i18n-t>
+              </span>
+            </label>
+            <p v-if="fieldErrors.aceptaTratamientoDatos" id="aceptaTratamientoDatos-error" class="field-error">
+              {{ fieldErrors.aceptaTratamientoDatos }}
+            </p>
+          </div>
+
           <div class="form-actions">
             <button type="submit" class="btn-primary" :disabled="loading" :aria-disabled="loading ? 'true' : 'false'">
               <span v-if="!loading">
-                <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <line x1="19" y1="8" x2="19" y2="14"></line>
-                  <line x1="22" y1="11" x2="16" y2="11"></line>
-                </svg>
+                <AppIcon name="user-plus" size="lg" />
                 {{$t('register_title')}}
               </span>
               <span v-else class="loading-text">
-                <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
-                </svg>
+                <AppIcon name="spinner" size="lg" spin />
                 {{$t('register_loading')}}
               </span>
             </button>
 
             <button type="button" class="btn-secondary" @click="goLogin" :disabled="loading" :aria-disabled="loading ? 'true' : 'false'">
-              <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-              </svg>
+              <AppIcon name="arrow-left" size="lg" />
               {{ $t('back_to_login') }}
             </button>
           </div>
         </form>
 
-        <div class="google-register">
-          <div class="separator" aria-hidden="true">
-            <span>{{ $t('or') }}</span>
-          </div>
-
-          <button
-            type="button"
-            class="btn-google"
-            @click="handleGoogleSignup"
-            :disabled="loading"
-            :aria-disabled="loading ? 'true' : 'false'"
-            :aria-label="$t('register_with_google')"
-          >
-            <svg
-              class="google-icon"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path
-                fill="currentColor"
-                d="M21.35 12.23c0-.79-.07-1.55-.23-2.27H12v4.3h5.23a4.47 4.47 0 0 1-1.94 2.93v2.39h3.14c1.84-1.69 2.92-4.18 2.92-7.35z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 21.99c2.63 0 4.84-.87 6.45-2.41l-3.14-2.39c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.3v2.46A9.74 9.74 0 0 0 12 21.99z"
-              />
-              <path
-                fill="currentColor"
-                d="M6.54 14.08A5.86 5.86 0 0 1 6.23 12c0-.72.12-1.42.31-2.08V7.46H3.3A9.99 9.99 0 0 0 2.01 12c0 1.63.39 3.17 1.29 4.54l3.24-2.46z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.89c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.83 2.92 14.63 2 12 2a9.74 9.74 0 0 0-8.7 5.46l3.24 2.46C6.31 7.61 8.46 5.89 12 5.89z"
-              />
-            </svg>
-
-            <span>{{ $t('register_with_google') }}</span>
-          </button>
-        </div>
-
         <footer class="register-footer">
           <p>
-            <svg class="info-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
+            <AppIcon class="info-icon" name="info" size="sm" />
             {{$t('required_fields_note')}} <span class="required" aria-hidden="true">*</span> {{$t('are_required')}}
           </p>
         </footer>
@@ -326,9 +282,13 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import authService from '@/services/authService'
 import { validateNIF } from '@/utils/validateNIF'
+import AppIcon from '@/components/AppIcon.vue'
+
+const MIN_PASSWORD_LENGTH = 8
 
 export default {
   name: 'RegisterView',
+  components: { AppIcon },
   setup() {
     const router = useRouter()
     const { t } = useI18n()
@@ -345,6 +305,7 @@ export default {
     const emailInput = ref(null)
     const passwordInput = ref(null)
     const password2Input = ref(null)
+    const consentInput = ref(null)
 
     const form = ref({
       nombre: '',
@@ -355,7 +316,8 @@ export default {
       password2: '',
       fechaNacimiento: '',
       nif: '',
-      telefono: ''
+      telefono: '',
+      aceptaTratamientoDatos: false
     })
 
     const fieldErrors = ref({
@@ -365,7 +327,8 @@ export default {
       nif: '',
       email: '',
       password: '',
-      password2: ''
+      password2: '',
+      aceptaTratamientoDatos: ''
     })
 
     const resetFieldErrors = () => {
@@ -376,9 +339,13 @@ export default {
         nif: '',
         email: '',
         password: '',
-        password2: ''
+        password2: '',
+        aceptaTratamientoDatos: ''
       }
     }
+
+    // Edad mínima para registrarse (LOPDGDD art. 7).
+    const MIN_EDAD_REGISTRO = 14
 
     const normalizeNif = () => {
       form.value.nif = form.value.nif.toUpperCase().replace(/\s+/g, '')
@@ -402,12 +369,34 @@ export default {
       return true
     }
 
+    const calcularEdad = (fechaIso) => {
+      const nacimiento = new Date(fechaIso)
+      const hoy = new Date()
+      let edad = hoy.getFullYear() - nacimiento.getFullYear()
+      const m = hoy.getMonth() - nacimiento.getMonth()
+      if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad -= 1
+      return edad
+    }
+
     const validateFechaNacimientoField = () => {
       if (!form.value.fechaNacimiento) {
         fieldErrors.value.fechaNacimiento = t('birth_date_required')
         return false
       }
+      if (calcularEdad(form.value.fechaNacimiento) < MIN_EDAD_REGISTRO) {
+        fieldErrors.value.fechaNacimiento = t('register_min_age_error', { age: MIN_EDAD_REGISTRO })
+        return false
+      }
       fieldErrors.value.fechaNacimiento = ''
+      return true
+    }
+
+    const validateConsentimientoField = () => {
+      if (!form.value.aceptaTratamientoDatos) {
+        fieldErrors.value.aceptaTratamientoDatos = t('register_consent_required')
+        return false
+      }
+      fieldErrors.value.aceptaTratamientoDatos = ''
       return true
     }
 
@@ -438,7 +427,7 @@ export default {
         fieldErrors.value.password = t('password_required')
         return false
       }
-      if (form.value.password.length < 6) {
+      if (form.value.password.length < MIN_PASSWORD_LENGTH) {
         fieldErrors.value.password = t('password_min_length')
         return false
       }
@@ -473,10 +462,11 @@ export default {
       if (fieldErrors.value.nombre && nombreInput.value) return nombreInput.value.focus()
       if (fieldErrors.value.apellido1 && apellido1Input.value) return apellido1Input.value.focus()
       if (fieldErrors.value.fechaNacimiento && fechaNacimientoInput.value) return fechaNacimientoInput.value.focus()
-      if (fieldErrors.value.nif && nifInput.value) return nifInput.value.focus()
       if (fieldErrors.value.email && emailInput.value) return emailInput.value.focus()
+      if (fieldErrors.value.nif && nifInput.value) return nifInput.value.focus()
       if (fieldErrors.value.password && passwordInput.value) return passwordInput.value.focus()
       if (fieldErrors.value.password2 && password2Input.value) return password2Input.value.focus()
+      if (fieldErrors.value.aceptaTratamientoDatos && consentInput.value) return consentInput.value.focus()
 
       if (error.value && formErrorRef.value) formErrorRef.value.focus()
     }
@@ -486,10 +476,11 @@ export default {
         validateNombreField(),
         validateApellido1Field(),
         validateFechaNacimientoField(),
-        validateNifField(),
         validateEmailField(),
+        validateNifField(),
         validatePasswordField(),
-        validatePassword2Field()
+        validatePassword2Field(),
+        validateConsentimientoField()
       ]
       return checks.every(Boolean)
     }
@@ -522,28 +513,6 @@ export default {
       }
     }
 
-    const handleGoogleSignup = async () => {
-      error.value = ''
-      success.value = false
-      loading.value = true
-
-      try {
-        const result = await authService.registerWithGoogle()
-
-        if (result?.redirect) {
-          return
-        }
-
-        success.value = true
-        setTimeout(() => router.push({ name: 'Login' }), 1200)
-      } catch (e) {
-        error.value = e.message || t('register_error')
-        await focusFirstError()
-      } finally {
-        loading.value = false
-      }
-    }
-
     const goLogin = () => router.push({ name: 'Login' })
 
     return {
@@ -557,6 +526,7 @@ export default {
       emailInput,
       passwordInput,
       password2Input,
+      consentInput,
       fieldErrors,
       loading,
       error,
@@ -571,8 +541,8 @@ export default {
       validateEmailField,
       validatePasswordField,
       validatePassword2Field,
-      buildDescribedBy,
-      handleGoogleSignup
+      validateConsentimientoField,
+      buildDescribedBy
     }
   }
 }
@@ -633,6 +603,7 @@ export default {
   margin: 0;
   opacity: 0.95;
   font-size: 1rem;
+  color: white;
 }
 
 .alert {
@@ -648,18 +619,6 @@ export default {
 
 .alert-icon {
   flex-shrink: 0;
-}
-
-.alert-danger {
-  background: var(--alert-danger-bg);
-  color: var(--alert-danger-text);
-  border: 1px solid var(--alert-danger-border);
-}
-
-.alert-success {
-  background: var(--alert-success-bg);
-  color: var(--alert-success-text);
-  border: 1px solid var(--alert-success-border);
 }
 
 .register-form {
@@ -751,6 +710,39 @@ export default {
   font-weight: 600;
 }
 
+.privacy-notice {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.consent-group {
+  margin: 0.5rem 0;
+}
+
+.consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.consent-check input[type='checkbox'] {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.privacy-notice a {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
 .form-actions {
   display: flex;
   flex-direction: column;
@@ -766,78 +758,20 @@ export default {
   }
 }
 
+/* Layout only -- colour, hover and disabled come from the shared button
+   system in styles/shared.css (every button in the app is green). */
 .btn-primary,
 .btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
   padding: 0.875rem 1.5rem;
-  border: none;
   border-radius: 8px;
-  font-size: 0.875rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: var(--shadow-sm);
   flex: 1;
-}
-
-.btn-primary {
-  background: var(--primary-color);
-  color: var(--text-inverse);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
-}
-
-.btn-primary:active:not(:disabled) {
-  background: var(--primary-active);
-  transform: translateY(0);
-}
-
-.btn-primary:disabled,
-.btn-secondary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: var(--card-bg);
-  color: var(--secondary-color);
-  border: 1.5px solid var(--border);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--bg-light);
-  border-color: var(--secondary-color);
-}
-
-.btn-icon {
-  flex-shrink: 0;
 }
 
 .loading-text {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .register-footer {
@@ -870,10 +804,6 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation: none;
-  }
-
   .btn-primary,
   .btn-secondary,
   .form-input {
@@ -909,92 +839,4 @@ export default {
   }
 }
 
-  .google-register {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-md);
-  }
-
-  .separator {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-  }
-
-  .separator::before,
-  .separator::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background-color: var(--border);
-  }
-
-  .separator span {
-    flex-shrink: 0;
-  }
-
-  .btn-google {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-sm);
-
-    width: auto;
-    min-width: 240px;
-    padding: 0.875rem 1.5rem;
-
-    margin: 0 auto var(--spacing-lg);
-
-    background: var(--bg-light);
-    color: var(--text-primary);
-
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-lg);
-
-    font-size: 0.875rem;
-    font-weight: 600;
-
-    cursor: pointer;
-
-    box-shadow: var(--button-shadow);
-
-    transition:
-      background-color var(--transition-fast),
-      border-color var(--transition-fast),
-      box-shadow var(--transition-fast),
-      transform var(--transition-fast);
-  }
-
-  .btn-google:hover:not(:disabled) {
-    background: var(--neutral-50);
-    border-color: var(--primary-color);
-    box-shadow: var(--button-shadow-hover);
-    transform: translateY(-1px);
-  }
-
-  .btn-google:active:not(:disabled) {
-    box-shadow: var(--button-shadow-active);
-    transform: translateY(0);
-  }
-
-  .btn-google:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .btn-google:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--focus-outline-offset);
-  }
-
-  .google-icon {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    color: var(--tertiary-color);
-  }
 </style>

@@ -4,8 +4,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.NoArgsConstructor;
 
 /**
@@ -25,10 +26,11 @@ import lombok.NoArgsConstructor;
  * @version 1.0
  * @since 1.0
  */
-@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @Entity
-@Data
+@Getter
+@Setter
+@ToString
 @Table(name = "perfil_usuario")
 public class PerfilUsuario extends BaseEntity {
 

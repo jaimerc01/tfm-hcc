@@ -14,14 +14,14 @@ api.interceptors.request.use((cfg) => {
 })
 
 export default {
-  listMyNotifications(page = 0, size = 5) { return api.get('/usuario/notificaciones', { params: { page, size } }) },
-  markAllRead() { return api.post('/usuario/notificaciones/marcar-todas') }
+  listMyNotifications(page = 0, size = 5) { return api.get('/notificaciones', { params: { page, size } }) },
+  markAllRead() { return api.post('/notificaciones/marcar-leidas') }
 }
 
-export function fetchUnreadCount() { return api.get('/usuario/notificaciones/no-leidas') }
+export function fetchUnreadCount() { return api.get('/notificaciones/no-leidas') }
 
 // mark single notification as read
-export function markNotificationRead(id) { return api.put(`/usuario/notificaciones/${id}/leida`) }
+export function markNotificationRead(id) { return api.put(`/notificaciones/${id}/leida`) }
 
-export function deleteNotification(id) { return api.delete(`/usuario/notificaciones/${id}`) }
+export function deleteNotification(id) { return api.delete(`/notificaciones/${id}`) }
 

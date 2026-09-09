@@ -1,0 +1,20 @@
+{
+  "name": "tfm-hcc-e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tests de extremo a extremo (Playwright) de tfm-hcc: navegador real contra frontend + backend + bases de datos reales.",
+  "scripts": {
+    "db:up": "docker compose -f docker-compose.test.yml up -d --wait",
+    "db:down": "docker compose -f docker-compose.test.yml down -v",
+    "pretest": "npm run db:up",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@types/pg": "^8.11.10",
+    "pg": "^8.13.1"
+  }
+}

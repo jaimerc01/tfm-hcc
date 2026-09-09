@@ -25,6 +25,48 @@ public final class ErrorMessages {
     public static final String ERROR_CREDENCIALES_INVALIDAS = "Credenciales inválidas";
     public static final String ERROR_USUARIO_BLOQUEADO = "Usuario bloqueado";
     public static final String ERROR_PERMISOS_INSUFICIENTES = "Permisos insuficientes";
+    public static final String ERROR_TRATAMIENTO_LIMITADO =
+            "El paciente ha limitado el tratamiento de sus datos: su historial clínico no está disponible";
+    public static final String ERROR_CUENTA_ELIMINADA_NO_MODIFICABLE =
+            "No es posible modificar el estado de una cuenta ya eliminada";
+    public static final String ERROR_REAUTENTICACION_REQUERIDA =
+            "Debes confirmar tu contraseña actual para completar esta operación";
+
+    // =====================================================
+    // MENSAJES DE ERROR - LOGIN CON GOOGLE
+    // =====================================================
+
+    public static final String ERROR_GOOGLE_CUENTA_NO_ENCONTRADA = "No existe ninguna cuenta asociada a este email de Google. Regístrate primero.";
+    public static final String ERROR_GOOGLE_EMAIL_NO_VERIFICADO = "El email de la cuenta de Google no está verificado.";
+    public static final String ERROR_GOOGLE_CODIGO_INVALIDO = "El código de autenticación de Google no es válido o ha caducado.";
+    public static final String ERROR_GOOGLE_AUTENTICACION_FALLIDA = "No se pudo completar la autenticación con Google.";
+
+    // Códigos cortos aptos para URL, usados en la redirección de vuelta al frontend (?error=...)
+    public static final String GOOGLE_ERROR_CODE_ACCOUNT_NOT_FOUND = "google_account_not_found";
+    public static final String GOOGLE_ERROR_CODE_EMAIL_NOT_VERIFIED = "google_email_not_verified";
+    public static final String GOOGLE_ERROR_CODE_INVALID_CODE = "google_code_invalid";
+    public static final String GOOGLE_ERROR_CODE_AUTH_FAILED = "google_auth_failed";
+
+    // =====================================================
+    // MENSAJES DE ERROR - SEGUNDO FACTOR (TOTP)
+    // =====================================================
+
+    public static final String ERROR_TOTP_NO_CONFIGURADO = "No hay una configuración de segundo factor pendiente de confirmar";
+    public static final String ERROR_TOTP_YA_ACTIVO = "El segundo factor ya está activo";
+    public static final String ERROR_TOTP_NO_ACTIVO = "El segundo factor no está activo";
+    public static final String ERROR_TOTP_CODIGO_INVALIDO = "El código de verificación no es válido";
+    public static final String ERROR_TOTP_CHALLENGE_INVALIDO = "El proceso de verificación no es válido o ha caducado. Inicia sesión de nuevo.";
+
+    public static final String ERROR_RESET_TOKEN_INVALIDO =
+            "El enlace de restablecimiento no es válido o ha caducado. Solicita uno nuevo.";
+    public static final String ERROR_RESET_PASSWORD_DEBIL =
+            "La nueva contraseña debe tener al menos 8 caracteres";
+    public static final String ERROR_REGISTRO_PASSWORD_DEBIL =
+            "La contraseña debe tener al menos 8 caracteres";
+    public static final String ERROR_CONSENTIMIENTO_REQUERIDO =
+            "Debes dar tu consentimiento explícito para el tratamiento de tus datos de salud para poder registrarte";
+    public static final String ERROR_EDAD_MINIMA_REGISTRO =
+            "Debes tener al menos {0} años para registrarte";
 
     // =====================================================
     // MENSAJES DE ERROR - GESTIÓN DE ARCHIVOS
@@ -53,6 +95,7 @@ public final class ErrorMessages {
     public static final String ERROR_DATO_NO_ENCONTRADO = "Dato clínico no encontrado";
     public static final String ERROR_NO_PERMITIDO = "Operación no permitida";
     public static final String ERROR_ANTECEDENTE_NO_ENCONTRADO = "Antecedente no encontrado";
+    public static final String ERROR_ALERGIA_NO_ENCONTRADA = "Alergia no encontrada";
     public static final String ERROR_INDICE_FUERA_RANGO = "Índice fuera de rango";
     public static final String ERROR_NO_HAY_ANTECEDENTES = "No hay antecedentes registrados";
     public static final String ERROR_FORMATO_FECHA_INVALIDO = "Formato de fecha inválido";
@@ -84,7 +127,7 @@ public final class ErrorMessages {
     public static final String ERROR_JSON_MAL_FORMADO = "JSON mal formado";
     public static final String ERROR_CAMPO_JSON_FALTANTE = "Campo requerido faltante en JSON";
     public static final String ERROR_TIPO_JSON_INCORRECTO = "Tipo de dato incorrecto en JSON";
-    public static final String ERROR_ANALISIS_JSON_ARRAY_ESPERADO = "Se esperaba un array JSON para análisis de sangre";
+    public static final String ERROR_ANALISIS_JSON_ARRAY_ESPERADO = "Se esperaba un array JSON para los datos clínicos";
     public static final String ERROR_ANALISIS_VALUE_REQUERIDO = "Cada entrada debe incluir 'value'";
     public static final String ERROR_VALOR_NUMERICO_INVALIDO = "Valor numérico inválido";
 
@@ -115,6 +158,21 @@ public final class ErrorMessages {
     public static final String ERROR_LISTADO_MEDICOS = "Error al listar médicos: {0}";
     public static final String ERROR_CREAR_MEDICO = "Error al crear médico: {0}";
     public static final String PERFIL_NO_ENCONTRADO = "Perfil '{0}' no encontrado";
+    public static final String ERROR_SOLICITUD_YA_EXISTE = "Ya existe una solicitud pendiente para este médico y paciente";
+    public static final String ERROR_RELACION_MEDICO_PACIENTE_NO_ACTIVA = "No existe una relación asistencial activa con ese usuario";
+
+    // =====================================================
+    // MENSAJES DE ERROR - PROPUESTAS DE CAMBIO CLÍNICO
+    // =====================================================
+
+    public static final String ERROR_PROPUESTA_NO_ENCONTRADA = "La propuesta de cambio no existe";
+    public static final String ERROR_PROPUESTA_YA_RESUELTA = "La propuesta de cambio ya ha sido resuelta";
+    public static final String ERROR_PROPUESTA_MOTIVO_REQUERIDO = "Debes indicar el motivo del cambio";
+    public static final String ERROR_PROPUESTA_DOMINIO_INVALIDO = "El apartado del historial indicado no es válido";
+    public static final String ERROR_PROPUESTA_OPERACION_INVALIDA = "La operación indicada no es válida";
+    public static final String ERROR_PROPUESTA_RECURSO_REQUERIDO = "Debes indicar el dato del historial sobre el que actúa la propuesta";
+    public static final String ERROR_PROPUESTA_DATOS_REQUERIDOS = "Faltan los datos propuestos para el cambio";
+    public static final String ERROR_PROPUESTA_ALERGIA_SIN_EDICION = "Las alergias no admiten edición; propón un borrado y una nueva alta";
 
     // =====================================================
     // MENSAJES DE ERROR - NOTIFICACIONES

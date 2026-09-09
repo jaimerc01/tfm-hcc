@@ -1,84 +1,61 @@
 <template>
-  <section class="alergias-section" :aria-busy="savingAlergias ? 'true' : 'false'" aria-labelledby="alergias-heading">
+  <section class="alergias-section" :aria-busy="saving ? 'true' : 'false'" aria-labelledby="alergias-heading">
     <h2 id="alergias-heading" class="sr-only">{{ $t('allergies') }}</h2>
     <div class="info-box">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 16v-4"></path>
-        <path d="M12 8h.01"></path>
-      </svg>
+      <AppIcon name="info" size="lg" />
       <span>
         <strong>{{ $t('register_allergies') }}</strong> {{ $t('doctor_consider') }}
-        {{ $t('allergy_line_instruction') }}
       </span>
     </div>
 
-    <div class="form-group full-width">
-      <label class="form-label" for="alergias-text">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-          <line x1="12" y1="9" x2="12" y2="13"></line>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
-        {{ $t('add_new_allergy') }}
-      </label>
-      <textarea 
-        id="alergias-text" 
-        v-model="alergias" 
-        class="form-input"
-        rows="4" 
-        :placeholder="$t('allergy_placeholder')"
-        required
-        aria-required="true"
-        :aria-invalid="error ? 'true' : 'false'"
-        :aria-describedby="error ? 'alergias-hint alergias-error' : 'alergias-hint'"></textarea>
-      <p id="alergias-hint" class="form-help">
-        {{ $t('allergy_hint') }}
-      </p>
-    </div>
+    <form class="add-form" @submit.prevent="addAlergia">
+      <div class="form-group full-width">
+        <label class="form-label" for="alergia-input">
+          <AppIcon name="alert-triangle" size="sm" />
+          {{ $t('add_new_allergy') }}
+        </label>
+        <div class="input-row">
+          <input
+            id="alergia-input"
+            type="text"
+            v-model="descripcion"
+            class="form-input"
+            maxlength="500"
+            :placeholder="$t('allergy_placeholder')"
+            required
+            aria-required="true"
+            :aria-invalid="error ? 'true' : 'false'"
+            :aria-describedby="error ? 'alergias-hint alergias-error' : 'alergias-hint'" />
+          <button
+            type="submit"
+            class="btn-primary"
+            :disabled="saving || !descripcion.trim()"
+            :aria-disabled="saving || !descripcion.trim() ? 'true' : 'false'">
+            <div v-if="saving" class="spinner-small"></div>
+            <AppIcon v-else name="plus" size="md" />
+            {{ saving ? $t('saving') : $t('add_allergy') }}
+          </button>
+        </div>
+        <p id="alergias-hint" class="form-help">
+          {{ $t('allergy_hint') }}
+        </p>
+      </div>
+    </form>
 
     <div v-if="error" id="alergias-error" class="alert alert-danger" role="alert" aria-live="assertive">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 16v-4"></path>
-        <path d="M12 8h.01"></path>
-      </svg>
+      <AppIcon name="alert-circle" size="lg" />
       {{ error }}
     </div>
 
-    <p v-if="savingAlergias" class="sr-only" role="status" aria-live="polite">
-      {{ $t('saving') }}
-    </p>
-
-    <div v-if="msgAler" class="alert alert-success" role="status" aria-live="polite">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <polyline points="20 6 9 17 4 12"></polyline>
-      </svg>
-      {{ msgAler }}
-    </div>
-
-    <div class="form-actions form-actions--right">
-      <button 
-        type="button"
-        class="btn-primary"
-        @click="saveAlergias" 
-        :disabled="savingAlergias || !alergias.trim()"
-        :aria-disabled="savingAlergias || !alergias.trim() ? 'true' : 'false'">
-        <div v-if="savingAlergias" class="spinner-small"></div>
-        <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 5v14"></path>
-          <path d="M5 12h14"></path>
-        </svg>
-        {{ savingAlergias ? $t('saving') : $t('save_allergy') }}
-      </button>
+    <div v-if="msg" class="alert alert-success" role="status" aria-live="polite">
+      <AppIcon name="check" size="lg" />
+      {{ msg }}
     </div>
 
     <!-- Lista de alergias registradas -->
     <div v-if="alergiasList && alergiasList.length" class="section">
       <div class="section-title">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 11H3v2h6m-6-5h6m-6 8h6m4-7h8m-8-3h8m-8 6h8m-8 3h8"></path>
-        </svg>
+        <AppIcon name="list" size="lg" />
         {{ $t('allergies_registered') }}
         <span class="badge badge-info">{{ alergiasList.length }}</span>
       </div>
@@ -86,41 +63,30 @@
       <div class="allergies-grid">
         <div v-for="a in alergiasList" :key="a.id" class="allergy-card">
           <div class="allergy-header">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="allergy-icon">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <h3>{{ allergyText(a) }}</h3>
+            <AppIcon name="alert-circle" size="lg" class="allergy-icon" />
+            <h3 class="entry-title">{{ a.descripcion }}</h3>
           </div>
           <div class="allergy-body">
             <div class="allergy-meta">
-              <span class="badge badge-warning">{{ a.tipo }}</span>
               <span v-if="a.createdAt" class="badge badge-date">{{ formatDateTime(a.createdAt) }}</span>
             </div>
           </div>
           <div class="allergy-actions">
-            <button 
+            <button
               type="button"
               class="btn-icon btn-danger"
               @click="openDelete(a)"
               :title="$t('delete_allergy')"
-              :aria-label="$t('delete_allergy_item_aria', { allergy: allergyText(a) })">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
+              :aria-label="$t('delete_allergy_item_aria', { allergy: a.descripcion })">
+              <AppIcon name="trash" size="sm" />
             </button>
           </div>
         </div>
         <!-- Modal de confirmación para borrar alergia -->
-        <AppModal v-if="showDelete && deleteAlergia" :label="$t('delete_allergy')" @close="closeDelete">
+        <AppModal v-if="showDelete && deleteAlergiaItem" :label="$t('delete_allergy')" @close="closeDelete">
           <template #header>
             <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--danger-color);">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
+              <AppIcon name="trash" size="2xl" style="color:var(--danger-color);" />
               <h3 style="margin:0; text-align:center;">{{ $t('delete_allergy') }}</h3>
             </div>
           </template>
@@ -142,11 +108,7 @@
 
     <!-- Empty state -->
     <div v-else class="empty-state-small">
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
+      <AppIcon name="alert-circle" size="3xl" />
       <p>{{ $t('no_allergies_registered') }}</p>
       <span>{{ $t('add_first_allergy_hint') }}</span>
     </div>
@@ -155,70 +117,68 @@
 
 <script>
 import AppModal from './Modal.vue';
+import AppIcon from './AppIcon.vue';
 export default {
   name: 'AlergiasSection',
-  components: { AppModal },
+  components: { AppModal, AppIcon },
   data() {
     return {
-      alergias: '',
+      descripcion: '',
       alergiasList: [],
-      savingAlergias: false,
-      msgAler: '',
+      saving: false,
+      msg: '',
       error: null,
       showDelete: false,
       deleteError: '',
-      deleteAlergia: null,
+      deleteAlergiaItem: null,
       successTimer: null
     }
   },
   created() { this.load() },
   methods: {
-    allergyText(a) {
-      return String((a && (a.observacion || a.valor || a.tipo)) || '')
-    },
-
     async load() {
       try {
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
         const res = await svc.getMine()
         const dto = res.data || {}
-        this.alergias = dto.alergiasJson || ''
-        this.alergiasList = Array.isArray(dto.datosClinicos) ? dto.datosClinicos.filter(d => (d.tipo || '').toUpperCase().includes('ALERGIA')) : []
+        this.alergiasList = Array.isArray(dto.alergias) ? dto.alergias : []
       } catch (e) { console.error(this.$t('error_loading_allergies'), e); this.error = this.$t('error_loading_allergies') }
     },
 
-    async saveAlergias() {
-      this.savingAlergias = true
+    async addAlergia() {
+      const texto = this.descripcion.trim()
+      if (!texto) return
+      this.saving = true
+      this.error = null
       try {
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
-        await svc.updateAlergias(this.alergias)
+        await svc.crearAlergia({ descripcion: texto })
+        this.descripcion = ''
         await this.load()
-        this.msgAler = this.$t('allergies_saved')
-        // clear textarea after saving to indicate stored
-        this.alergias = ''
+        this.msg = this.$t('allergies_saved')
         if (this.successTimer) clearTimeout(this.successTimer)
         this.successTimer = setTimeout(() => {
-          this.msgAler = ''
+          this.msg = ''
           this.successTimer = null
         }, 3000)
-      } catch (e) { this.error = this.$t('error_saving_allergies') } finally { this.savingAlergias = false }
+      } catch (e) { this.error = this.$t('error_saving_allergies') } finally { this.saving = false }
     },
 
     openDelete(alergia) {
-      this.deleteAlergia = alergia;
+      this.deleteAlergiaItem = alergia;
       this.showDelete = true;
       this.deleteError = '';
     },
     closeDelete() {
       this.showDelete = false;
-      this.deleteAlergia = null;
+      this.deleteAlergiaItem = null;
       this.deleteError = '';
     },
     async confirmDelete() {
-      if (!this.deleteAlergia) return;
+      if (!this.deleteAlergiaItem) return;
       try {
         const svc = await import('@/services/historiaClinicaService').then(m => m.default)
-        await svc.deleteDatoClinico(this.deleteAlergia.id)
+        await svc.deleteAlergia(this.deleteAlergiaItem.id)
         await this.load()
         this.closeDelete()
       } catch (e) {
@@ -266,6 +226,20 @@ export default {
   margin-bottom: 0;
 }
 
+.input-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.input-row .form-input {
+  flex: 1 1 260px;
+}
+
+.input-row .btn-primary {
+  flex-shrink: 0;
+}
+
 /* Allergies Grid */
 .allergies-grid {
   display: grid;
@@ -305,15 +279,6 @@ export default {
   flex-shrink: 0;
 }
 
-.allergy-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  word-break: break-word;
-  white-space: pre-line;
-}
-
 .allergy-body {
   margin-bottom: 0.75rem;
 }
@@ -331,57 +296,12 @@ export default {
   border-top: 1px solid var(--border);
 }
 
-.modal-error {
-  color: var(--danger-color);
-  font-weight: 600;
-  margin-top: 0.75rem;
-}
-
 .form-input:focus-visible,
 .btn-primary:focus-visible,
 .btn-secondary:focus-visible,
 .btn-icon:focus-visible {
-  outline: 3px solid var(--focus-color, #005fcc);
+  outline: 3px solid var(--focus-color);
   outline-offset: 2px;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Empty state small variant */
-.empty-state-small {
-  text-align: center;
-  padding: 3rem 2rem;
-  background: var(--bg-light);
-  border-radius: 12px;
-  border: 1px dashed var(--border);
-}
-
-.empty-state-small svg {
-  color: var(--text-secondary);
-  opacity: 0.3;
-  margin-bottom: 1rem;
-}
-
-.empty-state-small p {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.empty-state-small span {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
 }
 
 @media (prefers-reduced-motion: reduce) {

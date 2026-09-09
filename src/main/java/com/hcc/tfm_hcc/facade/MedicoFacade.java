@@ -1,8 +1,19 @@
 package com.hcc.tfm_hcc.facade;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
+import org.springframework.core.io.Resource;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.hcc.tfm_hcc.dto.AnotacionMedicaDTO;
+import com.hcc.tfm_hcc.dto.ArchivoClinicoDTO;
+import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.dto.PacienteDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoDTO;
+import com.hcc.tfm_hcc.dto.PropuestaCambioClinicoRequestDTO;
+import com.hcc.tfm_hcc.model.AnotacionMedica;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 
 /**
@@ -35,7 +46,23 @@ public interface MedicoFacade {
      * @throws IllegalArgumentException si los datos de identificación no son válidos
      */
     PacienteDTO buscarPacientePorDniYFechaNacimiento(String dni, String fechaNacimiento) throws IllegalArgumentException;
-    
+
+    /**
+     * Lista los pacientes con una relación activa con el médico autenticado.
+     *
+     * @return Lista de PacienteDTO con los pacientes actualmente asignados
+     */
+    List<PacienteDTO> listarMisPacientes();
+
+    /**
+     * Obtiene el historial clínico de un paciente vinculado al médico autenticado.
+     *
+     * @param nifPaciente NIF del paciente cuyo historial se consulta
+     * @return HistorialClinicoDTO con los datos médicos del paciente
+     * @throws IllegalArgumentException si el NIF es inválido o el paciente no existe
+     */
+    HistorialClinicoDTO obtenerHistorialPaciente(String nifPaciente);
+
     /**
      * Crea una nueva solicitud de asignación entre el médico autenticado y un paciente.
      * La solicitud queda pendiente hasta que sea aprobada por el sistema o el paciente.
@@ -58,8 +85,96 @@ public interface MedicoFacade {
     /**
      * Lista todas las solicitudes de asignación enviadas por el médico autenticado,
      * independientemente de su estado actual (pendiente, aprobada, rechazada).
-     * 
+     *
      * @return Lista de SolicitudAsignacion enviadas por el médico
      */
     List<SolicitudAsignacion> listarSolicitudesEnviadas();
+
+    /**
+     * Escribe una anotación médica sobre un paciente vinculado al médico autenticado.
+     * Solo se permite si existe una relación médico-paciente activa y el paciente no
+     * ha limitado el tratamiento de sus datos. El paciente recibe una notificación.
+     *
+     * @param nifPaciente NIF del paciente sobre el que se escribe la anotación
+     * @param mensaje contenido de la anotación
+     * @return AnotacionMedica creada
+     * @throws IllegalArgumentException si el mensaje está vacío
+     * @throws com.hcc.tfm_hcc.exception.PacienteNoEncontradoException si no existe un paciente con ese NIF
+     * @throws com.hcc.tfm_hcc.exception.UsuarioSinPermisoException si no hay relación activa con el
+     *         paciente, o el paciente ha limitado el tratamiento de sus datos
+     */
+    AnotacionMedica crearAnotacion(String nifPaciente, String mensaje);
+
+    /**
+     * Lista las anotaciones que el médico autenticado ha escrito sobre un paciente
+     * vinculado a él, de la más reciente a la más antigua.
+     *
+     * @param nifPaciente NIF del paciente
+     * @return lista de AnotacionMedicaDTO escritas por el médico sobre ese paciente
+     * @throws com.hcc.tfm_hcc.exception.PacienteNoEncontradoException si no existe un paciente con ese NIF
+     * @throws com.hcc.tfm_hcc.exception.UsuarioSinPermisoException si no hay relación activa con el
+     *         paciente, o el paciente ha limitado el tratamiento de sus datos
+     */
+    List<AnotacionMedicaDTO> listarAnotacionesPaciente(String nifPaciente);
+
+    /**
+     * Lista los documentos clínicos de un paciente vinculado al médico autenticado.
+     *
+     * @param nifPaciente NIF del paciente
+     * @return lista de ArchivoClinicoDTO del paciente
+     * @throws com.hcc.tfm_hcc.exception.UsuarioSinPermisoException si no hay relación activa con el paciente
+     */
+    List<ArchivoClinicoDTO> listarArchivosPaciente(String nifPaciente);
+
+    /**
+     * Sube un documento clínico al historial de un paciente vinculado al médico
+     * autenticado. El paciente recibe una notificación.
+     *
+     * @param nifPaciente NIF del paciente
+     * @param file documento a subir
+     * @return ArchivoClinicoDTO del documento creado
+     * @throws IOException si falla el cifrado del contenido
+     * @throws com.hcc.tfm_hcc.exception.UsuarioSinPermisoException si no hay relación activa con el paciente
+     */
+    ArchivoClinicoDTO subirArchivoPaciente(String nifPaciente, MultipartFile file) throws IOException;
+
+    /**
+     * Obtiene los metadatos de un documento clínico de un paciente vinculado al médico autenticado.
+     *
+     * @param nifPaciente NIF del paciente
+     * @param archivoId ID del documento
+     * @return ArchivoClinicoDTO con el nombre original y el tipo de contenido
+     */
+    ArchivoClinicoDTO obtenerArchivoPaciente(String nifPaciente, UUID archivoId);
+
+    /**
+     * Descarga el contenido de un documento clínico de un paciente vinculado al médico autenticado.
+     *
+     * @param nifPaciente NIF del paciente
+     * @param archivoId ID del documento
+     * @return recurso con el contenido descifrado del documento
+     */
+    Resource descargarArchivoPaciente(String nifPaciente, UUID archivoId);
+
+    /**
+     * Registra una propuesta de cambio (alta, edición o borrado) sobre el historial de un
+     * paciente vinculado al médico autenticado. El cambio no se aplica: queda pendiente de que
+     * el paciente lo confirme y este recibe una notificación.
+     *
+     * @param nifPaciente NIF del paciente destinatario
+     * @param request dominio, operación, recurso objetivo, motivo y datos propuestos
+     * @return la propuesta creada
+     * @throws com.hcc.tfm_hcc.exception.UsuarioSinPermisoException si no hay relación asistencial activa
+     * @throws com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException si la petición es inválida
+     */
+    PropuestaCambioClinicoDTO proponerCambioClinico(String nifPaciente, PropuestaCambioClinicoRequestDTO request);
+
+    /**
+     * Lista las propuestas de cambio que el médico autenticado ha enviado a un paciente,
+     * de la más reciente a la más antigua, con su estado actual.
+     *
+     * @param nifPaciente NIF del paciente
+     * @return lista de PropuestaCambioClinicoDTO enviadas por el médico a ese paciente
+     */
+    List<PropuestaCambioClinicoDTO> listarPropuestasCambioParaPaciente(String nifPaciente);
 }

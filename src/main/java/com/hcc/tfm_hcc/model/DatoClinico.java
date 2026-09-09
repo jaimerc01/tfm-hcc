@@ -1,12 +1,16 @@
 package com.hcc.tfm_hcc.model;
 
+import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.NoArgsConstructor;
 
 /**
@@ -26,11 +30,12 @@ import lombok.NoArgsConstructor;
  * @version 1.0
  * @since 1.0
  */
-@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @Entity
 @Table(name = "dato_clinico")
-@Data
+@Getter
+@Setter
+@ToString
 public class DatoClinico extends BaseEntity {
 
     private static final long serialVersionUID = 6L;
@@ -38,29 +43,47 @@ public class DatoClinico extends BaseEntity {
     /**
      * Tipo o categoría del dato clínico.
      * Ejemplos: "GLUCOSA", "PRESION_ARTERIAL", "ALERGIA", "COLESTEROL", etc.
+     * Campo cifrado con AES/GCM (no determinista): la búsqueda por igualdad ya no
+     * se aplica sobre esta columna, sino sobre {@link #tipoHash}.
      */
     @Column(name = "tipo", nullable = false)
+    @Convert(converter = AESEncryptionConverter.class)
     private String tipo;
 
     /**
-     * Valor numérico del dato clínico.
+     * Índice de búsqueda determinista del tipo (HMAC-SHA256), calculado por
+     * {@link com.hcc.tfm_hcc.service.HmacSearchIndexService}. Permite filtrar por
+     * tipo (p. ej. "dame todos los datos de tipo GLUCOSA de este historial") sin
+     * depender de la igualdad sobre el valor cifrado, que nunca coincide dos veces.
+     */
+    @Column(name = "tipo_hash", nullable = false)
+    private String tipoHash;
+
+    /**
+     * Valor numérico del dato clínico, almacenado como texto para poder cifrarlo.
      * Para datos no numéricos, puede usarse como indicador booleano (0/1).
+     * Campo encriptado por tratarse de un dato clínico del paciente.
      */
     @Column(name = "valor", nullable = false)
-    private float valor;
+    @Convert(converter = AESEncryptionConverter.class)
+    private String valor;
 
     /**
      * Unidad de medida del valor.
      * Ejemplos: "mg/dL", "mmHg", "text", "UI/L", etc.
+     * Campo encriptado por tratarse de un dato clínico del paciente.
      */
     @Column(name = "unidad", nullable = false)
+    @Convert(converter = AESEncryptionConverter.class)
     private String unidad;
 
     /**
      * Observaciones adicionales o comentarios sobre el dato clínico.
      * Campo opcional para información textual complementaria.
+     * Campo encriptado por tratarse de un dato clínico del paciente.
      */
     @Column(name = "observacion")
+    @Convert(converter = AESEncryptionConverter.class)
     private String observacion;
 
     /**

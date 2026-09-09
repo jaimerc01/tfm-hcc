@@ -3,6 +3,7 @@ package com.hcc.tfm_hcc.service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO.AccesoDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
@@ -84,10 +85,31 @@ public interface UsuarioService {
     /**
      * Elimina permanentemente la cuenta del usuario autenticado.
      * Esta operación es irreversible y elimina todos los datos asociados.
-     * 
+     *
+     * @param currentPassword contraseña actual del usuario, exigida como confirmación
+     *                        antes de esta operación irreversible
      * @throws RuntimeException si el usuario no está autenticado o hay error en la eliminación
+     * @throws com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException si la contraseña falta o no coincide
      */
-    void deleteCuentaActual();
+    void deleteCuentaActual(String currentPassword);
+
+    /**
+     * Limita el tratamiento de los datos del usuario autenticado (derecho de limitación
+     * del tratamiento, art. 18 RGPD): mientras dure, ningún médico puede consultar su
+     * historial clínico, pero la cuenta sigue activa y el propio usuario conserva acceso
+     * para poder revertirlo con {@link #reanudarTratamiento()} cuando quiera.
+     *
+     * @throws IllegalStateException si el usuario no está autenticado o su cuenta ya está eliminada
+     */
+    void limitarTratamiento();
+
+    /**
+     * Revierte la limitación del tratamiento aplicada por {@link #limitarTratamiento()},
+     * devolviendo la cuenta a su estado activo normal.
+     *
+     * @throws IllegalStateException si el usuario no está autenticado o su cuenta ya está eliminada
+     */
+    void reanudarTratamiento();
 
     /**
      * Obtiene los registros de acceso del usuario autenticado.
@@ -103,11 +125,14 @@ public interface UsuarioService {
     /**
      * Genera una exportación completa de los datos del usuario autenticado.
      * Cumple con los requisitos de portabilidad de datos (GDPR Art. 20).
-     * 
+     *
+     * @param currentPassword contraseña actual del usuario, exigida como confirmación
+     *                        antes de exportar todos sus datos personales
      * @return UserExportDTO con todos los datos del usuario en formato exportable
      * @throws RuntimeException si el usuario no está autenticado o hay error en la exportación
+     * @throws com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException si la contraseña falta o no coincide
      */
-    UserExportDTO exportUsuario();
+    UserExportDTO exportUsuario(String currentPassword);
 
     /**
      * Lista todas las solicitudes de asignación médico-paciente recibidas por el usuario.
@@ -129,4 +154,41 @@ public interface UsuarioService {
      * @throws RuntimeException si el usuario no está autenticado o no tiene permisos sobre la solicitud
      */
     SolicitudAsignacion actualizarEstadoSolicitud(String idSolicitud, String nuevoEstado);
+
+    /**
+     * Genera un nuevo secreto TOTP para el usuario autenticado y lo guarda como
+     * pendiente de confirmar (no activa el segundo factor todavía).
+     *
+     * @return secreto en Base32 y URI otpauth para el código QR
+     * @throws IllegalStateException si el usuario no está autenticado
+     */
+    TotpSetupResponseDTO setupTotp();
+
+    /**
+     * Confirma la activación del segundo factor: valida el código introducido
+     * contra el secreto pendiente generado por {@link #setupTotp()} y, si es
+     * correcto, marca el segundo factor como activo.
+     *
+     * @param code código de 6 dígitos de la aplicación autenticadora
+     * @throws IllegalStateException si no hay un secreto pendiente de confirmar
+     * @throws IllegalArgumentException si el código no es válido
+     */
+    void confirmTotp(String code);
+
+    /**
+     * Desactiva el segundo factor del usuario autenticado. Exige un código TOTP
+     * vigente para demostrar la posesión del segundo factor antes de desactivarlo.
+     *
+     * @param code código de 6 dígitos de la aplicación autenticadora
+     * @throws IllegalStateException si el segundo factor no está activo
+     * @throws IllegalArgumentException si el código no es válido
+     */
+    void disableTotp(String code);
+
+    /**
+     * Indica si el usuario autenticado tiene activado el segundo factor.
+     *
+     * @return true si el segundo factor está activo
+     */
+    boolean isTotpEnabled();
 }

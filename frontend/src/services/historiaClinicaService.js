@@ -5,25 +5,30 @@ api.interceptors.request.use((cfg) => { const token = localStorage.getItem('auth
 
 export default {
   getMine() { return api.get('/historia') },
-  // identification is sent as JSON
-  updateIdentificacion(payload) { return api.put('/historia/identificacion', payload, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
-  // antecedents and single-antecedent edits are plain text (multiline supported)
-  updateAntecedentes(text) { return api.put('/historia/antecedentes', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  updateAntecedente(index, texto) { return api.put(`/historia/antecedentes/${index}`, texto, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  // alergias endpoint expects JSON: { alergias: "..." }
-  updateAlergias(alergiasText) {
-    // Unir todas las líneas en un solo string, separadas por salto de línea si hay varias
-    const value = (alergiasText || '').split('\n').map(l => l.trim()).filter(l => l.length > 0).join('\n');
-    const payload = JSON.stringify({ alergias: value });
-    return api.post('/historia/alergias', payload, { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
-  },
+  // antecedentes clínicos: entradas individuales con categoria (PERSONAL/FAMILIAR) y descripcion
+  crearAntecedente(antecedente) { return api.post('/historia/antecedentes', antecedente, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
+  editarAntecedente(id, antecedente) { return api.put(`/historia/antecedentes/${id}`, antecedente, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
+  deleteAntecedente(id) { return api.delete(`/historia/antecedentes/${id}`) },
+  // alergias: entradas individuales con descripcion
+  crearAlergia(alergia) { return api.post('/historia/alergias', alergia, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
+  deleteAlergia(id) { return api.delete(`/historia/alergias/${id}`) },
   deleteDatoClinico(id) { return api.delete(`/historia/datos-clinicos/${id}`) },
-  deleteAntecedente(index) { return api.delete(`/historia/antecedentes/${index}`) },
-  // Analisis de sangre: Replace all (PUT) or add new (POST)
-  updateAnalisisSangre(text) { return api.put('/historia/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  añadirAnalisisSangre(text) { return api.post('/historia/analisis-sangre', text, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }) },
-  // getMine already returns the whole DTO, which may include analisisSangre
-  
+  // Edición individual de un dato clínico ya guardado (parámetro, valor, unidad, fecha)
+  editarDatoClinico(id, medicion) { return api.put(`/historia/datos-clinicos/${id}`, medicion, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
+  // Propuestas de cambio que un médico ha enviado sobre el historial: pendientes de confirmar e histórico resuelto
+  listarPropuestasCambio() { return api.get('/historia/propuestas-cambio') },
+  responderPropuestaCambio(id, aceptar) { return api.post(`/historia/propuestas-cambio/${id}`, { aceptar }, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
+  // Analisis de sangre: Replace all (PUT) or add new (POST). El cuerpo es un array de mediciones (application/json).
+  updateAnalisisSangre(datos) { return api.put('/historia/analisis-sangre', datos) },
+  añadirAnalisisSangre(datos) { return api.post('/historia/analisis-sangre', datos) },
+  // Signos vitales: Replace all (PUT) or add new (POST)
+  updateSignosVitales(datos) { return api.put('/historia/signos-vitales', datos) },
+  añadirSignosVitales(datos) { return api.post('/historia/signos-vitales', datos) },
+  // Analisis de orina: Replace all (PUT) or add new (POST)
+  updateAnalisisOrina(datos) { return api.put('/historia/analisis-orina', datos) },
+  añadirAnalisisOrina(datos) { return api.post('/historia/analisis-orina', datos) },
+  // getMine already returns the whole DTO, which may include analisisSangre, signosVitales and analisisOrina
+
   // Rangos de referencia
   getRangos() { return api.get('/rangos') }
 }

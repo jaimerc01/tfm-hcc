@@ -1,6 +1,7 @@
 package com.hcc.tfm_hcc.service.impl;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -14,7 +15,9 @@ import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
 import com.hcc.tfm_hcc.facade.NotificacionFacade;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.SolicitudAsignacionService;
+import com.hcc.tfm_hcc.util.NombreUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,36 +27,45 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SolicitudAsignacionServiceImpl implements SolicitudAsignacionService {
 
+    private static final String ZONE_ID_EUROPA_MADRID = "Europe/Madrid";
+    private static final String MENSAJE_SOLICITUD_RECIBIDA_PREFIJO = "Has recibido una solicitud de asignación del médico ";
+
     private final SolicitudAsignacionRepository solicitudAsignacionRepository;
     private final UsuarioRepository usuarioRepository;
     private final NotificacionFacade notificacionFacade;
+    private final HmacSearchIndexService hmacSearchIndexService;
 
     @Override
     @Transactional
     public SolicitudAsignacion crearSolicitud(String nifMedico, String nifPaciente) {
-        Usuario medico = usuarioRepository.findByNif(nifMedico).orElse(null);
-        Usuario paciente = usuarioRepository.findByNif(nifPaciente).orElse(null);
+        Usuario medico = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nifMedico)).orElse(null);
+        Usuario paciente = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nifPaciente)).orElse(null);
         if (medico == null || paciente == null) {
             throw new UsuarioNoEncontradoException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO);
         }
 
-        boolean exists = solicitudAsignacionRepository.existsByMedicoNifAndPacienteNifAndEstado(nifMedico, nifPaciente, "PENDIENTE");
+        boolean exists = solicitudAsignacionRepository.existsByMedicoNifHashAndPacienteNifHashAndEstado(
+                medico.getNifHash(), paciente.getNifHash(), SolicitudAsignacion.ESTADO_PENDIENTE);
         if (exists) {
-            throw new SolicitudExistenteException("Ya existe una solicitud pendiente para este médico y paciente");
+            throw new SolicitudExistenteException(ErrorMessages.ERROR_SOLICITUD_YA_EXISTE);
         }
 
         SolicitudAsignacion solicitud = new SolicitudAsignacion();
         solicitud.setMedico(medico);
         solicitud.setPaciente(paciente);
-        solicitud.setEstado("PENDIENTE");
-        solicitud.setFechaCreacion(LocalDateTime.now());
+        solicitud.setEstado(SolicitudAsignacion.ESTADO_PENDIENTE);
+        solicitud.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
 
         var saved = solicitudAsignacionRepository.save(solicitud);
 
         // Crear notificación (no lanzar si falla)
         try {
-            String mensaje = "Has recibido una solicitud de asignación del médico " + (medico.getNombre()!=null ? medico.getNombre() : medico.getNif());
-            notificacionFacade.crearNotificacionParaUsuario(paciente.getNif(), mensaje);
+            String nombreMedico = NombreUtil.nombreCompleto(medico);
+            if (nombreMedico == null || nombreMedico.isBlank()) {
+                nombreMedico = medico.getNif();
+            }
+            notificacionFacade.crearNotificacionParaUsuario(
+                    paciente.getNif(), MENSAJE_SOLICITUD_RECIBIDA_PREFIJO + nombreMedico);
         } catch (Exception e) {
             log.warn("Error al crear notificación tras crear solicitud: {}", e.getMessage());
         }
@@ -63,11 +75,11 @@ public class SolicitudAsignacionServiceImpl implements SolicitudAsignacionServic
 
     @Override
     public List<SolicitudAsignacion> listarSolicitudesPendientesPorMedico(String nifMedico) {
-        return solicitudAsignacionRepository.findByMedicoNifAndEstado(nifMedico, "PENDIENTE");
+        return solicitudAsignacionRepository.findByMedicoNifHashAndEstado(hmacSearchIndexService.indexar(nifMedico), SolicitudAsignacion.ESTADO_PENDIENTE);
     }
 
     @Override
     public List<SolicitudAsignacion> listarSolicitudesEnviadasPorMedico(String nifMedico) {
-        return solicitudAsignacionRepository.findByMedicoNifOrderByFechaCreacionDesc(nifMedico);
+        return solicitudAsignacionRepository.findByMedicoNifHashOrderByFechaCreacionDesc(hmacSearchIndexService.indexar(nifMedico));
     }
 }

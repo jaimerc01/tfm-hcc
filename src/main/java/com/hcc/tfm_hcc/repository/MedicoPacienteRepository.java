@@ -34,7 +34,19 @@ public interface MedicoPacienteRepository extends JpaRepository<MedicoPaciente, 
      * @return true si existe la relación médico-paciente, false en caso contrario
      */
     boolean existsByMedicoIdAndPacienteId(UUID medicoId, UUID pacienteId);
-    
+
+    /**
+     * Verifica si existe una relación médico-paciente con un estado concreto.
+     * Se usa para autorizar el acceso de un médico al historial de un paciente,
+     * exigiendo explícitamente que la relación esté en estado "ACTIVA".
+     *
+     * @param medicoId ID único del médico
+     * @param pacienteId ID único del paciente
+     * @param estado Estado exacto que debe tener la relación (p. ej. "ACTIVA")
+     * @return true si existe una relación médico-paciente con ese estado
+     */
+    boolean existsByMedicoIdAndPacienteIdAndEstado(UUID medicoId, UUID pacienteId, String estado);
+
     /**
      * Busca todas las relaciones médico-paciente de un médico específico,
      * excluyendo aquellas que tengan un estado determinado.
@@ -45,4 +57,47 @@ public interface MedicoPacienteRepository extends JpaRepository<MedicoPaciente, 
      * @return Lista de MedicoPaciente que no tienen el estado especificado
      */
     List<MedicoPaciente> findByMedicoIdAndEstadoNot(UUID medicoId, String estado);
+
+    /**
+     * Busca todas las relaciones médico-paciente de un médico específico que tengan
+     * exactamente un estado determinado. Se usa para listar los pacientes con acceso
+     * actualmente concedido (estado "ACTIVA") a un médico.
+     *
+     * @param medicoId ID único del médico del cual obtener las relaciones
+     * @param estado Estado exacto que deben tener las relaciones (p. ej. "ACTIVA")
+     * @return Lista de MedicoPaciente con ese estado
+     */
+    List<MedicoPaciente> findByMedicoIdAndEstado(UUID medicoId, String estado);
+
+    /**
+     * Busca las relaciones médico-paciente de un paciente concreto con un estado dado.
+     * Se usa para que el paciente liste los médicos que tienen acceso activo a su historial.
+     *
+     * @param pacienteId ID único del paciente
+     * @param estado Estado exacto que deben tener las relaciones (p. ej. "ACTIVA")
+     * @return Lista de MedicoPaciente con ese estado
+     */
+    List<MedicoPaciente> findByPacienteIdAndEstado(UUID pacienteId, String estado);
+
+    /**
+     * Busca las relaciones médico-paciente entre un médico y un paciente concretos con
+     * un estado dado. Se usa para localizar la relación vigente que se quiere revocar.
+     *
+     * @param medicoId ID único del médico
+     * @param pacienteId ID único del paciente
+     * @param estado Estado exacto que deben tener las relaciones (p. ej. "ACTIVA")
+     * @return Lista de MedicoPaciente con ese estado (normalmente cero o una)
+     */
+    List<MedicoPaciente> findByMedicoIdAndPacienteIdAndEstado(UUID medicoId, UUID pacienteId, String estado);
+
+    /**
+     * Busca todas las relaciones médico-paciente entre un médico y un paciente concretos,
+     * en cualquier estado. Se usa al aceptar una solicitud para decidir si crear una
+     * relación nueva o reactivar una previamente revocada.
+     *
+     * @param medicoId ID único del médico
+     * @param pacienteId ID único del paciente
+     * @return Lista de MedicoPaciente entre ambos usuarios
+     */
+    List<MedicoPaciente> findByMedicoIdAndPacienteId(UUID medicoId, UUID pacienteId);
 }

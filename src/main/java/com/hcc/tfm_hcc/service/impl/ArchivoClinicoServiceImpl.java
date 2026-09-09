@@ -1,18 +1,18 @@
 package com.hcc.tfm_hcc.service.impl;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -26,25 +26,29 @@ import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.ArchivoClinicoRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.ArchivoCifradoService;
 import com.hcc.tfm_hcc.service.AuditoriaCambioService;
+import com.hcc.tfm_hcc.service.FieldEncryptionService;
+import com.hcc.tfm_hcc.service.RelacionMedicoPacienteService;
+import com.hcc.tfm_hcc.util.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * Implementación del servicio de archivos clínicos.
- * 
+ *
  * <p>Esta clase proporciona la implementación de los servicios relacionados
  * con la gestión de archivos clínicos de los usuarios.</p>
- * 
+ *
  * <p>Responsabilidades principales:</p>
  * <ul>
  *   <li>Gestión de subida de archivos con validaciones de seguridad</li>
- *   <li>Almacenamiento seguro en el sistema de archivos</li>
+ *   <li>Almacenamiento seguro en MongoDB, con el contenido cifrado con AES/GCM</li>
  *   <li>Control de acceso basado en propietario</li>
  *   <li>Gestión del ciclo de vida de archivos</li>
  * </ul>
- * 
+ *
  * @author Sistema HCC
  * @version 1.0
  * @since 2024
@@ -74,22 +78,28 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     private static final String LOG_ARCHIVO_ELIMINADO = "Archivo eliminado exitosamente: {} por usuario: {}";
 
     private static final String BORRADO_ARCHIVO_CLINICO = "BORRADO_ARCHIVO_CLINICO";
+    private static final String SUBIDA_ARCHIVO_CLINICO = "SUBIDA_ARCHIVO_CLINICO";
     private static final String ARCHIVO_CLINICO = "archivo_clinico";
+    private static final String SUBIDA_ARCHIVO_POR_MEDICO = "Subida de archivo clínico por el médico";
 
     // Dependencias inyectadas por constructor
     private final ArchivoClinicoRepository archivoClinicoRepository;
     private final UsuarioRepository usuarioRepository;
     private final AuditoriaCambioService auditoriaCambioService;
-
-    @Value("${app.uploads.base-dir:uploads}")
-    private String baseDir;
+    private final ArchivoCifradoService archivoCifradoService;
+    private final FieldEncryptionService fieldEncryptionService;
+    private final RelacionMedicoPacienteService relacionMedicoPacienteService;
 
     @Value("${app.uploads.max-size-bytes:10485760}") // 10 MB por defecto
     private long maxSizeBytes;
 
-    // TODO: ESTABLECER CONFIGURACIÓN DE TIPOS PERMITIDOS DESDE PROPERTIES
-    @Value("${app.uploads.allowed-types:}") // vacío = sin restricción
+    /** Tipos MIME admitidos, separados por comas (vacío = sin restricción). */
+    @Value("${app.uploads.allowed-types:}")
     private String allowedTypes;
+
+    /** Extensiones admitidas, separadas por comas y sin punto (vacío = sin restricción). */
+    @Value("${app.uploads.allowed-extensions:}")
+    private String allowedExtensions;
 
     /**
      * Obtiene el ID del usuario autenticado actualmente
@@ -115,14 +125,8 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     }
 
     /**
-     * Construye el directorio específico del usuario
-     */
-    private Path userDir(UUID userId) {
-        return Paths.get(baseDir, userId.toString());
-    }
-
-    /**
-     * Lista todos los archivos clínicos del usuario autenticado.
+     * Lista todos los archivos clínicos del usuario autenticado, con el
+     * nombre original ya descifrado.
      *
      * @return lista de archivos clínicos ordenados por fecha de creación descendente
      */
@@ -131,10 +135,11 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     public List<ArchivoClinico> listMine() {
         UUID userId = getCurrentUserId();
         log.debug(LOG_LISTANDO_ARCHIVOS, userId);
-        
+
         List<ArchivoClinico> archivos = archivoClinicoRepository.findByUsuarioIdOrderByFechaCreacionDesc(userId);
+        archivos.forEach(this::descifrarNombre);
         log.info(LOG_ARCHIVOS_ENCONTRADOS, archivos.size(), userId);
-        
+
         return archivos;
     }
 
@@ -143,27 +148,40 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
      *
      * @param file el archivo a subir
      * @return el registro del archivo clínico creado
-     * @throws IOException si ocurre un error durante el almacenamiento
+     * @throws IOException si ocurre un error durante el cifrado del contenido
      * @throws IllegalArgumentException si el archivo es inválido
      */
     @Override
     @Transactional
     public ArchivoClinico uploadMine(MultipartFile file) throws IOException {
         validarArchivoSubida(file);
-        
+
         Usuario usuario = getCurrentUser();
         String nombreOriginal = procesarNombreArchivo(file.getOriginalFilename());
-        
+
         log.debug(LOG_SUBIENDO_ARCHIVO, nombreOriginal, usuario.getId());
-        
+
+        validarExtensionArchivo(nombreOriginal);
         validarTipoArchivo(file.getContentType());
-        
-        String nombreAlmacenado = generarNombreAlmacenado(nombreOriginal);
-        Path rutaDestino = almacenarArchivo(file, usuario.getId(), nombreAlmacenado);
-        
-        ArchivoClinico archivo = crearRegistroArchivo(file, usuario, nombreOriginal, rutaDestino);
+
+        byte[] contenidoCifrado = cifrarContenido(file);
+        ArchivoClinico archivo = crearRegistroArchivo(file, usuario, nombreOriginal, contenidoCifrado);
         log.info(LOG_ARCHIVO_SUBIDO, nombreOriginal, archivo.getId(), usuario.getId());
-        
+
+        auditoriaCambioService.registrarCambio(
+            usuario.getId().toString(),
+            usuario.getId().toString(),
+            null,
+            SUBIDA_ARCHIVO_CLINICO,
+            ARCHIVO_CLINICO,
+            archivo.getId().toString(),
+            null,
+            null,
+            AuditoriaCambio.TipoOperacion.CREATE,
+            "Subida de archivo clínico"
+        );
+
+        descifrarNombre(archivo);
         return archivo;
     }
 
@@ -190,13 +208,13 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
         if (nombre == null || nombre.isBlank()) {
             nombre = ARCHIVO_DEFAULT_NAME;
         }
-        
+
         nombre = StringUtils.cleanPath(nombre);
-        
+
         if (esNombreArchivoInseguro(nombre)) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_NOMBRE_INVALIDO);
         }
-        
+
         return nombre;
     }
 
@@ -204,9 +222,35 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
      * Verifica si el nombre del archivo es inseguro
      */
     private boolean esNombreArchivoInseguro(String nombre) {
-        return nombre.contains(PATH_SEPARATOR) || 
-               nombre.startsWith(FORWARD_SLASH) || 
+        return nombre.contains(PATH_SEPARATOR) ||
+               nombre.startsWith(FORWARD_SLASH) ||
                nombre.startsWith(BACKSLASH);
+    }
+
+    /**
+     * Valida la extensión del archivo contra la lista blanca configurada
+     * ({@code app.uploads.allowed-extensions}). Complementa a {@link #validarTipoArchivo(String)}:
+     * el {@code Content-Type} lo controla el cliente, la extensión al menos limita lo que
+     * quedará almacenado y se servirá después.
+     */
+    private void validarExtensionArchivo(String nombre) {
+        if (this.allowedExtensions == null || this.allowedExtensions.isBlank()) {
+            return; // Sin restricciones
+        }
+
+        int punto = nombre.lastIndexOf('.');
+        String extension = (punto >= 0 && punto < nombre.length() - 1)
+                ? nombre.substring(punto + 1).toLowerCase()
+                : "";
+
+        boolean permitida = Arrays.stream(this.allowedExtensions.split(ALLOWED_TYPES_SEPARATOR))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .anyMatch(extension::equals);
+
+        if (!permitida) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_EXTENSION_NO_PERMITIDA);
+        }
     }
 
     /**
@@ -219,72 +263,61 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
 
         String[] tiposPermitidos = this.allowedTypes.split(ALLOWED_TYPES_SEPARATOR);
         boolean tipoPermitido = false;
-        
+
         for (String tipo : tiposPermitidos) {
             String tipoLimpio = tipo.trim();
-            
+
             if (WILDCARD_CONTENT_TYPE.equals(tipoLimpio) || (contentType != null && contentType.startsWith(tipoLimpio))) {
                 tipoPermitido = true;
                 break;
             }
         }
-        
+
         if (!tipoPermitido) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_TIPO_NO_PERMITIDO);
         }
     }
 
     /**
-     * Genera un nombre único para almacenar el archivo
+     * Cifra el contenido del archivo subido con AES/GCM (ver
+     * {@link ArchivoCifradoService}), listo para guardarse en MongoDB.
      */
-    private String generarNombreAlmacenado(String nombreOriginal) {
-        String extension = extraerExtension(nombreOriginal);
-        return UUID.randomUUID().toString() + extension;
-    }
-
-    /**
-     * Extrae la extensión del archivo
-     */
-    private String extraerExtension(String nombreArchivo) {
-        int ultimoPunto = nombreArchivo.lastIndexOf('.');
-        if (ultimoPunto > 0 && ultimoPunto < nombreArchivo.length() - 1) {
-            return nombreArchivo.substring(ultimoPunto);
-        }
-        return "";
-    }
-
-    /**
-     * Almacena físicamente el archivo en el sistema de archivos
-     */
-    private Path almacenarArchivo(MultipartFile file, UUID userId, String nombreAlmacenado) throws IOException {
-        Path directorio = userDir(userId);
-        Files.createDirectories(directorio);
-        
-        Path rutaDestino = directorio.resolve(nombreAlmacenado);
-        
-        try {
-            Files.copy(file.getInputStream(), rutaDestino);
-            return rutaDestino;
+    private byte[] cifrarContenido(MultipartFile file) throws IOException {
+        try (InputStream entrada = file.getInputStream();
+             ByteArrayOutputStream salida = new ByteArrayOutputStream()) {
+            archivoCifradoService.cifrar(entrada, salida);
+            return salida.toByteArray();
         } catch (IOException ex) {
             throw new IOException(ErrorMessages.ERROR_GUARDAR_ARCHIVO, ex);
         }
     }
 
     /**
-     * Crea el registro del archivo en la base de datos
+     * Crea el registro del archivo clínico, con el nombre original cifrado
+     * antes de guardarlo en MongoDB.
      */
-    private ArchivoClinico crearRegistroArchivo(MultipartFile file, Usuario usuario, 
-                                              String nombreOriginal, Path rutaDestino) {
+    private ArchivoClinico crearRegistroArchivo(MultipartFile file, Usuario usuario,
+                                              String nombreOriginal, byte[] contenidoCifrado) {
         ArchivoClinico archivo = new ArchivoClinico();
-        archivo.setUsuario(usuario);
-        archivo.setNombreOriginal(nombreOriginal);
+        archivo.setId(UUID.randomUUID());
+        archivo.setUsuarioId(usuario.getId());
+        archivo.setNombreOriginal(fieldEncryptionService.cifrar(nombreOriginal));
         archivo.setContentType(file.getContentType());
         archivo.setSizeBytes(file.getSize());
-        archivo.setRutaAlmacenada(rutaDestino.toString());
+        archivo.setContenido(contenidoCifrado);
         archivo.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
-        archivo.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPA_MADRID)));
-        
-        return archivoClinicoRepository.save(archivo);
+
+        ArchivoClinico guardado = archivoClinicoRepository.save(archivo);
+        guardado.setNombreOriginal(nombreOriginal);
+        return guardado;
+    }
+
+    /**
+     * Descifra el nombre original de un archivo clínico leído de MongoDB,
+     * dejándolo en claro en el propio objeto en memoria.
+     */
+    private void descifrarNombre(ArchivoClinico archivo) {
+        archivo.setNombreOriginal(fieldEncryptionService.descifrar(archivo.getNombreOriginal()));
     }
 
     /**
@@ -299,11 +332,11 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     public Resource getMineResource(UUID id) {
         UUID userId = getCurrentUserId();
         log.debug(LOG_DESCARGANDO_ARCHIVO, id, userId);
-        
+
         ArchivoClinico archivo = obtenerArchivoUsuario(id, userId);
         Resource resource = crearResourceDesdeArchivo(archivo);
-        
-        log.info(LOG_ARCHIVO_DESCARGADO, archivo.getNombreOriginal(), userId);
+
+        log.info(LOG_ARCHIVO_DESCARGADO, fieldEncryptionService.descifrar(archivo.getNombreOriginal()), userId);
         return resource;
     }
 
@@ -316,31 +349,20 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
     }
 
     /**
-     * Crea un Resource a partir de un archivo clínico
+     * Crea un Resource a partir de un archivo clínico, descifrando su contenido
+     * binario (ver {@link ArchivoCifradoService}) antes de servirlo al usuario.
      */
     private Resource crearResourceDesdeArchivo(ArchivoClinico archivo) {
-        try {
-            Path rutaArchivo = Paths.get(archivo.getRutaAlmacenada());
-            var uri = rutaArchivo.toUri();
-            if (uri == null) {
-                throw new IllegalStateException(ErrorMessages.ERROR_RUTA_INVALIDA);
-            }
-            Resource resource = new UrlResource(uri);
-            
-            validarResourceAccesible(resource);
-            
-            return resource;
-        } catch (MalformedURLException e) {
-            throw new IllegalStateException(ErrorMessages.ERROR_RUTA_INVALIDA, e);
-        }
-    }
-
-    /**
-     * Valida que el resource sea accesible
-     */
-    private void validarResourceAccesible(Resource resource) {
-        if (!resource.exists() || !resource.isReadable()) {
+        if (archivo.getContenido() == null) {
             throw new IllegalStateException(ErrorMessages.ERROR_ARCHIVO_NO_ACCESIBLE);
+        }
+
+        try {
+            InputStream contenidoDescifrado = archivoCifradoService.descifrar(
+                    new ByteArrayInputStream(archivo.getContenido()));
+            return new InputStreamResource(contenidoDescifrado);
+        } catch (IOException e) {
+            throw new IllegalStateException(ErrorMessages.ERROR_ARCHIVO_NO_ACCESIBLE, e);
         }
     }
 
@@ -348,37 +370,21 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
      * Elimina un archivo clínico del usuario autenticado.
      *
      * @param id el ID del archivo clínico a eliminar
-     * @throws IOException si ocurre un error durante la eliminación
      * @throws IllegalArgumentException si el archivo no existe o no pertenece al usuario
      */
     @Override
     @Transactional
-    public void borrarArchivo(UUID id) throws IOException {
+    public void borrarArchivo(UUID id) {
         UUID userId = getCurrentUserId();
         log.debug(LOG_ELIMINANDO_ARCHIVO, id, userId);
-        
-        ArchivoClinico archivo = obtenerArchivoUsuario(id, userId);
-        String nombreOriginal = archivo.getNombreOriginal();
-        
-        eliminarRegistroYArchivo(archivo);
-        log.info(LOG_ARCHIVO_ELIMINADO, nombreOriginal, userId);
-    }
 
-    /**
-     * Elimina tanto el registro de la base de datos como el archivo físico
-     */
-    private void eliminarRegistroYArchivo(ArchivoClinico archivo) throws IOException {
-        Path rutaArchivo = Paths.get(archivo.getRutaAlmacenada());
-        
-        // Eliminar primero el registro de la base de datos
+        ArchivoClinico archivo = obtenerArchivoUsuario(id, userId);
+        String nombreOriginal = fieldEncryptionService.descifrar(archivo.getNombreOriginal());
+
         archivoClinicoRepository.delete(archivo);
-        
-        // Luego eliminar el archivo físico si existe
-        eliminarArchivoFisico(rutaArchivo);
-        
         auditoriaCambioService.registrarCambio(
-            archivo.getUsuario().getId().toString(),
-            archivo.getUsuario().getId().toString(),
+            archivo.getUsuarioId().toString(),
+            archivo.getUsuarioId().toString(),
             null,
             BORRADO_ARCHIVO_CLINICO,
             ARCHIVO_CLINICO,
@@ -388,14 +394,81 @@ public class ArchivoClinicoServiceImpl implements com.hcc.tfm_hcc.service.Archiv
             AuditoriaCambio.TipoOperacion.DELETE,
             "Eliminación de archivo clínico"
         );
+
+        log.info(LOG_ARCHIVO_ELIMINADO, nombreOriginal, userId);
+    }
+
+    // ===============================
+    // ARCHIVOS DE UN PACIENTE ASIGNADO (acceso del médico)
+    // ===============================
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<ArchivoClinico> listForPaciente(String nifPaciente) {
+        Usuario paciente = verificarAccesoMedico(nifPaciente);
+        List<ArchivoClinico> archivos = archivoClinicoRepository.findByUsuarioIdOrderByFechaCreacionDesc(paciente.getId());
+        archivos.forEach(this::descifrarNombre);
+        return archivos;
     }
 
     /**
-     * Elimina el archivo físico del sistema de archivos
+     * {@inheritDoc}
      */
-    private void eliminarArchivoFisico(Path rutaArchivo) throws IOException {
-        if (Files.exists(rutaArchivo)) {
-            Files.delete(rutaArchivo);
+    @Override
+    @Transactional
+    public ArchivoClinico uploadForPaciente(String nifPaciente, MultipartFile file) throws IOException {
+        Usuario paciente = verificarAccesoMedico(nifPaciente);
+        Usuario medico = getCurrentUser();
+
+        validarArchivoSubida(file);
+        String nombreOriginal = procesarNombreArchivo(file.getOriginalFilename());
+        validarExtensionArchivo(nombreOriginal);
+        validarTipoArchivo(file.getContentType());
+
+        byte[] contenidoCifrado = cifrarContenido(file);
+        ArchivoClinico archivo = crearRegistroArchivo(file, paciente, nombreOriginal, contenidoCifrado);
+        log.info("Archivo clínico subido para el paciente {} por el médico {}", paciente.getId(), medico.getId());
+
+        auditoriaCambioService.registrarCambio(
+            medico.getId().toString(),
+            paciente.getId().toString(),
+            medico.getId().toString(),
+            SUBIDA_ARCHIVO_CLINICO,
+            ARCHIVO_CLINICO,
+            archivo.getId().toString(),
+            null,
+            null,
+            AuditoriaCambio.TipoOperacion.CREATE,
+            SUBIDA_ARCHIVO_POR_MEDICO
+        );
+
+        descifrarNombre(archivo);
+        return archivo;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Resource getPacienteResource(String nifPaciente, UUID id) {
+        Usuario paciente = verificarAccesoMedico(nifPaciente);
+        ArchivoClinico archivo = obtenerArchivoUsuario(id, paciente.getId());
+        return crearResourceDesdeArchivo(archivo);
+    }
+
+    /**
+     * Comprueba que el médico autenticado tiene acceso asistencial activo sobre el
+     * paciente y devuelve la entidad del paciente.
+     */
+    private Usuario verificarAccesoMedico(String nifPaciente) {
+        String nifMedico = SecurityUtils.getCurrentUserNif();
+        if (nifMedico == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
         }
+        return relacionMedicoPacienteService.verificarAccesoMedicoActivo(nifMedico, nifPaciente);
     }
 }

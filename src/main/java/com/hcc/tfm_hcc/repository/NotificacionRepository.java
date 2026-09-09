@@ -29,30 +29,29 @@ import com.hcc.tfm_hcc.model.Usuario;
 public interface NotificacionRepository extends JpaRepository<Notificacion, UUID> {
     
     /**
-     * Busca todas las notificaciones de un usuario específico.
-     * Los resultados se ordenan por fecha de creación de forma descendente (más recientes primero).
-     * 
+     * Busca las notificaciones no eliminadas de un usuario, ordenadas por fecha de creación
+     * descendente (más recientes primero).
+     *
      * @param usuario Usuario del cual obtener las notificaciones
-     * @return Lista de Notificacion del usuario ordenadas por fecha de creación descendente
+     * @return Lista de Notificacion (sin las eliminadas) ordenadas por fecha de creación descendente
      */
-    List<Notificacion> findByUsuarioOrderByFechaCreacionDesc(Usuario usuario);
-    
+    List<Notificacion> findByUsuarioAndEliminadaFalseOrderByFechaCreacionDesc(Usuario usuario);
+
     /**
-     * Busca las notificaciones de un usuario con soporte para paginación.
-     * Permite manejar eficientemente grandes volúmenes de notificaciones.
-     * 
+     * Busca las notificaciones no eliminadas de un usuario con soporte para paginación.
+     *
      * @param usuario Usuario del cual obtener las notificaciones
      * @param pageable Configuración de paginación y ordenamiento
-     * @return Page con las notificaciones del usuario según la configuración de paginación
+     * @return Page con las notificaciones del usuario (sin las eliminadas)
      */
-    Page<Notificacion> findByUsuario(Usuario usuario, Pageable pageable);
-    
+    Page<Notificacion> findByUsuarioAndEliminadaFalse(Usuario usuario, Pageable pageable);
+
     /**
-     * Cuenta el número de notificaciones no leídas de un usuario específico.
-     * Útil para mostrar indicadores de notificaciones pendientes en la interfaz.
-     * 
-     * @param usuario Usuario del cual contar las notificaciones no leídas
-     * @return Número de notificaciones no leídas del usuario
+     * Cuenta las notificaciones no leídas (y no eliminadas) de un usuario, para el indicador
+     * de notificaciones pendientes.
+     *
+     * @param usuario Usuario del cual contar las notificaciones
+     * @return Número de notificaciones no leídas y no eliminadas del usuario
      */
-    long countByUsuarioAndLeidaFalse(Usuario usuario);
+    long countByUsuarioAndLeidaFalseAndEliminadaFalse(Usuario usuario);
 }

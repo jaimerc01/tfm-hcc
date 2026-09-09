@@ -10,7 +10,7 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--surface-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -20,12 +20,12 @@
 
 /* Modal container */
 .modal {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 2rem;
   max-width: 400px;
   width: 90%;
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-xl);
   animation: slideUp 0.3s ease;
 }
 
@@ -61,6 +61,55 @@
 @media (min-width: 400px) {
   .modal-actions {
     flex-direction: row;
+  }
+}
+
+/* Action buttons inside .modal-actions. Confirm is solid green (like every
+   button in the app); cancel is a neutral outline. */
+.modal-btn {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-btn--confirm {
+  background: var(--button-color);
+  color: var(--on-button);
+}
+
+.modal-btn--confirm:hover {
+  background: var(--button-hover);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+.modal-btn--cancel {
+  background: var(--bg-light);
+  border: 1.5px solid var(--border);
+  color: var(--text-primary);
+}
+
+.modal-btn--cancel:hover {
+  background: var(--border);
+}
+
+.modal-btn:focus-visible {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-btn {
+    transition: none;
+  }
+
+  .modal-btn--confirm:hover {
+    transform: none;
   }
 }
 
@@ -274,7 +323,7 @@
   justify-content: center;
   width: 64px;
   height: 64px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  background: var(--gradient-primary);
   border-radius: 12px;
   color: white;
   flex-shrink: 0;
@@ -287,10 +336,287 @@
   color: var(--text-primary);
 }
 
-.page-header .subtitle {
+.page-header .subtitle,
+.subtitle {
   margin: 0.25rem 0 0 0;
   color: var(--text-secondary);
   font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .page-header .header-icon {
+    width: 48px;
+    height: 48px;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+}
+
+/* ================================
+   PAGE SHELL
+   ================================ */
+
+/* Centred content column shared by the routed views. */
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Full-viewport centring wrapper for the standalone auth screens. */
+.auth-viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--bg-medium);
+}
+
+/* ================================
+   SECTION CARD
+   ================================ */
+
+/* Same surface as .panel-card (styles/layout.css) with tighter padding, for
+   embedded sections (add-entry forms, results blocks...). */
+.section-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  padding: 1.5rem;
+}
+
+/* ================================
+   APP ICON (lucide via components/AppIcon.vue)
+   ================================ */
+
+/* Dimensiones por tamaño lógico. Especificidad baja (una clase) a propósito:
+   una clase de contexto en el componente padre (p. ej. .register-icon en una
+   media query) puede sobreescribir el tamaño sin pelear con estilos scoped. */
+.app-icon {
+  flex-shrink: 0;
+}
+
+.app-icon--xs { width: var(--icon-xs); height: var(--icon-xs); }
+.app-icon--sm { width: var(--icon-sm); height: var(--icon-sm); }
+.app-icon--md { width: var(--icon-md); height: var(--icon-md); }
+.app-icon--lg { width: var(--icon-lg); height: var(--icon-lg); }
+.app-icon--xl { width: var(--icon-xl); height: var(--icon-xl); }
+.app-icon--2xl { width: var(--icon-2xl); height: var(--icon-2xl); }
+.app-icon--3xl { width: var(--icon-3xl); height: var(--icon-3xl); }
+.app-icon--4xl { width: var(--icon-4xl); height: var(--icon-4xl); }
+
+.app-icon--spin {
+  animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-icon--spin {
+    animation: none;
+  }
+}
+
+/* ================================
+   CIRCULAR ICON BADGE
+   ================================ */
+
+/* A round tinted badge holding a stroked SVG glyph. Used for feature cards,
+   quick-access cards and similar. */
+.circle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--primary-100);
+}
+
+.circle-icon svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  fill: none;
+  stroke: var(--primary-color);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ================================
+   SMALL EMPTY STATE
+   ================================ */
+
+.empty-state-small {
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--bg-light);
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+}
+
+.empty-state-small svg {
+  color: var(--text-secondary);
+  opacity: 0.3;
+  margin-bottom: 1rem;
+}
+
+.empty-state-small p {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.empty-state-small span {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* ================================
+   RESULTS TABLE
+   ================================ */
+
+/* Shared skeleton for the clinical "results" tables (analytics history,
+   read-only summaries...). Components add their own row/cell tweaks on top. */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.results-table thead {
+  background: var(--bg-light);
+  border-bottom: 2px solid var(--border);
+}
+
+.results-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.results-table tbody tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table td {
+  padding: 1rem;
+  color: var(--text-primary);
+}
+
+/* Unit suffix shown next to a measured value. */
+.unit-small {
+  font-weight: 400;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+
+/* Muted helper line under a panel heading / empty list. */
+.empty-hint,
+.panel-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Non-wrapping muted timestamp cell in the results tables. */
+.date-cell {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+/* Small brand-coloured glyph aligned to the first line of adjacent text. */
+.field-icon {
+  color: var(--primary-color);
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+/* ================================
+   MODAL ERROR TEXT
+   ================================ */
+
+.modal-error {
+  color: var(--danger-color);
+  font-weight: 600;
+  margin-top: 0.75rem;
+}
+
+/* ================================
+   TOAST NOTIFICATION
+   ================================ */
+
+/* Transient success toast used by the clinical-data section components. */
+.toast-notification {
+  position: fixed;
+  right: 2rem;
+  bottom: 2rem;
+  background: var(--success-color);
+  color: var(--text-inverse);
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: var(--shadow-toast);
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  z-index: 10000;
+}
+
+.toast-notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-notification svg {
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-notification {
+    transition: none;
+    animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .toast-notification {
+    right: 1rem;
+    bottom: 1rem;
+    left: 1rem;
+    width: auto;
+  }
+}
+
+/* ================================
+   ENTRY / CARD TITLE
+   ================================ */
+
+/* Title of a clinical entry card (allergy, background...). Wraps long,
+   multi-line user text without overflowing the card. */
+.entry-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: break-word;
+  white-space: pre-line;
 }
 
 /* ================================

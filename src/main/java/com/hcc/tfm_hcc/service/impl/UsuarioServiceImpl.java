@@ -17,10 +17,13 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.commons.validator.routines.EmailValidator;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
+import com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException;
+import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.converter.UsuarioExportConverter;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
+import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.MedicoPaciente;
 import com.hcc.tfm_hcc.model.SolicitudAsignacion;
 import com.hcc.tfm_hcc.model.Usuario;
@@ -30,7 +33,11 @@ import com.hcc.tfm_hcc.repository.NotificacionRepository;
 import com.hcc.tfm_hcc.model.Notificacion;
 import com.hcc.tfm_hcc.repository.SolicitudAsignacionRepository;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.util.NombreUtil;
+import com.hcc.tfm_hcc.service.AuditoriaCambioService;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.PerfilUsuarioService;
+import com.hcc.tfm_hcc.service.TotpService;
 import com.hcc.tfm_hcc.service.UsuarioService;
 
 import lombok.RequiredArgsConstructor;
@@ -42,13 +49,19 @@ public class UsuarioServiceImpl implements UsuarioService {
     // Constantes
     private static final Log log = LogFactory.getLog(UsuarioServiceImpl.class);
     private static final String PERFIL_PACIENTE = "PACIENTE";
-    private static final String ESTADO_ACEPTADA = "ACEPTADA";
-    private static final String ESTADO_RECHAZADA = "RECHAZADA";
+    private static final String SOLICITUD_ASIGNACION_TABLA = "solicitud_asignacion";
     private static final String TELEFONO_REGEX = "^[0-9+\\-() ]{0,20}$";
     private static final String NIF_REGEX = "^[0-9A-Za-z]{6,15}$";
     private static final int MAX_LONGITUD_NOMBRE = 100;
     private static final String ZONE_ID_EUROPE_MADRID = "Europe/Madrid"; // Zona horaria para la creación de usuarios
     
+    private static final String CONSENTIMIENTO_TIPO_CAMBIO = "CONSENTIMIENTO";
+    private static final String CONSENTIMIENTO_TABLA = "usuario";
+
+    /** Versión de la política de privacidad que se registra junto al consentimiento del alta. */
+    @org.springframework.beans.factory.annotation.Value("${app.privacy.policy-version:2026-09-03}")
+    private String versionPoliticaPrivacidad;
+
     // Dependencies injection by constructor
     private final UsuarioMapper usuarioMapper;
     private final UsuarioRepository usuarioRepository;
@@ -59,6 +72,9 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final NotificacionRepository notificacionRepository;
     private final MedicoPacienteRepository medicoPacienteRepository;
     private final UsuarioExportConverter usuarioExportConverter;
+    private final HmacSearchIndexService hmacSearchIndexService;
+    private final TotpService totpService;
+    private final AuditoriaCambioService auditoriaCambioService;
 
     /**
      * Obtiene el NIF del usuario autenticado actual
@@ -79,52 +95,30 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (nif == null) {
             throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
         }
-        return findUsuarioByNifLegacyAware(nif)
+        return findUsuarioByNif(nif)
                 .orElseThrow(() -> new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_ENCONTRADO));
     }
 
     /**
-     * Busca un usuario por NIF sin depender de una única representación en la base.
+     * Busca un usuario por NIF a través de su índice de búsqueda (HMAC), ya que el NIF
+     * en sí está cifrado de forma no determinista y no es consultable por igualdad.
      */
-    private Optional<Usuario> findUsuarioByNifLegacyAware(String nif) {
+    private Optional<Usuario> findUsuarioByNif(String nif) {
         if (nif == null || nif.isBlank()) {
             return Optional.empty();
         }
-
-        Optional<Usuario> usuarioDirecto = usuarioRepository.findByNif(nif);
-        if (usuarioDirecto.isPresent()) {
-            return usuarioDirecto;
-        }
-
-        for (Usuario usuario : usuarioRepository.findAll()) {
-            if (usuario != null && nif.equals(usuario.getNif())) {
-                return Optional.of(usuario);
-            }
-        }
-
-        return Optional.empty();
+        return usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nif));
     }
 
     /**
-     * Busca un usuario por email sin depender de una única representación en la base.
+     * Busca un usuario por email a través de su índice de búsqueda (HMAC), ya que el email
+     * en sí está cifrado de forma no determinista y no es consultable por igualdad.
      */
-    private Optional<Usuario> findUsuarioByEmailLegacyAware(String email) {
+    private Optional<Usuario> findUsuarioByEmail(String email) {
         if (email == null || email.isBlank()) {
             return Optional.empty();
         }
-
-        Optional<Usuario> usuarioDirecto = usuarioRepository.findByEmail(email);
-        if (usuarioDirecto.isPresent()) {
-            return usuarioDirecto;
-        }
-
-        for (Usuario usuario : usuarioRepository.findAll()) {
-            if (usuario != null && email.equals(usuario.getEmail())) {
-                return Optional.of(usuario);
-            }
-        }
-
-        return Optional.empty();
+        return usuarioRepository.findByEmailHash(hmacSearchIndexService.indexar(email));
     }
 
     /**
@@ -135,29 +129,12 @@ public class UsuarioServiceImpl implements UsuarioService {
             return false;
         }
 
+        String nifHash = hmacSearchIndexService.indexar(nif);
         if (excludeId == null) {
-            return findUsuarioByNifLegacyAware(nif).isPresent();
+            return usuarioRepository.findByNifHash(nifHash).isPresent();
         }
 
-        if (usuarioRepository.existsByNifAndIdNot(nif, excludeId)) {
-            return true;
-        }
-
-        for (Usuario usuario : usuarioRepository.findAll()) {
-            if (usuario == null) {
-                continue;
-            }
-
-            if (excludeId != null && excludeId.equals(usuario.getId())) {
-                continue;
-            }
-
-            if (nif.equals(usuario.getNif())) {
-                return true;
-            }
-        }
-
-        return false;
+        return usuarioRepository.existsByNifHashAndIdNot(nifHash, excludeId);
     }
 
     /**
@@ -168,29 +145,12 @@ public class UsuarioServiceImpl implements UsuarioService {
             return false;
         }
 
+        String emailHash = hmacSearchIndexService.indexar(email);
         if (excludeId == null) {
-            return findUsuarioByEmailLegacyAware(email).isPresent();
+            return usuarioRepository.findByEmailHash(emailHash).isPresent();
         }
 
-        if (usuarioRepository.existsByEmailAndIdNot(email, excludeId)) {
-            return true;
-        }
-
-        for (Usuario usuario : usuarioRepository.findAll()) {
-            if (usuario == null) {
-                continue;
-            }
-
-            if (excludeId != null && excludeId.equals(usuario.getId())) {
-                continue;
-            }
-
-            if (email.equals(usuario.getEmail())) {
-                return true;
-            }
-        }
-
-        return false;
+        return usuarioRepository.existsByEmailHashAndIdNot(emailHash, excludeId);
     }
 
     /**
@@ -260,45 +220,79 @@ public class UsuarioServiceImpl implements UsuarioService {
     public Usuario altaUsuario(UsuarioDTO usuarioDTO) {
         validarUsuarioDTO(usuarioDTO);
 
-        if (findUsuarioByNifLegacyAware(usuarioDTO.getNif()).isPresent()) {
+        if (findUsuarioByNif(usuarioDTO.getNif()).isPresent()) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_DNI_YA_EXISTE);
         }
 
-        if (findUsuarioByEmailLegacyAware(usuarioDTO.getEmail()).isPresent()) {
+        if (findUsuarioByEmail(usuarioDTO.getEmail()).isPresent()) {
             throw new IllegalArgumentException(ErrorMessages.ERROR_EMAIL_YA_EXISTE);
         }
-        
+
         // Codificar password
         usuarioDTO.setPassword(passwordEncoder.encode(usuarioDTO.getPassword()));
-        
-        // Crear usuario
+
+        // Crear usuario. Se sobrescriben explícitamente todos los campos que no debe
+        // poder fijar quien da de alta al usuario (id incluido: un id no nulo hace que
+        // JPA trate el guardado como una actualización de la fila existente con ese id
+        // en vez de una inserción, así que dejarlo pasar permitiría sobrescribir una
+        // cuenta ajena si el llamador lo hubiera fijado).
         Usuario usuario = usuarioMapper.toEntity(usuarioDTO);
-        usuario.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
+        usuario.setId(null);
+        usuario.setNifHash(hmacSearchIndexService.indexar(usuario.getNif()));
+        usuario.setEmailHash(hmacSearchIndexService.indexar(usuario.getEmail()));
+        LocalDateTime ahora = LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID));
+        usuario.setFechaCreacion(ahora);
         usuario.setLastPasswordChange(null);
-        usuario.setEstadoCuenta("ACTIVO"); // Estado activo por defecto al registrarse
-        
+        usuario.setEstadoCuenta(Usuario.ESTADO_CUENTA_ACTIVO); // Estado activo por defecto al registrarse
+        // Registro del consentimiento explícito prestado en el alta (RGPD art. 7.1): cuándo se
+        // dio y qué versión de la política de privacidad se aceptó. El controlador ya rechaza el
+        // alta si el interesado no marcó la casilla.
+        usuario.setFechaConsentimiento(ahora);
+        usuario.setVersionPoliticaPrivacidad(versionPoliticaPrivacidad);
+
         usuario = usuarioRepository.save(usuario);
-        
+
         // Crear perfil PACIENTE obligatorio
         perfilUsuarioService.asignarPerfil(usuario.getId(), PERFIL_PACIENTE);
-        
+
+        registrarAuditoriaConsentimiento(usuario);
+
         return usuario;
+    }
+
+    /**
+     * Deja constancia inmutable del consentimiento prestado en el alta, en la auditoría
+     * (además del registro en la propia cuenta). Un fallo al auditar no revierte el alta ya
+     * confirmada: la traza queda a nivel ERROR para poder detectar el hueco.
+     */
+    private void registrarAuditoriaConsentimiento(Usuario usuario) {
+        if (usuario.getId() == null) {
+            return;
+        }
+        try {
+            auditoriaCambioService.registrarCambio(
+                usuario.getId().toString(),
+                usuario.getId().toString(),
+                null,
+                CONSENTIMIENTO_TIPO_CAMBIO,
+                CONSENTIMIENTO_TABLA,
+                usuario.getId().toString(),
+                "",
+                "Consentimiento del tratamiento de datos de salud (RGPD art. 9.2.a), política v" + versionPoliticaPrivacidad,
+                AuditoriaCambio.TipoOperacion.CREATE,
+                "Alta de usuario con consentimiento explícito del tratamiento de datos de salud"
+            );
+        } catch (RuntimeException e) {
+            log.error("No se pudo registrar en la auditoría el consentimiento del alta del usuario "
+                    + usuario.getId() + ": " + e.getMessage(), e);
+        }
     }
 
     @Override
     public String getNombreUsuario() {
         String nif = getNifUsuarioAutenticado();
-        return usuarioRepository.findByNif(nif)
-                .map(usuario -> {
-                    String nombreCompleto = usuario.getNombre();
-                    if (usuario.getApellido1() != null && !usuario.getApellido1().isEmpty()) {
-                        nombreCompleto += " " + usuario.getApellido1();
-                    }
-                    if (usuario.getApellido2() != null && !usuario.getApellido2().isEmpty()) {
-                        nombreCompleto += " " + usuario.getApellido2();
-                    }
-                    return nombreCompleto;
-                })
+        return findUsuarioByNif(nif)
+                .map(NombreUtil::nombreCompleto)
                 .orElse(null);
     }
 
@@ -308,7 +302,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         if (nif == null) {
             return null;
         }
-        return usuarioRepository.findByNif(nif)
+        return findUsuarioByNif(nif)
                 .map(usuarioMapper::toDto)
                 .orElse(null);
     }
@@ -323,7 +317,6 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         
         usuario.setPassword(passwordEncoder.encode(newPassword));
-        usuario.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
         usuario.setLastPasswordChange(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
         usuarioRepository.save(usuario);
     }
@@ -395,6 +388,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         if (parcial.getEmail() != null) {
             usuario.setEmail(parcial.getEmail());
+            usuario.setEmailHash(hmacSearchIndexService.indexar(parcial.getEmail()));
         }
         if (parcial.getTelefono() != null) {
             usuario.setTelefono(parcial.getTelefono());
@@ -404,8 +398,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         if (parcial.getNif() != null && !parcial.getNif().equals(usuario.getNif())) {
             usuario.setNif(parcial.getNif());
+            usuario.setNifHash(hmacSearchIndexService.indexar(parcial.getNif()));
         }
-        usuario.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
 
         return usuario;
     }
@@ -427,27 +421,66 @@ public class UsuarioServiceImpl implements UsuarioService {
      */
     @NonNull
     private Usuario anonimizarUsuario(Usuario usuario) {
-        usuario.setEstadoCuenta("ELIMINADO");
+        usuario.setEstadoCuenta(Usuario.ESTADO_CUENTA_ELIMINADO);
         usuario.setFechaEliminacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
         usuario.setNombre("_eliminado_");
         usuario.setApellido1(null);
         usuario.setApellido2(null);
-        usuario.setEmail("anon-" + usuario.getId() + "@local");
+        String emailAnonimizado = "anon-" + usuario.getId() + "@local";
+        usuario.setEmail(emailAnonimizado);
+        usuario.setEmailHash(hmacSearchIndexService.indexar(emailAnonimizado));
         usuario.setTelefono(null);
-        usuario.setNif("DEL-" + usuario.getId().toString().substring(0, 8));
+        String nifAnonimizado = "DEL-" + usuario.getId().toString().substring(0, 8);
+        usuario.setNif(nifAnonimizado);
+        usuario.setNifHash(hmacSearchIndexService.indexar(nifAnonimizado));
         usuario.setEspecialidad(null);
-        usuario.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
+        // La fecha de nacimiento es un cuasi-identificador (combinada con otros datos del
+        // historial puede reidentificar a la persona) y debe anonimizarse igual que el
+        // resto de datos personales de esta cuenta; se dejaba fuera hasta ahora.
+        usuario.setFechaNacimiento(null);
         return usuario;
     }
 
     @Override
     @Transactional
-    public void deleteCuentaActual() {
+    public void deleteCuentaActual(String currentPassword) {
         Usuario usuario = obtenerUsuarioAutenticado();
-        if (usuario != null) {
-            Usuario usuarioAnonimizado = anonimizarUsuario(usuario);
-            usuarioRepository.save(usuarioAnonimizado);
+        verificarPasswordActual(usuario, currentPassword);
+        Usuario usuarioAnonimizado = anonimizarUsuario(usuario);
+        usuarioRepository.save(usuarioAnonimizado);
+    }
+
+    /**
+     * Exige confirmar la contraseña actual antes de una operación sensible (exportar
+     * todos los datos del usuario, eliminar la cuenta).
+     */
+    private void verificarPasswordActual(Usuario usuario, String currentPassword) {
+        if (currentPassword == null || currentPassword.isBlank()
+                || !passwordEncoder.matches(currentPassword, usuario.getPassword())) {
+            throw new ReautenticacionRequeridaException(ErrorMessages.ERROR_REAUTENTICACION_REQUERIDA);
         }
+    }
+
+    @Override
+    @Transactional
+    public void limitarTratamiento() {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        if (Usuario.ESTADO_CUENTA_ELIMINADO.equals(usuario.getEstadoCuenta())) {
+            throw new IllegalStateException(ErrorMessages.ERROR_CUENTA_ELIMINADA_NO_MODIFICABLE);
+        }
+        usuario.setEstadoCuenta(Usuario.ESTADO_CUENTA_SUSPENDIDO);
+        usuarioRepository.save(usuario);
+    }
+
+    @Override
+    @Transactional
+    public void reanudarTratamiento() {
+        Usuario usuario = obtenerUsuarioAutenticado();
+        if (Usuario.ESTADO_CUENTA_ELIMINADO.equals(usuario.getEstadoCuenta())) {
+            throw new IllegalStateException(ErrorMessages.ERROR_CUENTA_ELIMINADA_NO_MODIFICABLE);
+        }
+        usuario.setEstadoCuenta(Usuario.ESTADO_CUENTA_ACTIVO);
+        usuarioRepository.save(usuario);
     }
 
     @Override
@@ -470,11 +503,12 @@ public class UsuarioServiceImpl implements UsuarioService {
      */
     @Override
     @Transactional(readOnly = true)
-    public UserExportDTO exportUsuario() {
+    public UserExportDTO exportUsuario(String currentPassword) {
         Usuario usuario = obtenerUsuarioAutenticado();
+        verificarPasswordActual(usuario, currentPassword);
         UsuarioDTO dto = usuarioMapper.toDto(usuario);
         var logs = accessLogRepository.findByUsuarioIdOrderByTimestampDesc(dto.getId());
-        
+
         return usuarioExportConverter.toExportDto(dto, usuario, logs);
     }
 
@@ -486,14 +520,14 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new IllegalStateException(ErrorMessages.ERROR_USUARIO_NO_AUTENTICADO);
         }
         
-        return solicitudAsignacionRepository.findByPacienteNifOrderByFechaCreacionDesc(nif);
+        return solicitudAsignacionRepository.findByPacienteNifHashOrderByFechaCreacionDesc(hmacSearchIndexService.indexar(nif));
     }
 
     /**
      * Valida el estado de la solicitud
      */
     private void validarEstadoSolicitud(String nuevoEstado) {
-        if (!nuevoEstado.equalsIgnoreCase(ESTADO_ACEPTADA) && !nuevoEstado.equalsIgnoreCase(ESTADO_RECHAZADA)) {
+        if (!nuevoEstado.equalsIgnoreCase(SolicitudAsignacion.ESTADO_ACEPTADA) && !nuevoEstado.equalsIgnoreCase(SolicitudAsignacion.ESTADO_RECHAZADA)) {
             throw new IllegalArgumentException(ErrorMessages.formatError("Estado inválido: {0}", nuevoEstado));
         }
     }
@@ -508,23 +542,39 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     /**
-     * Crea relación médico-paciente si la solicitud es aceptada
+     * Al aceptarse la solicitud, garantiza que exista una relación médico-paciente
+     * activa: si ya la hay no hace nada; si existe pero fue revocada (el paciente o el
+     * médico la habían finalizado antes) la reactiva en lugar de crear un duplicado; y
+     * si no existe ninguna, la crea.
      */
     private void procesarSolicitudAceptada(SolicitudAsignacion solicitud) {
-        if (ESTADO_ACEPTADA.equalsIgnoreCase(solicitud.getEstado())) {
-            var medico = solicitud.getMedico();
-            var paciente = solicitud.getPaciente();
-            
-            if (medico != null && paciente != null) {
-                boolean exists = medicoPacienteRepository.existsByMedicoIdAndPacienteId(
-                    medico.getId(), paciente.getId()
-                );
-                
-                if (!exists) {
-                    crearRelacionMedicoPaciente(medico, paciente);
-                }
-            }
+        if (!SolicitudAsignacion.ESTADO_ACEPTADA.equalsIgnoreCase(solicitud.getEstado())) {
+            return;
         }
+        var medico = solicitud.getMedico();
+        var paciente = solicitud.getPaciente();
+        if (medico == null || paciente == null) {
+            return;
+        }
+
+        List<MedicoPaciente> relaciones = medicoPacienteRepository.findByMedicoIdAndPacienteId(
+            medico.getId(), paciente.getId());
+
+        boolean yaActiva = relaciones.stream()
+            .anyMatch(relacion -> MedicoPaciente.ESTADO_ACTIVA.equals(relacion.getEstado()));
+        if (yaActiva) {
+            return;
+        }
+
+        Optional<MedicoPaciente> previa = relaciones.stream().findFirst();
+        if (previa.isPresent()) {
+            MedicoPaciente relacion = previa.get();
+            relacion.setEstado(MedicoPaciente.ESTADO_ACTIVA);
+            medicoPacienteRepository.save(relacion);
+            return;
+        }
+
+        crearRelacionMedicoPaciente(medico, paciente);
     }
 
     /**
@@ -533,7 +583,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     private void crearRelacionMedicoPaciente(Usuario medico, Usuario paciente) {
         MedicoPaciente relacion = new MedicoPaciente();
         relacion.setFechaCreacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
-        relacion.setEstado("ACTIVA");
+        relacion.setEstado(MedicoPaciente.ESTADO_ACTIVA);
         relacion.setMedico(medico);
         relacion.setPaciente(paciente);
         medicoPacienteRepository.save(relacion);
@@ -553,7 +603,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                     ? paciente.getNombre() 
                     : "un paciente";
                     
-                String accion = ESTADO_ACEPTADA.equalsIgnoreCase(solicitud.getEstado()) 
+                String accion = SolicitudAsignacion.ESTADO_ACEPTADA.equalsIgnoreCase(solicitud.getEstado()) 
                     ? "aceptado" 
                     : solicitud.getEstado().toLowerCase();
                     
@@ -595,16 +645,96 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.formatError("Solicitud no encontrada: {0}", idSolicitud)));
         
         validarPermisoModificacion(solicitud, nif);
-        
+
+        String estadoAnterior = solicitud.getEstado();
         solicitud.setEstado(nuevoEstado.toUpperCase());
-        solicitud.setFechaUltimaModificacion(LocalDateTime.now(ZoneId.of(ZONE_ID_EUROPE_MADRID)));
-        
+
         SolicitudAsignacion solicitudGuardada = solicitudAsignacionRepository.save(solicitud);
-        
+
         procesarSolicitudAceptada(solicitudGuardada);
         enviarNotificacionMedico(solicitudGuardada);
-        
+        registrarAuditoriaResolucionSolicitud(solicitudGuardada, estadoAnterior);
+
         return solicitudGuardada;
     }
 
+    /**
+     * Registra en la auditoría de cambios la resolución (aceptación o rechazo) de una
+     * solicitud de asignación médico-paciente por parte del paciente destinatario.
+     */
+    private void registrarAuditoriaResolucionSolicitud(SolicitudAsignacion solicitud, String estadoAnterior) {
+        Usuario paciente = solicitud.getPaciente();
+        Usuario medico = solicitud.getMedico();
+
+        auditoriaCambioService.registrarCambio(
+            paciente.getId().toString(),
+            paciente.getId().toString(),
+            medico != null ? medico.getId().toString() : null,
+            solicitud.getEstado(),
+            SOLICITUD_ASIGNACION_TABLA,
+            solicitud.getId().toString(),
+            estadoAnterior,
+            solicitud.getEstado(),
+            AuditoriaCambio.TipoOperacion.UPDATE,
+            "Resolución de solicitud de asignación médico-paciente"
+        );
+    }
+
+    // ---- Segundo factor (TOTP) ----
+
+    @Override
+    @Transactional
+    public TotpSetupResponseDTO setupTotp() {
+        Usuario usuario = obtenerUsuarioAutenticado();
+
+        String secreto = totpService.generarSecreto();
+        usuario.setTotpSecret(secreto);
+        usuario.setTotpEnabled(false);
+        usuarioRepository.save(usuario);
+
+        String otpauthUri = totpService.generarOtpAuthUri(secreto, usuario.getNif());
+        return new TotpSetupResponseDTO(secreto, otpauthUri);
+    }
+
+    @Override
+    @Transactional
+    public void confirmTotp(String code) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+
+        if (usuario.getTotpSecret() == null) {
+            throw new IllegalStateException(ErrorMessages.ERROR_TOTP_NO_CONFIGURADO);
+        }
+        if (usuario.isTotpEnabled()) {
+            throw new IllegalStateException(ErrorMessages.ERROR_TOTP_YA_ACTIVO);
+        }
+        if (!totpService.validarCodigo(usuario.getTotpSecret(), code)) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_TOTP_CODIGO_INVALIDO);
+        }
+
+        usuario.setTotpEnabled(true);
+        usuarioRepository.save(usuario);
+    }
+
+    @Override
+    @Transactional
+    public void disableTotp(String code) {
+        Usuario usuario = obtenerUsuarioAutenticado();
+
+        if (!usuario.isTotpEnabled()) {
+            throw new IllegalStateException(ErrorMessages.ERROR_TOTP_NO_ACTIVO);
+        }
+        if (!totpService.validarCodigo(usuario.getTotpSecret(), code)) {
+            throw new IllegalArgumentException(ErrorMessages.ERROR_TOTP_CODIGO_INVALIDO);
+        }
+
+        usuario.setTotpEnabled(false);
+        usuario.setTotpSecret(null);
+        usuarioRepository.save(usuario);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isTotpEnabled() {
+        return obtenerUsuarioAutenticado().isTotpEnabled();
+    }
 }

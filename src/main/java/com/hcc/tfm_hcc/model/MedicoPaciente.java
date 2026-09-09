@@ -5,8 +5,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.NoArgsConstructor;
 
 /**
@@ -26,9 +27,10 @@ import lombok.NoArgsConstructor;
  * @version 1.0
  * @since 1.0
  */
-@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
+@ToString
 @Entity
 @Table(name = "medico_paciente")
 public class MedicoPaciente extends BaseEntity {
@@ -49,9 +51,15 @@ public class MedicoPaciente extends BaseEntity {
     @JoinColumn(name = "id_paciente", referencedColumnName = "id", updatable = false)
     private Usuario paciente;
 
+    /** Relación vigente: el médico tiene acceso al historial del paciente. */
+    public static final String ESTADO_ACTIVA = "ACTIVA";
+
+    /** Relación finalizada (por el paciente, por baja del médico o por retirada del perfil). */
+    public static final String ESTADO_REVOCADA = "REVOCADA";
+
     /**
      * Estado de la relación médico-paciente.
-     * Valores posibles: "ACTIVA", "REVOCADA", "PENDIENTE", etc.
+     * Valores posibles: {@link #ESTADO_ACTIVA}, {@link #ESTADO_REVOCADA}.
      */
     @Column(name = "estado", nullable = false)
     private String estado;

@@ -1,0 +1,41 @@
+# Bases de datos para desarrollo local (tfm-hcc).
+#
+#   docker compose up -d      # levanta PostgreSQL (5432) y MongoDB (27017)
+#   docker compose down       # las para, conservando los datos
+#   docker compose down -v    # las para y borra los volúmenes (datos incluidos)
+#
+# Los valores de usuario/contraseña se leen de `.env` (ver `.env.example`).
+# Para las bases de datos de los tests de extremo a extremo, ver
+# `e2e/docker-compose.test.yml` (puertos 5433 / 27018, datos en memoria).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: HCC_DEV
+      POSTGRES_USER: ${DB_USERNAME:-hcc}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-hcc}
+    ports:
+      - "5432:5432"
+    volumes:
+      - hcc-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-hcc} -d HCC_DEV"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - hcc-mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  hcc-postgres:
+  hcc-mongo:

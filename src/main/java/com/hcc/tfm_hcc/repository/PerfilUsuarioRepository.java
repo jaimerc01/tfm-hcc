@@ -33,12 +33,16 @@ public interface PerfilUsuarioRepository extends CrudRepository<PerfilUsuario, U
     /**
      * Obtiene todos los perfiles asignados a un usuario identificado por su NIF.
      * Permite conocer todos los roles y permisos que tiene un usuario en el sistema.
-     * 
-     * @param nif NIF (Número de Identificación Fiscal) del usuario
+     *
+     * <p>El NIF del usuario está cifrado de forma no determinista, así que el filtro se
+     * aplica sobre {@code usuario.nifHash}, no sobre el NIF cifrado
+     * (ver {@link com.hcc.tfm_hcc.service.HmacSearchIndexService}).</p>
+     *
+     * @param nifHash índice de búsqueda (HMAC) del NIF del usuario
      * @return Lista de Perfil asignados al usuario con el NIF especificado
      */
-    @Query("SELECT p.perfil FROM PerfilUsuario p WHERE p.usuario.nif = :nif")
-    List<Perfil> getPerfilesByNif(@Param("nif") String nif);
+    @Query("SELECT p.perfil FROM PerfilUsuario p WHERE p.usuario.nifHash = :nifHash")
+    List<Perfil> getPerfilesByNifHash(@Param("nifHash") String nifHash);
 
     /**
      * Busca la relación usuario-perfil para un usuario y rol concretos.

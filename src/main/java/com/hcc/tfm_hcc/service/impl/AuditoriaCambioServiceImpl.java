@@ -8,12 +8,15 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.hcc.tfm_hcc.model.AuditoriaCambio;
 import com.hcc.tfm_hcc.model.AuditoriaCambio.TipoOperacion;
 import com.hcc.tfm_hcc.repository.AuditoriaCambioRepository;
 import com.hcc.tfm_hcc.service.AuditoriaCambioService;
 import com.hcc.tfm_hcc.service.AuditoriaCambioStats;
+import com.hcc.tfm_hcc.service.FieldEncryptionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,16 +38,25 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
     private static final String EUROPE_MADRID = "Europe/Madrid";
     private final AuditoriaCambioRepository auditoriaCambioRepository;
+    private final FieldEncryptionService fieldEncryptionService;
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>El registro de auditoría vive en MongoDB, mientras que el cambio clínico que lo
+     * origina se persiste en PostgreSQL dentro de una transacción JPA. Para que no queden
+     * registros de auditoría huérfanos (auditoría escrita pero cambio revertido), cuando
+     * hay una transacción activa la escritura en Mongo se aplaza a {@code afterCommit}: solo
+     * ocurre si la transacción de Postgres confirma. Fuera de transacción se escribe al
+     * momento.</p>
+     */
     @Override
-    @Transactional
     public AuditoriaCambio registrarCambio(AuditoriaCambio auditoria) {
         if (auditoria == null) {
             log.warn("Intento de registrar auditoría nula");
             throw new IllegalArgumentException("El registro de auditoría no puede ser nulo");
         }
 
-        // Asegurar que el ID y la fecha están establecidos
         if (auditoria.getId() == null) {
             auditoria.setId(java.util.UUID.randomUUID().toString());
         }
@@ -52,19 +64,65 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             auditoria.setFechaCambio(LocalDateTime.now(ZoneId.of(EUROPE_MADRID)));
         }
 
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        persistirAuditoria(auditoria);
+                    } catch (RuntimeException e) {
+                        // La transacción clínica ya está confirmada: no se puede revertir. Se
+                        // deja constancia a nivel ERROR para poder detectar el hueco de auditoría.
+                        log.error("No se pudo persistir el registro de auditoría tras confirmar el cambio "
+                                + "(usuario={}, recurso={}, operacion={}): {}",
+                                auditoria.getIdUsuario(), auditoria.getIdRecurso(),
+                                auditoria.getTipoOperacion(), e.getMessage(), e);
+                    }
+                }
+            });
+            return auditoria;
+        }
+
+        return persistirAuditoria(auditoria);
+    }
+
+    /**
+     * Cifra los valores sensibles y guarda el registro en MongoDB. Devuelve la entidad con
+     * los valores otra vez en claro (el cifrado es un detalle de persistencia).
+     */
+    private AuditoriaCambio persistirAuditoria(AuditoriaCambio auditoria) {
+        String valorAnteriorPlano = auditoria.getValorAnterior();
+        String valorNuevoPlano = auditoria.getValorNuevo();
+        auditoria.setValorAnterior(fieldEncryptionService.cifrar(valorAnteriorPlano));
+        auditoria.setValorNuevo(fieldEncryptionService.cifrar(valorNuevoPlano));
+
         AuditoriaCambio guardado = auditoriaCambioRepository.save(auditoria);
-        
+
+        guardado.setValorAnterior(valorAnteriorPlano);
+        guardado.setValorNuevo(valorNuevoPlano);
+
         log.info(
             "Auditoría registrada: usuario={}, paciente={}, tipo={}, operacion={}",
-            guardado.getIdUsuario(), guardado.getIdPaciente(), 
+            guardado.getIdUsuario(), guardado.getIdPaciente(),
             guardado.getTipoCambio(), guardado.getTipoOperacion()
         );
 
         return guardado;
     }
 
+    /**
+     * Descifra {@code valorAnterior}/{@code valorNuevo} de cada registro obtenido del
+     * repositorio, para que quien llama a este servicio siempre trabaje con texto en claro.
+     */
+    private List<AuditoriaCambio> descifrarValores(List<AuditoriaCambio> cambios) {
+        cambios.forEach(c -> {
+            c.setValorAnterior(fieldEncryptionService.descifrar(c.getValorAnterior()));
+            c.setValorNuevo(fieldEncryptionService.descifrar(c.getValorNuevo()));
+        });
+        return cambios;
+    }
+
     @Override
-    @Transactional
     public AuditoriaCambio registrarCambio(
             String idUsuario,
             String idPaciente,
@@ -102,7 +160,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository.findByIdUsuarioOrderByFechaCambioDesc(idUsuario);
         log.debug("Se recuperaron {} cambios para usuario {}", cambios.size(), idUsuario);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -115,7 +173,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository.findByIdPacienteOrderByFechaCambioDesc(idPaciente);
         log.debug("Se recuperaron {} cambios para paciente {}", cambios.size(), idPaciente);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -142,7 +200,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
             "Se recuperaron {} cambios para paciente {} entre {} y {}",
             cambios.size(), idPaciente, desde, hasta
         );
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -155,7 +213,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository.findByIdRecursoOrderByFechaCambioDesc(idRecurso);
         log.debug("Se recuperaron {} cambios para recurso {}", cambios.size(), idRecurso);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -168,9 +226,9 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository
             .findByIdPacienteAndTipoCambioOrderByFechaCambioDesc(idPaciente, tipoCambio);
-        log.debug("Se recuperaron {} cambios de tipo {} para paciente {}", 
+        log.debug("Se recuperaron {} cambios de tipo {} para paciente {}",
             cambios.size(), tipoCambio, idPaciente);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -183,7 +241,7 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository.findByIdMedicoOrderByFechaCambioDesc(idMedico);
         log.debug("Se recuperaron {} cambios realizados por médico {}", cambios.size(), idMedico);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override
@@ -199,9 +257,9 @@ public class AuditoriaCambioServiceImpl implements AuditoriaCambioService {
 
         List<AuditoriaCambio> cambios = auditoriaCambioRepository
             .findByIdPacienteAndTipoOperacionOrderByFechaCambioDesc(idPaciente, tipoOperacion);
-        log.debug("Se recuperaron {} cambios de tipo {} para paciente {}", 
+        log.debug("Se recuperaron {} cambios de tipo {} para paciente {}",
             cambios.size(), tipoOperacion, idPaciente);
-        return cambios;
+        return descifrarValores(cambios);
     }
 
     @Override

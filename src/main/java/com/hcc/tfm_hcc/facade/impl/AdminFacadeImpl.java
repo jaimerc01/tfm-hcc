@@ -4,19 +4,21 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import com.hcc.tfm_hcc.constants.ErrorMessages;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.AdminOperacionException;
 import com.hcc.tfm_hcc.exception.AdminValidationException;
+import com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException;
 import com.hcc.tfm_hcc.facade.AdminFacade;
 import com.hcc.tfm_hcc.mapper.UsuarioMapper;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.UsuarioRepository;
+import com.hcc.tfm_hcc.service.HmacSearchIndexService;
 import com.hcc.tfm_hcc.service.MedicoService;
+import com.hcc.tfm_hcc.util.LogMaskUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,9 +33,12 @@ import lombok.extern.slf4j.Slf4j;
  *   <li>Operaciones CRUD completas para médicos del sistema</li>
  *   <li>Asignación y revocación dinámica de perfiles médicos</li>
  *   <li>Búsqueda optimizada de usuarios por identificadores</li>
- *   <li>Respuestas HTTP estandarizadas con códigos apropiados</li>
  *   <li>Logging estructurado para auditoría administrativa</li>
  * </ul>
+ *
+ * <p>Devuelve DTOs y modelos de dominio (no {@code ResponseEntity}): traducir el
+ * resultado a una respuesta HTTP con su código de estado es responsabilidad del
+ * controlador.</p>
  * 
  * <p>Características de seguridad y validación:</p>
  * <ul>
@@ -54,9 +59,12 @@ import lombok.extern.slf4j.Slf4j;
  * @see UsuarioRepository
  */
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class AdminFacadeImpl implements AdminFacade {
+
+    /** Longitud mínima de un NIF/NIE español (8 dígitos + letra). */
+    private static final int LONGITUD_MINIMA_NIF = 9;
 
     /**
      * Servicio de gestión de médicos que encapsula la lógica de negocio
@@ -77,22 +85,28 @@ public class AdminFacadeImpl implements AdminFacade {
     private final UsuarioMapper usuarioMapper;
 
     /**
+     * Servicio para calcular el índice de búsqueda (HMAC) del NIF, necesario porque
+     * el NIF está cifrado de forma no determinista y no es consultable por igualdad.
+     */
+    private final HmacSearchIndexService hmacSearchIndexService;
+
+    /**
      * {@inheritDoc}
-     * 
+     *
      * <p>Implementación que obtiene la lista completa de usuarios con perfil médico,
      * proporcionando información detallada para operaciones administrativas.</p>
      * 
-     * @return ResponseEntity con lista de UsuarioDTO de todos los médicos del sistema
+     * @return lista de UsuarioDTO de todos los médicos del sistema
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<List<UsuarioDTO>> listarMedicos() {
+    public List<UsuarioDTO> listarMedicos() {
         log.debug("Solicitando lista completa de médicos del sistema");
-        
+
         try {
             List<UsuarioDTO> medicos = medicoService.listarMedicos();
             log.info("Se obtuvieron {} médicos del sistema", medicos.size());
-            return ResponseEntity.ok(medicos);
+            return medicos;
         } catch (Exception e) {
             log.error("Error al obtener lista de médicos: {}", e.getMessage(), e);
             throw new AdminOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
@@ -106,19 +120,19 @@ public class AdminFacadeImpl implements AdminFacade {
      * validando los datos de entrada y asignando automáticamente el perfil médico.</p>
      * 
      * @param medicoDTO Datos del médico a crear en el sistema
-     * @return ResponseEntity con el UsuarioDTO del médico creado exitosamente
+     * @return el UsuarioDTO del médico creado exitosamente
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<UsuarioDTO> crearMedico(UsuarioDTO medicoDTO) {
+    public UsuarioDTO crearMedico(UsuarioDTO medicoDTO) {
         log.debug("Creando nuevo médico en el sistema");
-        
+
         try {
             validarDatosMedico(medicoDTO);
-            
+
             UsuarioDTO medicoCreado = medicoService.crearMedico(medicoDTO);
             log.info("Médico creado exitosamente con ID: {}", medicoCreado.getId());
-            return ResponseEntity.ok(medicoCreado);
+            return medicoCreado;
         } catch (AdminValidationException e) {
             log.warn("Error de validación al crear médico: {}", e.getMessage());
             throw e;
@@ -136,20 +150,20 @@ public class AdminFacadeImpl implements AdminFacade {
      * 
      * @param id Identificador único del médico a actualizar
      * @param medicoDTO Nuevos datos del médico
-     * @return ResponseEntity con el UsuarioDTO actualizado del médico
+     * @return el UsuarioDTO actualizado del médico
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<UsuarioDTO> actualizarMedico(UUID id, UsuarioDTO medicoDTO) {
+    public UsuarioDTO actualizarMedico(UUID id, UsuarioDTO medicoDTO) {
         log.debug("Actualizando datos de médico con ID: {}", id);
-        
+
         try {
             validarIdMedico(id);
             validarDatosMedico(medicoDTO);
-            
+
             UsuarioDTO medicoActualizado = medicoService.actualizarMedico(id, medicoDTO);
             log.info("Médico actualizado exitosamente: ID {}", id);
-            return ResponseEntity.ok(medicoActualizado);
+            return medicoActualizado;
         } catch (AdminValidationException e) {
             log.warn("Error de validación al actualizar médico con ID {}: {}", id, e.getMessage());
             throw e;
@@ -166,19 +180,19 @@ public class AdminFacadeImpl implements AdminFacade {
      * validando la existencia del médico y gestionando las dependencias apropiadamente.</p>
      * 
      * @param id Identificador único del médico a eliminar del sistema
-     * @return ResponseEntity con el ID del médico eliminado para confirmación
+     * @return el ID del médico eliminado, para confirmación
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<UUID> eliminarMedico(UUID id) {
+    public UUID eliminarMedico(UUID id) {
         log.debug("Solicitando eliminación de médico con ID: {}", id);
-        
+
         try {
             validarIdMedico(id);
-            
+
             UUID idEliminado = medicoService.eliminarMedico(id);
             log.info("Médico eliminado exitosamente: ID {}", idEliminado);
-            return ResponseEntity.ok(idEliminado);
+            return idEliminado;
         } catch (AdminValidationException e) {
             log.warn("Error de validación al eliminar médico con ID {}: {}", id, e.getMessage());
             throw e;
@@ -196,20 +210,20 @@ public class AdminFacadeImpl implements AdminFacade {
      * 
      * @param id Identificador único del usuario para modificar su perfil
      * @param asignar true para asignar perfil médico, false para revocarlo
-     * @return ResponseEntity con el ID del usuario afectado para confirmación
+     * @return el ID del usuario afectado, para confirmación
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<UUID> setPerfilMedico(UUID id, boolean asignar) {
+    public UUID setPerfilMedico(UUID id, boolean asignar) {
         log.debug("Modificando perfil médico para usuario ID: {} - Asignar: {}", id, asignar);
-        
+
         try {
             validarIdUsuario(id);
-            
+
             medicoService.setPerfilMedico(id, asignar);
             String accion = asignar ? "asignado" : "revocado";
             log.info("Perfil médico {} exitosamente para usuario ID: {}", accion, id);
-            return ResponseEntity.ok(id);
+            return id;
         } catch (AdminValidationException e) {
             log.warn("Error de validación al modificar perfil médico para usuario ID {}: {}", id, e.getMessage());
             throw e;
@@ -226,30 +240,33 @@ public class AdminFacadeImpl implements AdminFacade {
      * validando el formato del identificador y manejando casos de usuario no encontrado.</p>
      * 
      * @param nif NIF del usuario a buscar en el sistema
-     * @return ResponseEntity con el UsuarioDTO del usuario encontrado
+     * @return el UsuarioDTO del usuario encontrado
+     * @throws UsuarioNoEncontradoException si no existe ningún usuario con ese NIF
      */
     @Override
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<UsuarioDTO> buscarUsuarioPorNif(String nif) {
-        log.debug("Buscando usuario por NIF: {}", nif);
-        
+    public UsuarioDTO buscarUsuarioPorNif(String nif) {
+        String nifLog = LogMaskUtil.enmascarar(nif);
+        log.debug("Buscando usuario por NIF: {}", nifLog);
+
         try {
             validarNif(nif);
-            
-            Optional<Usuario> usuarioOpt = usuarioRepository.findByNif(nif);
-            if (usuarioOpt.isPresent()) {
-                UsuarioDTO usuarioDTO = usuarioMapper.toDto(usuarioOpt.get());
-                log.info("Usuario encontrado exitosamente por NIF: {}", nif);
-                return ResponseEntity.ok(usuarioDTO);
-            } else {
-                log.warn("Usuario no encontrado con NIF: {}", nif);
-                throw new AdminValidationException(ErrorMessages.entidadNoEncontrada("Usuario", nif));
-            }
-        } catch (AdminValidationException e) {
-            log.warn("Error de validación al buscar usuario por NIF {}: {}", nif, e.getMessage());
+
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByNifHash(hmacSearchIndexService.indexar(nif));
+            Usuario usuario = usuarioOpt.orElseThrow(() -> {
+                log.warn("Usuario no encontrado con NIF: {}", nifLog);
+                // El mensaje se registra tal cual más abajo, así que lleva el NIF enmascarado.
+                return new UsuarioNoEncontradoException(ErrorMessages.entidadNoEncontrada("Usuario", nifLog));
+            });
+
+            UsuarioDTO usuarioDTO = usuarioMapper.toDto(usuario);
+            log.info("Usuario encontrado exitosamente por NIF: {}", nifLog);
+            return usuarioDTO;
+        } catch (AdminValidationException | UsuarioNoEncontradoException e) {
+            log.warn("No se pudo obtener el usuario por NIF {}: {}", nifLog, e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("Error inesperado al buscar usuario por NIF {}: {}", nif, e.getMessage(), e);
+            log.error("Error inesperado al buscar usuario por NIF {}: {}", nifLog, e.getMessage(), e);
             throw new AdminOperacionException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }
@@ -320,9 +337,9 @@ public class AdminFacadeImpl implements AdminFacade {
         if (nif == null || nif.trim().isEmpty()) {
             throw new AdminValidationException(ErrorMessages.campoRequerido("NIF"));
         }
-        
-        if (nif.trim().length() < 9) {
-            throw new AdminValidationException(ErrorMessages.campoRequerido("NIF válido"));
+
+        if (nif.trim().length() < LONGITUD_MINIMA_NIF) {
+            throw new AdminValidationException(ErrorMessages.ERROR_DNI_INVALIDO);
         }
     }
 }
