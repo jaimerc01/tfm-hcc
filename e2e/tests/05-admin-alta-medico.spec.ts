@@ -15,18 +15,19 @@ test('el administrador crea un médico nuevo y aparece en la tabla', async ({ pa
 
   await page.getByRole('button', { name: 'Añadir médico' }).click()
 
-  // Paso 1: comprobar si el NIF ya existe. Como es nuevo, pasa al formulario completo.
-  await page.getByPlaceholder('NIF').fill(nif)
-  await page.getByRole('button', { name: 'Buscar' }).click()
+  // Paso 1: comprobar si el NIF ya existe (modal con un solo campo). Como es nuevo,
+  // el backend responde 404 y se pasa al formulario completo.
+  await page.locator('#nif-search-input').fill(nif)
+  await page.locator('#nif-search-input').press('Enter')
 
-  // Paso 2: formulario completo del médico.
-  await page.getByPlaceholder('Nombre').fill('Doctor')
-  await page.getByPlaceholder('Primer apellido').fill('Nuevo')
-  await page.getByPlaceholder('Email').fill(email)
-  await page.getByPlaceholder('NIF').fill(nif)
-  await page.getByPlaceholder('Especialidad').fill('Cardiología')
-  await page.locator('input[type="date"]').fill('1988-02-02')
-  await page.getByPlaceholder('Contraseña').fill(PASSWORD)
+  // Paso 2: formulario completo del médico (inputs con id estable).
+  await page.locator('#medico-nombre').fill('Doctor')
+  await page.locator('#medico-apellido1').fill('Nuevo')
+  await page.locator('#medico-email').fill(email)
+  await page.locator('#medico-nif').fill(nif)
+  await page.locator('#medico-especialidad').fill('Cardiología')
+  await page.locator('#medico-fecha-nacimiento').fill('1988-02-02')
+  await page.locator('#medico-password').fill(PASSWORD)
 
   await page.getByRole('button', { name: 'Guardar' }).click()
 

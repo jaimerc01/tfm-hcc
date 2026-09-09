@@ -8,8 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.hcc.tfm_hcc.model.PropuestaCambioClinico;
 
 /**
- * Repositorio para las propuestas de cambio clínico enviadas por los médicos y pendientes de
- * confirmación del paciente.
+ * Repositorio para las propuestas de cambio clínico que los médicos envían sobre el historial de
+ * un paciente y que este debe confirmar o rechazar.
  *
  * @author Sistema HCC
  * @version 1.0
@@ -18,13 +18,13 @@ import com.hcc.tfm_hcc.model.PropuestaCambioClinico;
 public interface PropuestaCambioClinicoRepository extends JpaRepository<PropuestaCambioClinico, UUID> {
 
     /**
-     * Propuestas dirigidas a un paciente en un estado concreto, de la más reciente a la más antigua.
+     * Todas las propuestas dirigidas a un paciente (pendientes y ya resueltas), de la más reciente
+     * a la más antigua. Alimenta la pestaña «Cambios propuestos» del historial del paciente.
      *
      * @param pacienteId ID del paciente destinatario
-     * @param estado estado de la propuesta (p. ej. {@code PENDIENTE})
      * @return lista de propuestas ordenada por fecha de creación descendente
      */
-    List<PropuestaCambioClinico> findByPacienteIdAndEstadoOrderByFechaCreacionDesc(UUID pacienteId, String estado);
+    List<PropuestaCambioClinico> findByPacienteIdOrderByFechaCreacionDesc(UUID pacienteId);
 
     /**
      * Todas las propuestas enviadas por un médico, de la más reciente a la más antigua.

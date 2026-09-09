@@ -772,4 +772,63 @@ class UsuarioServiceImplTest {
 
         assertEquals(true, service.isTotpEnabled());
     }
+
+    // ---- derechos RGPD: limitación del tratamiento (art. 18) ----
+
+    @Test
+    void limitarTratamiento_marcaLaCuentaComoSuspendidaYLaPersiste() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setEstadoCuenta(Usuario.ESTADO_CUENTA_ACTIVO);
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+
+        service.limitarTratamiento();
+
+        assertEquals(Usuario.ESTADO_CUENTA_SUSPENDIDO, usuario.getEstadoCuenta());
+        verify(usuarioRepository, times(1)).save(usuario);
+    }
+
+    @Test
+    void limitarTratamiento_conCuentaEliminada_lanzaIllegalStateException() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setEstadoCuenta(Usuario.ESTADO_CUENTA_ELIMINADO);
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+
+        assertThrows(IllegalStateException.class, () -> service.limitarTratamiento());
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
+    void limitarTratamiento_sinUsuarioAutenticado_lanzaIllegalStateException() {
+        assertThrows(IllegalStateException.class, () -> service.limitarTratamiento());
+    }
+
+    @Test
+    void reanudarTratamiento_devuelveLaCuentaAlEstadoActivoYLaPersiste() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setEstadoCuenta(Usuario.ESTADO_CUENTA_SUSPENDIDO);
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+
+        service.reanudarTratamiento();
+
+        assertEquals(Usuario.ESTADO_CUENTA_ACTIVO, usuario.getEstadoCuenta());
+        verify(usuarioRepository, times(1)).save(usuario);
+    }
+
+    @Test
+    void reanudarTratamiento_conCuentaEliminada_lanzaIllegalStateException() {
+        autenticarComo("12345678A");
+        Usuario usuario = new Usuario();
+        usuario.setNif("12345678A");
+        usuario.setEstadoCuenta(Usuario.ESTADO_CUENTA_ELIMINADO);
+        when(usuarioRepository.findByNifHash("hash-12345678A")).thenReturn(Optional.of(usuario));
+
+        assertThrows(IllegalStateException.class, () -> service.reanudarTratamiento());
+        verify(usuarioRepository, never()).save(any());
+    }
 }

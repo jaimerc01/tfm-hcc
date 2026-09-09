@@ -16,6 +16,9 @@ vi.mock('@/components/AnalisisSangreSection.vue', () => ({ default: { template: 
 vi.mock('@/components/SignosVitalesSection.vue', () => ({ default: { template: '<div class="section-stub" />' } }))
 vi.mock('@/components/AnalisisOrinaSection.vue', () => ({ default: { template: '<div class="section-stub" />' } }))
 vi.mock('@/components/AnotacionesMedicasSection.vue', () => ({ default: { template: '<div class="section-stub" />' } }))
+vi.mock('@/components/PropuestasCambioClinicoSection.vue', () => ({
+  default: { name: 'PropuestasCambioClinicoSection', template: '<div class="section-stub propuestas-stub" />', emits: ['applied', 'count-changed'] }
+}))
 
 import HistoriaClinicaView from '@/views/HistoriaClinicaView.vue'
 
@@ -56,9 +59,20 @@ describe('HistoriaClinicaView', () => {
     w.vm.onTabKeydown({ key: 'ArrowLeft', preventDefault: vi.fn() }, 'alergias')
     expect(w.vm.activeSection).toBe('antecedentes')
     w.vm.onTabKeydown({ key: 'End', preventDefault: vi.fn() }, 'antecedentes')
-    expect(w.vm.activeSection).toBe('anotaciones')
-    w.vm.onTabKeydown({ key: 'Home', preventDefault: vi.fn() }, 'anotaciones')
+    expect(w.vm.activeSection).toBe('propuestas')
+    w.vm.onTabKeydown({ key: 'Home', preventDefault: vi.fn() }, 'propuestas')
     expect(w.vm.activeSection).toBe('antecedentes')
+    w.unmount()
+  })
+
+  it('la pestaña de cambios propuestos muestra un contador con las propuestas pendientes', async () => {
+    const w = await factory()
+    expect(w.find('.tab-badge').exists()).toBe(false)
+
+    w.findComponent({ name: 'PropuestasCambioClinicoSection' }).vm.$emit('count-changed', 2)
+    await w.vm.$nextTick()
+
+    expect(w.find('#propuestas-tab .tab-badge').text()).toBe('2')
     w.unmount()
   })
 

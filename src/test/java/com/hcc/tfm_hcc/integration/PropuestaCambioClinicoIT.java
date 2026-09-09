@@ -81,6 +81,7 @@ class PropuestaCambioClinicoIT extends AbstractIntegrationIT {
         JsonNode lista = objectMapper.readTree(pendientes);
         org.assertj.core.api.Assertions.assertThat(lista).hasSize(1);
         org.assertj.core.api.Assertions.assertThat(lista.get(0).get("id").asText()).isEqualTo(idPropuesta);
+        org.assertj.core.api.Assertions.assertThat(lista.get(0).get("estado").asText()).isEqualTo("PENDIENTE");
 
         // El paciente la acepta.
         mockMvc.perform(post("/historia/propuestas-cambio/" + idPropuesta)
@@ -96,10 +97,12 @@ class PropuestaCambioClinicoIT extends AbstractIntegrationIT {
                 .andExpect(jsonPath("$.analisisSangre[0].tipo").value("Glucosa"))
                 .andExpect(jsonPath("$.analisisSangre[0].valor").value("95"));
 
-        // Ya no quedan propuestas pendientes.
+        // La propuesta sigue en el listado, ahora como parte del histórico resuelto.
         mockMvc.perform(get("/historia/propuestas-cambio").header("Authorization", bearer(tokenPaciente)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].estado").value("ACEPTADA"))
+                .andExpect(jsonPath("$[0].fechaResolucion").isNotEmpty());
     }
 
     @Test

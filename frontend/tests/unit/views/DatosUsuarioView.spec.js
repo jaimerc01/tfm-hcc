@@ -34,8 +34,8 @@ beforeEach(() => {
   auth.getCurrentUser.mockReturnValue({ sub: '12345678Z' })
 })
 
-const factory = async () => {
-  const w = mount(DatosUsuarioView, { global: { stubs } })
+const factory = async (options = {}) => {
+  const w = mount(DatosUsuarioView, { global: { stubs }, ...options })
   await flushPromises()
   return w
 }
@@ -363,6 +363,47 @@ describe('DatosUsuarioView', () => {
       w.vm.showDelete = true
       w.vm.onDeleteModalKeydown({ key: 'Escape', preventDefault: vi.fn() })
       expect(w.vm.showDelete).toBe(false)
+    })
+
+    it('openDelete abre el modal y limpia el error previo', async () => {
+      const w = await factory({ attachTo: document.body })
+      w.vm.deleteError = 'error viejo'
+      await w.vm.openDelete({ currentTarget: document.createElement('button') })
+      await flushPromises()
+      expect(w.vm.showDelete).toBe(true)
+      expect(w.vm.deleteError).toBe('')
+      w.unmount()
+    })
+
+    it('closeDelete no cierra mientras el borrado está en curso', async () => {
+      const w = await factory()
+      w.vm.showDelete = true
+      w.vm.deleteLoading = true
+      w.vm.closeDelete()
+      expect(w.vm.showDelete).toBe(true)
+
+      w.vm.deleteLoading = false
+      w.vm.closeDelete()
+      expect(w.vm.showDelete).toBe(false)
+    })
+
+    it('onDeleteModalKeydown atrapa el foco con Tab dentro del modal', async () => {
+      const w = await factory({ attachTo: document.body })
+      w.vm.showDelete = true
+      await flushPromises()
+      const cancel = w.vm.deleteCancelRef
+      const confirm = w.vm.deleteConfirmRef
+      if (cancel && confirm) {
+        confirm.focus()
+        const ev = { key: 'Tab', shiftKey: false, preventDefault: vi.fn() }
+        w.vm.onDeleteModalKeydown(ev)
+        expect(ev.preventDefault).toHaveBeenCalled()
+      }
+      // Una tecla distinta de Tab/Escape no hace nada.
+      const noop = { key: 'a', preventDefault: vi.fn() }
+      w.vm.onDeleteModalKeydown(noop)
+      expect(noop.preventDefault).not.toHaveBeenCalled()
+      w.unmount()
     })
   })
 

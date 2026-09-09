@@ -530,7 +530,7 @@ class HistorialClinicoControllerImplTest {
 
     @Test
     void listarPropuestasCambio_devuelveLaLista() throws Exception {
-        when(facade.listarPropuestasCambioPendientes()).thenReturn(List.of(new PropuestaCambioClinicoDTO()));
+        when(facade.listarPropuestasCambio()).thenReturn(List.of(new PropuestaCambioClinicoDTO()));
 
         mvc.perform(get("/historia/propuestas-cambio")).andExpect(status().isOk());
     }
@@ -565,5 +565,148 @@ class HistorialClinicoControllerImplTest {
         mvcConAdvice.perform(post("/historia/propuestas-cambio/" + id)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"aceptar\":true}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void listarPropuestasCambio_conErrorInesperado_devuelve500() throws Exception {
+        when(facade.listarPropuestasCambio())
+                .thenThrow(new HistorialClinicoException("fallo", new NullPointerException("bug")));
+
+        mvcConAdvice.perform(get("/historia/propuestas-cambio")).andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void responderPropuestaCambio_conErrorInesperado_devuelve500() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(facade.responderPropuestaCambio(id, true))
+                .thenThrow(new HistorialClinicoException("fallo", new NullPointerException("bug")));
+
+        mvcConAdvice.perform(post("/historia/propuestas-cambio/" + id)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"aceptar\":true}"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    // ---- mediciones: validación (400) y error inesperado (500) por endpoint ----
+
+    @Test
+    void crearAnalisisSangre_conDatosInvalidos_devuelve400() throws Exception {
+        when(facade.anadirAnalisisSangre(any()))
+                .thenThrow(new com.hcc.tfm_hcc.exception.DatosClinicosValidationException("Sin mediciones"));
+
+        mvcConAdvice.perform(post("/historia/analisis-sangre")
+                        .contentType(MediaType.APPLICATION_JSON).content("[]"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void crearAnalisisSangre_conErrorInesperado_devuelve500() throws Exception {
+        when(facade.anadirAnalisisSangre(any()))
+                .thenThrow(new HistorialClinicoException("fallo", new NullPointerException("bug")));
+
+        mvcConAdvice.perform(post("/historia/analisis-sangre")
+                        .contentType(MediaType.APPLICATION_JSON).content("[{\"label\":\"Glucosa\",\"value\":\"90\"}]"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void crearSignosVitales_conDatosInvalidos_devuelve400() throws Exception {
+        when(facade.anadirSignosVitales(any()))
+                .thenThrow(new com.hcc.tfm_hcc.exception.DatosClinicosValidationException("Sin mediciones"));
+
+        mvcConAdvice.perform(post("/historia/signos-vitales")
+                        .contentType(MediaType.APPLICATION_JSON).content("[]"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void crearSignosVitales_conErrorInesperado_devuelve500() throws Exception {
+        when(facade.anadirSignosVitales(any()))
+                .thenThrow(new HistorialClinicoException("fallo", new NullPointerException("bug")));
+
+        mvcConAdvice.perform(post("/historia/signos-vitales")
+                        .contentType(MediaType.APPLICATION_JSON).content("[{\"label\":\"Pulso\",\"value\":\"70\"}]"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void crearAnalisisOrina_conDatosInvalidos_devuelve400() throws Exception {
+        when(facade.anadirAnalisisOrina(any()))
+                .thenThrow(new com.hcc.tfm_hcc.exception.DatosClinicosValidationException("Sin mediciones"));
+
+        mvcConAdvice.perform(post("/historia/analisis-orina")
+                        .contentType(MediaType.APPLICATION_JSON).content("[]"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void crearAnalisisOrina_conErrorInesperado_devuelve500() throws Exception {
+        when(facade.anadirAnalisisOrina(any()))
+                .thenThrow(new HistorialClinicoException("fallo", new NullPointerException("bug")));
+
+        mvcConAdvice.perform(post("/historia/analisis-orina")
+                        .contentType(MediaType.APPLICATION_JSON).content("[{\"label\":\"pH\",\"value\":\"6\"}]"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void actualizarSignosVitales_conDatosInvalidos_devuelve400() throws Exception {
+        when(facade.actualizarSignosVitales(any()))
+                .thenThrow(new com.hcc.tfm_hcc.exception.DatosClinicosValidationException("Sin mediciones"));
+
+        mvcConAdvice.perform(put("/historia/signos-vitales")
+                        .contentType(MediaType.APPLICATION_JSON).content("[]"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void actualizarAnalisisOrina_conDatosInvalidos_devuelve400() throws Exception {
+        when(facade.actualizarAnalisisOrina(any()))
+                .thenThrow(new com.hcc.tfm_hcc.exception.DatosClinicosValidationException("Sin mediciones"));
+
+        mvcConAdvice.perform(put("/historia/analisis-orina")
+                        .contentType(MediaType.APPLICATION_JSON).content("[]"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void editarDatoClinico_conDatosInvalidos_devuelve400() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(facade.editarDatoClinico(eq(id), any()))
+                .thenThrow(new com.hcc.tfm_hcc.exception.DatosClinicosValidationException("Valor requerido"));
+
+        mvcConAdvice.perform(put("/historia/datos-clinicos/" + id)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"value\":\"\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void editarDatoClinico_conErrorInesperado_devuelve500() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(facade.editarDatoClinico(eq(id), any()))
+                .thenThrow(new HistorialClinicoException("fallo", new NullPointerException("bug")));
+
+        mvcConAdvice.perform(put("/historia/datos-clinicos/" + id)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"value\":\"95\"}"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void borrarDatoClinico_conIdInexistente_devuelve400() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new HistorialClinicoException("no encontrado",
+                new IllegalArgumentException("El dato clínico no existe")))
+                .when(facade).borrarDatoClinico(id);
+
+        mvcConAdvice.perform(delete("/historia/datos-clinicos/" + id)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void subirArchivo_conErrorInesperado_devuelve500() throws Exception {
+        when(facade.upload(any()))
+                .thenThrow(new ArchivoClinicoException("fallo", new NullPointerException("bug")));
+
+        mvcConAdvice.perform(multipart("/historia/archivos")
+                        .file(new MockMultipartFile("file", "a.pdf", "application/pdf", "x".getBytes())))
+                .andExpect(status().isInternalServerError());
     }
 }

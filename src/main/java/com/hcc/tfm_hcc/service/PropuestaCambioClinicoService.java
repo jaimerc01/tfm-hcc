@@ -43,13 +43,15 @@ public interface PropuestaCambioClinicoService {
     List<PropuestaCambioClinico> listarPropuestasEnviadasParaPaciente(String nifMedico, String nifPaciente);
 
     /**
-     * Lista las propuestas de cambio pendientes de confirmar de un paciente, de la más reciente
-     * a la más antigua.
+     * Lista todas las propuestas de cambio dirigidas a un paciente, de la más reciente a la más
+     * antigua: tanto las que siguen {@code PENDIENTE} de confirmar como las ya resueltas
+     * ({@code ACEPTADA}, {@code RECHAZADA} o {@code ANULADA}), para que el paciente pueda revisar
+     * también su histórico.
      *
      * @param nifPaciente NIF del paciente autenticado
-     * @return lista de propuestas con estado {@code PENDIENTE}
+     * @return lista de propuestas ordenada por fecha de creación descendente
      */
-    List<PropuestaCambioClinico> listarPropuestasPendientesParaPaciente(String nifPaciente);
+    List<PropuestaCambioClinico> listarPropuestasParaPaciente(String nifPaciente);
 
     /**
      * Resuelve una propuesta pendiente. Si el paciente la acepta, el cambio se aplica sobre su

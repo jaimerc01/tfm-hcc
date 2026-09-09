@@ -77,4 +77,43 @@ describe('ClinicalTimelineCard', () => {
     await w.findAll('.clinical-timeline__event')[0].trigger('mouseenter')
     expect(setActiveEvent).toHaveBeenCalledWith(0)
   })
+
+  it('si falla la carga de rangos, sigue dibujando la línea de tiempo', async () => {
+    svc.getRangos.mockRejectedValueOnce(new Error('500'))
+    const w = await factory()
+    expect(draw).toHaveBeenCalled()
+    expect(w.findAll('.clinical-timeline__event')).toHaveLength(2)
+  })
+
+  it('sin ningún parámetro con datos, no muestra el selector', async () => {
+    const w = await factory({ analisisSangre: [], signosVitales: [], analisisOrina: [] })
+    expect(w.find('#timeline-param-select').exists()).toBe(false)
+    expect(w.vm.selectedKey).toBe('')
+  })
+
+  it('redibuja cuando cambian las entradas o los antecedentes', async () => {
+    const w = await factory()
+    const antes = draw.mock.calls.length
+    await w.setProps({
+      analisisSangre: [
+        { tipo: 'Glucosa', valor: 95, fechaCreacion: '2026-01-10T00:00:00Z' },
+        { tipo: 'Glucosa', valor: 102, fechaCreacion: '2026-03-01T00:00:00Z' }
+      ]
+    })
+    await flushPromises()
+    expect(draw.mock.calls.length).toBeGreaterThan(antes)
+
+    const antesAnt = draw.mock.calls.length
+    await w.setProps({ antecedentes: [...antecedentes, { id: 'a3', categoria: 'PERSONAL', descripcion: 'Nuevo', createdAt: '2026-04-01T09:00:00Z' }] })
+    await flushPromises()
+    expect(draw.mock.calls.length).toBeGreaterThan(antesAnt)
+  })
+
+  it('limpia el contenedor del gráfico al desmontarse', async () => {
+    const w = await factory()
+    const container = w.vm.$refs.chart
+    container.innerHTML = '<svg></svg>'
+    w.unmount()
+    expect(container.innerHTML).toBe('')
+  })
 })

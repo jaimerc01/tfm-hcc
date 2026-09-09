@@ -13,6 +13,8 @@ test('el paciente descarga sus datos personales en JSON', async ({ page }) => {
   await login(page, PACIENTE.nif)
   await page.goto('/usuario')
 
+  // La descarga (derecho de portabilidad) vive en la pestaña "Registro de accesos".
+  await page.getByRole('tab', { name: 'Registro de accesos' }).click()
   await page.locator('#reauth-password').fill(PASSWORD)
 
   const descarga = page.waitForEvent('download')
@@ -25,6 +27,9 @@ test('el paciente descarga sus datos personales en JSON', async ({ page }) => {
 test('el paciente limita el tratamiento de sus datos y luego lo reanuda', async ({ page }) => {
   await login(page, PACIENTE.nif)
   await page.goto('/usuario')
+
+  // La limitación del tratamiento (art. 18 RGPD) es su propia pestaña.
+  await page.getByRole('tab', { name: 'Limitación del tratamiento' }).click()
 
   const limitar = page.locator('button:has-text("Limitar tratamiento de mis datos")')
   const reanudar = page.locator('button:has-text("Reanudar tratamiento de mis datos")')

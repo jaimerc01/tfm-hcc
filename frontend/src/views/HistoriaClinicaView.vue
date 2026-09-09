@@ -10,8 +10,6 @@
       </div>
     </div>
 
-    <PropuestasCambioClinicoSection class="propuestas-cambio-wrapper" @applied="reloadHistorial" />
-
     <section class="tabs-section">
       <div class="tabs-nav" role="tablist" :aria-label="$t('clinical_history')">
         <button
@@ -124,6 +122,27 @@
         >
           <AppIcon name="note" size="md" />
           {{$t('medical_annotations')}}
+        </button>
+
+        <button
+          type="button"
+          id="propuestas-tab"
+          ref="tabPropuestas"
+          :class="['tab-btn', { active: activeSection === 'propuestas' }]"
+          @click="activeSection = 'propuestas'"
+          @keydown="onTabKeydown($event, 'propuestas')"
+          role="tab"
+          :aria-selected="activeSection === 'propuestas'"
+          aria-controls="propuestas-panel"
+          :tabindex="activeSection === 'propuestas' ? 0 : -1"
+        >
+          <AppIcon name="clipboard-check" size="md" />
+          {{$t('change_proposals')}}
+          <span
+            v-if="propuestasPendientes > 0"
+            class="tab-badge"
+            :aria-label="$t('change_proposals_badge_label', { count: propuestasPendientes })"
+          >{{ propuestasPendientes }}</span>
         </button>
       </div>
 
@@ -293,6 +312,22 @@
           </div>
         </div>
       </transition>
+
+      <!-- Fuera de la <transition>: montado siempre para que el contador de la pestaña
+           se rellene al cargar el historial, no solo al abrir la pestaña. -->
+      <div
+        v-show="activeSection === 'propuestas'"
+        id="propuestas-panel"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="propuestas-tab"
+        tabindex="-1"
+      >
+        <PropuestasCambioClinicoSection
+          @applied="reloadHistorial"
+          @count-changed="onPropuestasCount"
+        />
+      </div>
     </section>
   </div>
 </template>
@@ -323,7 +358,8 @@ export default {
   },
   data() {
     return {
-      tabOrder: ['antecedentes', 'alergias', 'analisis', 'signos-vitales', 'analisis-orina', 'archivos', 'anotaciones'],
+      tabOrder: ['antecedentes', 'alergias', 'analisis', 'signos-vitales', 'analisis-orina', 'archivos', 'anotaciones', 'propuestas'],
+      propuestasPendientes: 0,
       items: [],
       file: null,
       uploading: false,
@@ -343,6 +379,10 @@ export default {
       this.historialVersion += 1
     },
 
+    onPropuestasCount(n) {
+      this.propuestasPendientes = Number.isFinite(n) ? n : 0
+    },
+
     getTabRefName(section) {
       const map = {
         antecedentes: 'tabAntecedentes',
@@ -351,7 +391,8 @@ export default {
         'signos-vitales': 'tabSignosVitales',
         'analisis-orina': 'tabAnalisisOrina',
         archivos: 'tabArchivos',
-        anotaciones: 'tabAnotaciones'
+        anotaciones: 'tabAnotaciones',
+        propuestas: 'tabPropuestas'
       }
       return map[section]
     },
@@ -503,6 +544,21 @@ export default {
 
 .tab-btn svg {
   flex-shrink: 0;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  background: var(--badge-warning-bg);
+  color: var(--badge-warning-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .tab-panel {

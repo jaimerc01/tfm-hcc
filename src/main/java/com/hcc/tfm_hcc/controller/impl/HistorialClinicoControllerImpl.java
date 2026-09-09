@@ -579,16 +579,17 @@ public class HistorialClinicoControllerImpl implements HistorialClinicoControlle
     /**
      * {@inheritDoc}
      *
-     * <p>Lista las propuestas de cambio pendientes de confirmar del usuario autenticado.</p>
+     * <p>Lista las propuestas de cambio del usuario autenticado: las pendientes de confirmar y
+     * también el histórico de las ya resueltas.</p>
      */
     @Override
     @GetMapping(RestUrls.HISTORIA_PROPUESTAS_CAMBIO)
     public ResponseEntity<List<PropuestaCambioClinicoDTO>> listarPropuestasCambio() throws HistorialClinicoException {
-        log.debug("Listando propuestas de cambio pendientes del usuario autenticado");
+        log.debug("Listando propuestas de cambio del usuario autenticado");
         try {
-            return ResponseEntity.ok(historialClinicoFacade.listarPropuestasCambioPendientes());
+            return ResponseEntity.ok(historialClinicoFacade.listarPropuestasCambio());
         } catch (Exception e) {
-            log.error("Error al listar propuestas de cambio pendientes: {}", e.getMessage(), e);
+            log.error("Error al listar propuestas de cambio: {}", e.getMessage(), e);
             throw new HistorialClinicoException(ErrorMessages.ERROR_INTERNO_SERVIDOR, e);
         }
     }

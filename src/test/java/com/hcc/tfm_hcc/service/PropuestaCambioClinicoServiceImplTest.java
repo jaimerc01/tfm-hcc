@@ -288,12 +288,11 @@ class PropuestaCambioClinicoServiceImplTest {
     // ---- listar / anular ----
 
     @Test
-    void listarPropuestasPendientesParaPaciente_devuelveLoDelRepositorio() {
-        when(propuestaRepository.findByPacienteIdAndEstadoOrderByFechaCreacionDesc(
-                paciente.getId(), PropuestaCambioClinico.ESTADO_PENDIENTE))
+    void listarPropuestasParaPaciente_devuelveLoDelRepositorio() {
+        when(propuestaRepository.findByPacienteIdOrderByFechaCreacionDesc(paciente.getId()))
                 .thenReturn(List.of(propuestaPendiente(Dominio.ANALISIS_SANGRE, Operacion.CREATE, null)));
 
-        assertEquals(1, service.listarPropuestasPendientesParaPaciente(NIF_PACIENTE).size());
+        assertEquals(1, service.listarPropuestasParaPaciente(NIF_PACIENTE).size());
     }
 
     @Test
@@ -326,5 +325,188 @@ class PropuestaCambioClinicoServiceImplTest {
         service.anularPendientes(medico.getId(), paciente.getId());
 
         verify(propuestaRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void anularPendientes_conArgumentosNulos_noConsultaElRepositorio() {
+        service.anularPendientes(null, paciente.getId());
+        service.anularPendientes(medico.getId(), null);
+
+        verify(propuestaRepository, never()).findByMedicoIdAndPacienteIdAndEstado(any(), any(), anyString());
+    }
+
+    // ---- construcción del payload por dominio ----
+
+    @Test
+    void crearPropuesta_conPeticionNula_lanzaExcepcion() {
+        assertThrows(PropuestaCambioClinicoException.class,
+                () -> service.crearPropuesta(NIF_MEDICO, NIF_PACIENTE, null));
+    }
+
+    @Test
+    void crearPropuesta_altaAntecedente_serializaElAntecedenteEnElPayload() {
+        PropuestaCambioClinicoRequestDTO request = new PropuestaCambioClinicoRequestDTO();
+        request.setDominio("antecedente");
+        request.setOperacion("create");
+        request.setMotivo("Nuevo antecedente relevante");
+        AntecedenteClinicoDTO antecedente = new AntecedenteClinicoDTO();
+        antecedente.setCategoria("PERSONAL");
+        antecedente.setDescripcion("Hipertensión arterial");
+        request.setAntecedente(antecedente);
+
+        PropuestaCambioClinico creada = service.crearPropuesta(NIF_MEDICO, NIF_PACIENTE, request);
+
+        assertEquals(Dominio.ANTECEDENTE, creada.getDominio());
+        org.junit.jupiter.api.Assertions.assertNotNull(creada.getPayloadJson());
+        org.junit.jupiter.api.Assertions.assertTrue(creada.getPayloadJson().contains("Hipertensión arterial"));
+    }
+
+    @Test
+    void crearPropuesta_altaAlergia_serializaLaAlergiaEnElPayload() {
+        PropuestaCambioClinicoRequestDTO request = new PropuestaCambioClinicoRequestDTO();
+        request.setDominio("ALERGIA");
+        request.setOperacion("CREATE");
+        request.setMotivo("El paciente refiere alergia nueva");
+        AlergiaDTO alergia = new AlergiaDTO();
+        alergia.setDescripcion("Penicilina");
+        request.setAlergia(alergia);
+
+        PropuestaCambioClinico creada = service.crearPropuesta(NIF_MEDICO, NIF_PACIENTE, request);
+
+        assertEquals(Dominio.ALERGIA, creada.getDominio());
+        org.junit.jupiter.api.Assertions.assertTrue(creada.getPayloadJson().contains("Penicilina"));
+    }
+
+    @Test
+    void crearPropuesta_altaAntecedenteSinDescripcion_lanzaExcepcion() {
+        PropuestaCambioClinicoRequestDTO request = new PropuestaCambioClinicoRequestDTO();
+        request.setDominio("ANTECEDENTE");
+        request.setOperacion("CREATE");
+        request.setMotivo("motivo");
+        request.setAntecedente(new AntecedenteClinicoDTO());
+
+        assertThrows(PropuestaCambioClinicoException.class,
+                () -> service.crearPropuesta(NIF_MEDICO, NIF_PACIENTE, request));
+    }
+
+    @Test
+    void crearPropuesta_altaMedicionSinValor_lanzaExcepcion() {
+        PropuestaCambioClinicoRequestDTO request = peticionAltaMedicion();
+        request.getMedicion().setValue("  ");
+
+        assertThrows(PropuestaCambioClinicoException.class,
+                () -> service.crearPropuesta(NIF_MEDICO, NIF_PACIENTE, request));
+    }
+
+    @Test
+    void crearPropuesta_operacionEnBlanco_lanzaExcepcion() {
+        PropuestaCambioClinicoRequestDTO request = peticionAltaMedicion();
+        request.setOperacion("  ");
+
+        assertThrows(PropuestaCambioClinicoException.class,
+                () -> service.crearPropuesta(NIF_MEDICO, NIF_PACIENTE, request));
+    }
+
+    @Test
+    void crearPropuesta_recursoObjetivoConUuidMalformado_lanzaExcepcion() {
+        PropuestaCambioClinicoRequestDTO request = peticionAltaMedicion();
+        request.setOperacion("UPDATE");
+        request.setIdRecursoObjetivo("no-es-un-uuid");
+
+        assertThrows(PropuestaCambioClinicoException.class,
+                () -> service.crearPropuesta(NIF_MEDICO, NIF_PACIENTE, request));
+    }
+
+    @Test
+    void crearPropuesta_borradoDeMedicion_dejaElPayloadANulo() {
+        PropuestaCambioClinicoRequestDTO request = new PropuestaCambioClinicoRequestDTO();
+        request.setDominio("ANALISIS_ORINA");
+        request.setOperacion("DELETE");
+        request.setMotivo("Medición duplicada");
+        UUID recurso = UUID.randomUUID();
+        request.setIdRecursoObjetivo(recurso.toString());
+        when(historialClinicoService.describirRecursoHistorial(paciente.getId(), Dominio.ANALISIS_ORINA, recurso))
+                .thenReturn("pH 6,0");
+
+        PropuestaCambioClinico creada = service.crearPropuesta(NIF_MEDICO, NIF_PACIENTE, request);
+
+        org.junit.jupiter.api.Assertions.assertNull(creada.getPayloadJson());
+        assertEquals("pH 6,0", creada.getDescripcionActual());
+    }
+
+    @Test
+    void crearPropuesta_medicoNoEncontrado_lanzaIllegalState() {
+        when(usuarioRepository.findByNifHash("hash-" + NIF_MEDICO)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class,
+                () -> service.crearPropuesta(NIF_MEDICO, NIF_PACIENTE, peticionAltaMedicion()));
+    }
+
+    @Test
+    void crearPropuesta_conFalloAlNotificarAlPaciente_noAbortaLaCreacion() {
+        org.mockito.Mockito.doThrow(new RuntimeException("fallo al notificar"))
+                .when(notificacionFacade).crearNotificacionParaUsuario(eq(NIF_PACIENTE), anyString());
+
+        PropuestaCambioClinico creada = service.crearPropuesta(NIF_MEDICO, NIF_PACIENTE, peticionAltaMedicion());
+
+        assertEquals(PropuestaCambioClinico.ESTADO_PENDIENTE, creada.getEstado());
+    }
+
+    // ---- aplicación del cambio en resolver(aceptar=true) por dominio ----
+
+    @Test
+    void resolver_aceptarAntecedente_aplicaElCambioDeAntecedente() {
+        PropuestaCambioClinico propuesta = propuestaPendiente(Dominio.ANTECEDENTE, Operacion.CREATE,
+                "{\"categoria\":\"PERSONAL\",\"descripcion\":\"Asma\"}");
+        when(propuestaRepository.findById(propuesta.getId())).thenReturn(Optional.of(propuesta));
+
+        service.resolver(NIF_PACIENTE, propuesta.getId(), true);
+
+        verify(historialClinicoService, times(1)).aplicarCambioAntecedente(
+                eq(paciente.getId()), eq(medico.getId()), eq(Operacion.CREATE), isNull(),
+                any(AntecedenteClinicoDTO.class), anyString());
+    }
+
+    @Test
+    void resolver_aceptarAlergia_aplicaElCambioDeAlergia() {
+        PropuestaCambioClinico propuesta = propuestaPendiente(Dominio.ALERGIA, Operacion.CREATE,
+                "{\"descripcion\":\"Polen\"}");
+        when(propuestaRepository.findById(propuesta.getId())).thenReturn(Optional.of(propuesta));
+
+        service.resolver(NIF_PACIENTE, propuesta.getId(), true);
+
+        verify(historialClinicoService, times(1)).aplicarCambioAlergia(
+                eq(paciente.getId()), eq(medico.getId()), eq(Operacion.CREATE), isNull(),
+                any(AlergiaDTO.class), anyString());
+    }
+
+    @Test
+    void resolver_aceptarConPayloadIlegible_lanzaExcepcion() {
+        PropuestaCambioClinico propuesta = propuestaPendiente(Dominio.ALERGIA, Operacion.CREATE,
+                "{ no es json ");
+        when(propuestaRepository.findById(propuesta.getId())).thenReturn(Optional.of(propuesta));
+
+        assertThrows(PropuestaCambioClinicoException.class,
+                () -> service.resolver(NIF_PACIENTE, propuesta.getId(), true));
+    }
+
+    @Test
+    void resolver_conIdNulo_lanzaNoEncontrada() {
+        assertThrows(PropuestaCambioNoEncontradaException.class,
+                () -> service.resolver(NIF_PACIENTE, null, true));
+    }
+
+    @Test
+    void listarPropuestasEnviadasParaPaciente_conNifNulo_lanzaIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.listarPropuestasEnviadasParaPaciente(null, NIF_PACIENTE));
+    }
+
+    @Test
+    void listarPropuestasParaPaciente_conPacienteInexistente_lanzaIllegalArgument() {
+        when(usuarioRepository.findByNifHash("hash-" + NIF_OTRO_PACIENTE)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.listarPropuestasParaPaciente(NIF_OTRO_PACIENTE));
     }
 }

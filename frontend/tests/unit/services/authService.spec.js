@@ -379,3 +379,142 @@ describe('authService.confirmarResetPassword', () => {
     await expect(authService.confirmarResetPassword('tok', 'nuevaClaveSegura')).rejects.toThrow()
   })
 })
+
+describe('authService — ramas de error genéricas', () => {
+  it('login: error 4xx no-401 propaga el mensaje del backend', async () => {
+    client.post.mockRejectedValueOnce({ message: 'Request failed', response: { status: 422, data: { message: 'datos inválidos' } } })
+    await expect(authService.login({})).rejects.toThrow('datos inválidos')
+  })
+
+  it('exchangeGoogleCode: requiresTwoFactor sin challengeId lanza', async () => {
+    client.post.mockResolvedValueOnce({ data: { requiresTwoFactor: true } })
+    await expect(authService.exchangeGoogleCode('code')).rejects.toThrow()
+  })
+
+  it('exchangeGoogleCode: respuesta sin token lanza', async () => {
+    client.post.mockResolvedValueOnce({ data: {} })
+    await expect(authService.exchangeGoogleCode('code')).rejects.toThrow()
+  })
+
+  it('exchangeGoogleCode: error no-401 propaga mensaje del backend', async () => {
+    client.post.mockRejectedValueOnce(err(500, { message: 'boom' }))
+    await expect(authService.exchangeGoogleCode('code')).rejects.toThrow('boom')
+  })
+
+  it('signup: error no-409 lanza mensaje de creación', async () => {
+    client.post.mockRejectedValueOnce(err(500))
+    await expect(authService.signup({})).rejects.toThrow()
+  })
+
+  it('fetchMyData: un error distinto de 401 se propaga', async () => {
+    client.get.mockRejectedValueOnce(err(500))
+    await expect(authService.fetchMyData()).rejects.toBeTruthy()
+  })
+
+  it('updateMyData: un error inesperado lanza mensaje genérico', async () => {
+    client.put.mockRejectedValueOnce(err(500))
+    await expect(authService.updateMyData({})).rejects.toThrow()
+  })
+
+  it('changePassword: sin cuerpo de error lanza mensaje genérico', async () => {
+    client.put.mockRejectedValueOnce(new Error('network'))
+    await expect(authService.changePassword('a', 'b')).rejects.toThrow()
+  })
+
+  it('exportMyData: 401 sin cabecera de reauth lanza "no autenticado"', async () => {
+    client.get.mockRejectedValueOnce(err(401))
+    await expect(authService.exportMyData()).rejects.toThrow()
+  })
+
+  it('exportMyData: error inesperado lanza mensaje genérico', async () => {
+    client.get.mockRejectedValueOnce(err(500))
+    await expect(authService.exportMyData('pw')).rejects.toThrow()
+  })
+
+  it('limitarTratamiento / reanudarTratamiento: 401 y error genérico', async () => {
+    client.post.mockRejectedValueOnce(err(401))
+    await expect(authService.limitarTratamiento()).rejects.toThrow()
+    client.post.mockRejectedValueOnce(err(500))
+    await expect(authService.limitarTratamiento()).rejects.toThrow()
+    client.post.mockRejectedValueOnce(err(409))
+    await expect(authService.reanudarTratamiento()).rejects.toThrow()
+    client.post.mockRejectedValueOnce(err(500))
+    await expect(authService.reanudarTratamiento()).rejects.toThrow()
+  })
+
+  it('getTotpStatus: 401 y error genérico', async () => {
+    client.get.mockRejectedValueOnce(err(401))
+    await expect(authService.getTotpStatus()).rejects.toThrow()
+    client.get.mockRejectedValueOnce(err(500))
+    await expect(authService.getTotpStatus()).rejects.toThrow()
+  })
+
+  it('setupTotp: 401 y error genérico', async () => {
+    client.post.mockRejectedValueOnce(err(401))
+    await expect(authService.setupTotp()).rejects.toThrow()
+    client.post.mockRejectedValueOnce(err(500))
+    await expect(authService.setupTotp()).rejects.toThrow()
+  })
+
+  it('confirmTotp: 409, 401 y error genérico', async () => {
+    client.post.mockRejectedValueOnce(err(409))
+    await expect(authService.confirmTotp('123456')).rejects.toThrow()
+    client.post.mockRejectedValueOnce(err(401))
+    await expect(authService.confirmTotp('123456')).rejects.toThrow()
+    client.post.mockRejectedValueOnce(err(500))
+    await expect(authService.confirmTotp('123456')).rejects.toThrow()
+  })
+
+  it('disableTotp: 400, 401 y error genérico', async () => {
+    client.post.mockRejectedValueOnce(err(400))
+    await expect(authService.disableTotp('123456')).rejects.toThrow()
+    client.post.mockRejectedValueOnce(err(401))
+    await expect(authService.disableTotp('123456')).rejects.toThrow()
+    client.post.mockRejectedValueOnce(err(500))
+    await expect(authService.disableTotp('123456')).rejects.toThrow()
+  })
+
+  it('confirmTotp / disableTotp: devuelven true en éxito', async () => {
+    client.post.mockResolvedValueOnce({})
+    await expect(authService.disableTotp('123456')).resolves.toBe(true)
+  })
+
+  it('listarMisMedicos: 401 y error genérico', async () => {
+    client.get.mockRejectedValueOnce(err(401))
+    await expect(authService.listarMisMedicos()).rejects.toThrow()
+    client.get.mockRejectedValueOnce(err(500))
+    await expect(authService.listarMisMedicos()).rejects.toThrow()
+  })
+
+  it('desasignarMedico: 401 y error genérico', async () => {
+    client.delete.mockRejectedValueOnce(err(401))
+    await expect(authService.desasignarMedico('11111111H')).rejects.toThrow()
+    client.delete.mockRejectedValueOnce(err(500))
+    await expect(authService.desasignarMedico('11111111H')).rejects.toThrow()
+  })
+
+  it('desasignarMedico: devuelve true en éxito', async () => {
+    client.delete.mockResolvedValueOnce({})
+    await expect(authService.desasignarMedico('11111111H')).resolves.toBe(true)
+  })
+
+  it('listarMisAnotaciones: error genérico distinto de 401', async () => {
+    client.get.mockRejectedValueOnce(err(500))
+    await expect(authService.listarMisAnotaciones()).rejects.toThrow()
+  })
+
+  it('misLogs: sin filtros, con filtros y errores', async () => {
+    client.get.mockResolvedValueOnce({ data: [{ id: 'l1' }] })
+    await expect(authService.misLogs()).resolves.toEqual([{ id: 'l1' }])
+    expect(client.get).toHaveBeenCalledWith('/usuario/logs', { params: {} })
+
+    client.get.mockResolvedValueOnce({ data: null })
+    await expect(authService.misLogs({ desde: '2024-01-01', hasta: '2024-12-31' })).resolves.toEqual([])
+    expect(client.get).toHaveBeenLastCalledWith('/usuario/logs', { params: { desde: '2024-01-01', hasta: '2024-12-31' } })
+
+    client.get.mockRejectedValueOnce(err(401))
+    await expect(authService.misLogs()).rejects.toThrow()
+    client.get.mockRejectedValueOnce(err(500))
+    await expect(authService.misLogs()).rejects.toThrow()
+  })
+})

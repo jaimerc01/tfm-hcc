@@ -368,4 +368,106 @@ class MedicoControllerImplTest {
 
         mvc.perform(get("/medico/pacientes/22222222B/propuestas-cambio")).andExpect(status().isOk());
     }
+
+    @Test
+    void listarPropuestasCambio_conNifInvalido_devuelveBadRequest() throws Exception {
+        // MedicoValidationException lleva @ResponseStatus(BAD_REQUEST): el controlador la re-lanza
+        // sin envolverla, y el ResponseStatusExceptionResolver la traduce a 400.
+        when(medicoFacade.listarPropuestasCambioParaPaciente("22222222B"))
+                .thenThrow(new com.hcc.tfm_hcc.exception.MedicoValidationException("NIF obligatorio"));
+
+        mvc.perform(get("/medico/pacientes/22222222B/propuestas-cambio")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void listarPropuestasCambio_conErrorInesperado_devuelve500() throws Exception {
+        when(medicoFacade.listarPropuestasCambioParaPaciente("22222222B")).thenThrow(new RuntimeException("fallo"));
+
+        mvc.perform(get("/medico/pacientes/22222222B/propuestas-cambio"))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void proponerCambioClinico_conErrorInesperado_devuelve500() throws Exception {
+        when(medicoFacade.proponerCambioClinico(eq("22222222B"), any())).thenThrow(new RuntimeException("fallo"));
+
+        mvc.perform(post("/medico/pacientes/22222222B/propuestas-cambio")
+                        .contentType(MediaType.APPLICATION_JSON).content(CUERPO_PROPUESTA))
+                .andExpect(status().isInternalServerError());
+    }
+
+    // ---- ramas de error inesperado que faltaban ----
+
+    @Test
+    void listarMisPacientes_devuelveLaListaDelFacade() throws Exception {
+        when(medicoFacade.listarMisPacientes()).thenReturn(List.of(new PacienteDTO(), new PacienteDTO()));
+
+        mvc.perform(get("/medico/pacientes")).andExpect(status().isOk());
+    }
+
+    @Test
+    void listarMisPacientes_conErrorInesperado_devuelve500() throws Exception {
+        when(medicoFacade.listarMisPacientes()).thenThrow(new RuntimeException("fallo"));
+
+        mvc.perform(get("/medico/pacientes")).andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void obtenerHistorialPaciente_conNifInvalido_devuelveBadRequest() throws Exception {
+        when(medicoFacade.obtenerHistorialPaciente("12345678A"))
+                .thenThrow(new IllegalArgumentException("NIF inválido"));
+
+        mvc.perform(get("/medico/pacientes/12345678A/historial")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void listarAnotaciones_conErrorInesperado_devuelve500() throws Exception {
+        when(medicoFacade.listarAnotacionesPaciente("22222222B")).thenThrow(new RuntimeException("fallo"));
+
+        mvc.perform(get("/medico/pacientes/22222222B/anotaciones")).andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void listarArchivosPaciente_conErrorInesperado_devuelve500() throws Exception {
+        when(medicoFacade.listarArchivosPaciente("22222222B")).thenThrow(new RuntimeException("fallo"));
+
+        mvc.perform(get("/medico/pacientes/22222222B/archivos")).andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void subirArchivoPaciente_conErrorInesperado_devuelve500() throws Exception {
+        when(medicoFacade.subirArchivoPaciente(eq("22222222B"), any())).thenThrow(new RuntimeException("fallo"));
+
+        mvc.perform(multipart("/medico/pacientes/22222222B/archivos")
+                        .file(new org.springframework.mock.web.MockMultipartFile("file", "a.pdf", "application/pdf", "x".getBytes())))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void descargarArchivoPaciente_sinRelacionActiva_devuelveForbidden() throws Exception {
+        java.util.UUID id = java.util.UUID.randomUUID();
+        when(medicoFacade.obtenerArchivoPaciente("22222222B", id))
+                .thenThrow(new UsuarioSinPermisoException("acceso denegado"));
+
+        mvc.perform(get("/medico/pacientes/22222222B/archivos/" + id)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void descargarArchivoPaciente_conErrorInesperado_devuelve500() throws Exception {
+        java.util.UUID id = java.util.UUID.randomUUID();
+        when(medicoFacade.obtenerArchivoPaciente("22222222B", id)).thenThrow(new RuntimeException("fallo"));
+
+        mvc.perform(get("/medico/pacientes/22222222B/archivos/" + id)).andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void descargarArchivoPaciente_sinNombreOriginalNiContentType_usaValoresPorDefecto() throws Exception {
+        java.util.UUID id = java.util.UUID.randomUUID();
+        com.hcc.tfm_hcc.dto.ArchivoClinicoDTO dto = new com.hcc.tfm_hcc.dto.ArchivoClinicoDTO();
+        when(medicoFacade.obtenerArchivoPaciente("22222222B", id)).thenReturn(dto);
+        when(medicoFacade.descargarArchivoPaciente("22222222B", id))
+                .thenReturn(new org.springframework.core.io.ByteArrayResource("x".getBytes()));
+
+        mvc.perform(get("/medico/pacientes/22222222B/archivos/" + id)).andExpect(status().isOk());
+    }
 }

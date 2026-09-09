@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcc.tfm_hcc.controller.impl.AdminControllerImpl;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
+import com.hcc.tfm_hcc.exception.AdminValidationException;
 import com.hcc.tfm_hcc.exception.UsuarioNoEncontradoException;
 import com.hcc.tfm_hcc.facade.AdminFacade;
 
@@ -188,5 +189,49 @@ class AdminControllerImplTest {
 
         mvc.perform(put("/admin/medicos/" + id + "/perfil-medico").param("asignar", "true"))
                 .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void crearMedico_conErrorDeValidacionDelFacade_devuelveBadRequest() throws Exception {
+        UsuarioDTO dto = new UsuarioDTO();
+        dto.setNif("12345678A");
+        when(adminFacade.crearMedico(ArgumentMatchers.any()))
+                .thenThrow(new AdminValidationException("El NIF ya está registrado"));
+
+        mvc.perform(post("/admin/medicos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void actualizarMedico_conErrorDeValidacionDelFacade_devuelveBadRequest() throws Exception {
+        UUID id = UUID.randomUUID();
+        UsuarioDTO dto = new UsuarioDTO();
+        when(adminFacade.actualizarMedico(ArgumentMatchers.eq(id), ArgumentMatchers.any()))
+                .thenThrow(new AdminValidationException("Datos inválidos"));
+
+        mvc.perform(put("/admin/medicos/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void eliminarMedico_conErrorDeValidacionDelFacade_devuelveBadRequest() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(adminFacade.eliminarMedico(id)).thenThrow(new AdminValidationException("El usuario no es médico"));
+
+        mvc.perform(delete("/admin/medicos/" + id)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void setPerfilMedico_conErrorDeValidacionDelFacade_devuelveBadRequest() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(adminFacade.setPerfilMedico(id, false))
+                .thenThrow(new AdminValidationException("No se puede quitar el último perfil"));
+
+        mvc.perform(put("/admin/medicos/" + id + "/perfil-medico").param("asignar", "false"))
+                .andExpect(status().isBadRequest());
     }
 }

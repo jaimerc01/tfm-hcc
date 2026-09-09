@@ -1,7 +1,7 @@
 <template>
-  <AppModal :label="$t('propose_change_title')" @close="$emit('close')">
+  <AppModal :label="tituloModal" @close="$emit('close')">
     <template #header>
-      <h3>{{ $t('propose_change_title') }}</h3>
+      <h3>{{ tituloModal }}</h3>
     </template>
 
     <p class="modal-subtitle">{{ $t('propose_change_subtitle') }}</p>
@@ -23,7 +23,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label" for="proponer-descripcion">{{ $t('propose_change_proposed_value') }}</label>
+          <label class="form-label" for="proponer-descripcion">{{ valorLabel }}</label>
           <textarea id="proponer-descripcion" v-model="form.descripcion" class="form-input" rows="3" required></textarea>
         </div>
       </template>
@@ -31,7 +31,7 @@
       <!-- Alergia -->
       <template v-if="dominio === 'ALERGIA' && operacion !== 'DELETE'">
         <div class="form-group">
-          <label class="form-label" for="proponer-alergia">{{ $t('propose_change_proposed_value') }}</label>
+          <label class="form-label" for="proponer-alergia">{{ valorLabel }}</label>
           <input id="proponer-alergia" v-model="form.descripcion" class="form-input" type="text" required />
         </div>
       </template>
@@ -41,7 +41,27 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="proponer-parametro">{{ $t('parameter_required') }}</label>
-            <input id="proponer-parametro" v-model="form.parametro" class="form-input" type="text" required />
+            <!-- Alta: se elige de los parámetros que ya maneja la aplicación.
+                 Edición: el parámetro es fijo, solo se propone otro valor. -->
+            <select
+              v-if="operacion === 'CREATE'"
+              id="proponer-parametro"
+              v-model="form.parametro"
+              class="form-input"
+              required
+              @change="onParametroChange"
+            >
+              <option value="" disabled>{{ $t('analysis_validation_select_param') }}</option>
+              <option v-for="a in analytesDominio" :key="a.key" :value="a.key">{{ $t(a.labelKey) }}</option>
+            </select>
+            <input
+              v-else
+              id="proponer-parametro"
+              class="form-input"
+              type="text"
+              :value="parametroLabel"
+              readonly
+            />
           </div>
           <div class="form-group">
             <label class="form-label" for="proponer-valor">{{ $t('value_required') }}</label>
@@ -51,7 +71,7 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="proponer-unidad">{{ $t('field_unit') }}</label>
-            <input id="proponer-unidad" v-model="form.unidad" class="form-input" type="text" />
+            <input id="proponer-unidad" :value="form.unidad" class="form-input" type="text" readonly />
           </div>
           <div class="form-group">
             <label class="form-label" for="proponer-fecha">{{ $t('date_required') }}</label>
@@ -89,6 +109,37 @@
 
 <script>
 import AppModal from './Modal.vue'
+import { DEFAULT_ANALYTES as BLOOD_ANALYTES } from '@/composables/useAnalisisSangre'
+import { DEFAULT_ANALYTES as VITAL_ANALYTES } from '@/composables/useSignosVitales'
+import { DEFAULT_ANALYTES as URINE_ANALYTES } from '@/composables/useAnalisisOrina'
+
+const MEDICION_DOMINIOS = ['ANALISIS_SANGRE', 'SIGNOS_VITALES', 'ANALISIS_ORINA']
+
+// Parámetros que la aplicación reconoce para cada dominio de medición.
+function analytesForDominio(dominio) {
+  if (dominio === 'ANALISIS_SANGRE') return BLOOD_ANALYTES
+  if (dominio === 'SIGNOS_VITALES') return VITAL_ANALYTES
+  if (dominio === 'ANALISIS_ORINA') return URINE_ANALYTES
+  return []
+}
+
+// Formatea una fecha al valor que espera un <input type="datetime-local">
+// (hora local, sin zona, con precisión de minutos).
+function toLocalDatetimeInput(value) {
+  const d = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+function findAnalyte(dominio, raw) {
+  const norm = String(raw || '').trim().toLowerCase()
+  if (!norm) return null
+  return analytesForDominio(dominio).find(a =>
+    a.key.toLowerCase() === norm ||
+    (a.aliases || []).some(al => String(al).toLowerCase() === norm)
+  ) || null
+}
 
 export default {
   name: 'ProponerCambioClinicoModal',
@@ -102,21 +153,49 @@ export default {
   emits: ['submit', 'close'],
   data() {
     const entrada = this.entrada || {}
+    const analyteActual = this.operacion === 'UPDATE' ? findAnalyte(this.dominio, entrada.tipo) : null
+    // Medición: en una edición se parte de la fecha de la fila; en un alta, de
+    // la fecha actual. En ambos casos el campo es editable.
+    let fecha = ''
+    if (MEDICION_DOMINIOS.includes(this.dominio)) {
+      fecha = this.operacion === 'UPDATE'
+        ? toLocalDatetimeInput(entrada.createdAt)
+        : toLocalDatetimeInput(new Date())
+    }
     return {
       form: {
         categoria: entrada.categoria || 'PERSONAL',
         descripcion: this.operacion === 'UPDATE' ? (entrada.descripcion || '') : '',
         parametro: this.operacion === 'UPDATE' ? (entrada.tipo || '') : '',
         valor: this.operacion === 'UPDATE' ? (entrada.valor || '') : '',
-        unidad: this.operacion === 'UPDATE' ? (entrada.unidad || '') : '',
-        fecha: '',
+        unidad: this.operacion === 'UPDATE'
+          ? (entrada.unidad || (analyteActual && analyteActual.unit) || '')
+          : '',
+        fecha,
         motivo: ''
       }
     }
   },
   computed: {
+    // El título y la etiqueta del campo dependen de la operación: un alta no es
+    // una modificación, así que no debe hablar de "cambio" ni de "valor propuesto".
+    tituloModal() {
+      return this.$t(`propose_change_title_${this.operacion}`)
+    },
+    valorLabel() {
+      return this.operacion === 'CREATE'
+        ? this.$t('propose_change_new_value')
+        : this.$t('propose_change_proposed_value')
+    },
     esMedicion() {
-      return ['ANALISIS_SANGRE', 'SIGNOS_VITALES', 'ANALISIS_ORINA'].includes(this.dominio)
+      return MEDICION_DOMINIOS.includes(this.dominio)
+    },
+    analytesDominio() {
+      return analytesForDominio(this.dominio)
+    },
+    parametroLabel() {
+      const a = findAnalyte(this.dominio, this.form.parametro)
+      return a ? this.$t(a.labelKey) : this.form.parametro
     },
     descripcionActual() {
       const e = this.entrada || {}
@@ -133,6 +212,10 @@ export default {
     }
   },
   methods: {
+    onParametroChange() {
+      const a = this.analytesDominio.find(x => x.key === this.form.parametro)
+      this.form.unidad = (a && a.unit) || ''
+    },
     onSubmit() {
       if (!this.valido || this.saving) return
       const payload = {

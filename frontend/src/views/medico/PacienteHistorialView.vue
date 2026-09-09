@@ -137,15 +137,7 @@
           <p class="panel-subtitle">{{ $t('sent_change_proposals_subtitle') }}</p>
         </div>
         <div v-if="propuestasEnviadas.length" class="cards-grid">
-          <div v-for="p in propuestasEnviadas" :key="p.id" class="read-card">
-            <div class="propuesta-badges">
-              <span class="badge badge-info">{{ $t('change_proposal_domain_' + p.dominio) }}</span>
-              <span class="badge badge-date">{{ $t('change_proposal_operation_' + p.operacion) }}</span>
-              <span :class="['badge', 'badge-status', 'badge-status--' + p.estado]">{{ $t('change_proposal_status_' + p.estado) }}</span>
-            </div>
-            <p class="propuesta-motivo">{{ p.motivo }}</p>
-            <span v-if="p.fechaCreacion" class="badge badge-date">{{ formatDateTime(p.fechaCreacion) }}</span>
-          </div>
+          <PropuestaCambioCard v-for="p in propuestasEnviadas" :key="p.id" :propuesta="p" show-status />
         </div>
         <p v-else class="empty-hint">{{ $t('no_sent_change_proposals') }}</p>
       </section>
@@ -303,6 +295,7 @@ import ReadOnlyDatoClinicoTable from '@/components/ReadOnlyDatoClinicoTable.vue'
 import PatientClinicalCharts from '@/components/PatientClinicalCharts.vue'
 import ClinicalTimelineCard from '@/components/ClinicalTimelineCard.vue'
 import ProponerCambioClinicoModal from '@/components/ProponerCambioClinicoModal.vue'
+import PropuestaCambioCard from '@/components/PropuestaCambioCard.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import AppTabs from '@/components/AppTabs.vue'
 import AppPagination from '@/components/AppPagination.vue'
@@ -312,7 +305,7 @@ const PAGE_SIZE = 10
 
 export default {
   name: 'PacienteHistorialView',
-  components: { ReadOnlyDatoClinicoTable, PatientClinicalCharts, ClinicalTimelineCard, ProponerCambioClinicoModal, AppIcon, AppTabs, AppPagination, FileDropZone },
+  components: { ReadOnlyDatoClinicoTable, PatientClinicalCharts, ClinicalTimelineCard, ProponerCambioClinicoModal, PropuestaCambioCard, AppIcon, AppTabs, AppPagination, FileDropZone },
   data() {
     return {
       historial: { antecedentes: [], alergias: [], analisisSangre: [], signosVitales: [], analisisOrina: [] },
@@ -655,36 +648,6 @@ export default {
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-top: 0.25rem;
-}
-
-.propuesta-badges {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.propuesta-motivo {
-  margin: 0;
-  font-size: 0.9375rem;
-  color: var(--text-primary);
-  white-space: pre-line;
-  word-break: break-word;
-}
-
-.badge-status--ACEPTADA {
-  background: var(--success-light);
-  color: var(--success-active);
-}
-
-.badge-status--RECHAZADA,
-.badge-status--ANULADA {
-  background: var(--badge-danger-bg);
-  color: var(--badge-danger-text);
-}
-
-.badge-status--PENDIENTE {
-  background: var(--badge-warning-bg);
-  color: var(--badge-warning-text);
 }
 
 .antecedentes-groups {

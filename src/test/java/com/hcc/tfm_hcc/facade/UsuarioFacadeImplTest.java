@@ -14,6 +14,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hcc.tfm_hcc.dto.TotpSetupResponseDTO;
 import com.hcc.tfm_hcc.dto.UserExportDTO;
 import com.hcc.tfm_hcc.dto.UsuarioDTO;
 import com.hcc.tfm_hcc.exception.ReautenticacionRequeridaException;
@@ -184,6 +185,100 @@ class UsuarioFacadeImplTest {
     @Test
     void actualizarEstadoSolicitud_conEstadoVacio_lanzaIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> facade.actualizarEstadoSolicitud("id-1", "  "));
+    }
+
+    @Test
+    void exportUsuario_conReautenticacionRequerida_propagaLaExcepcion() {
+        when(usuarioService.exportUsuario("incorrecta"))
+                .thenThrow(new ReautenticacionRequeridaException("reautenticación requerida"));
+
+        assertThrows(ReautenticacionRequeridaException.class, () -> facade.exportUsuario("incorrecta"));
+    }
+
+    @Test
+    void exportUsuario_conErrorInesperado_lanzaRuntimeException() {
+        when(usuarioService.exportUsuario(any())).thenThrow(new IllegalStateException("fallo"));
+
+        assertThrows(RuntimeException.class, () -> facade.exportUsuario("miContraseñaActual"));
+    }
+
+    // ---- derechos RGPD: limitación del tratamiento ----
+
+    @Test
+    void limitarTratamiento_delegaEnElServicio() {
+        facade.limitarTratamiento();
+
+        verify(usuarioService, times(1)).limitarTratamiento();
+    }
+
+    @Test
+    void limitarTratamiento_conCuentaYaEliminada_propagaIllegalStateException() {
+        org.mockito.Mockito.doThrow(new IllegalStateException("cuenta eliminada"))
+                .when(usuarioService).limitarTratamiento();
+
+        assertThrows(IllegalStateException.class, () -> facade.limitarTratamiento());
+    }
+
+    @Test
+    void limitarTratamiento_conErrorInesperado_lanzaRuntimeException() {
+        org.mockito.Mockito.doThrow(new RuntimeException("fallo de base de datos"))
+                .when(usuarioService).limitarTratamiento();
+
+        assertThrows(RuntimeException.class, () -> facade.limitarTratamiento());
+    }
+
+    @Test
+    void reanudarTratamiento_delegaEnElServicio() {
+        facade.reanudarTratamiento();
+
+        verify(usuarioService, times(1)).reanudarTratamiento();
+    }
+
+    @Test
+    void reanudarTratamiento_conCuentaYaEliminada_propagaIllegalStateException() {
+        org.mockito.Mockito.doThrow(new IllegalStateException("cuenta eliminada"))
+                .when(usuarioService).reanudarTratamiento();
+
+        assertThrows(IllegalStateException.class, () -> facade.reanudarTratamiento());
+    }
+
+    @Test
+    void reanudarTratamiento_conErrorInesperado_lanzaRuntimeException() {
+        org.mockito.Mockito.doThrow(new RuntimeException("fallo de base de datos"))
+                .when(usuarioService).reanudarTratamiento();
+
+        assertThrows(RuntimeException.class, () -> facade.reanudarTratamiento());
+    }
+
+    // ---- segundo factor (TOTP) ----
+
+    @Test
+    void setupTotp_delegaEnElServicio() {
+        TotpSetupResponseDTO respuesta = new TotpSetupResponseDTO("SECRET", "otpauth://totp/HCC");
+        when(usuarioService.setupTotp()).thenReturn(respuesta);
+
+        assertEquals(respuesta, facade.setupTotp());
+    }
+
+    @Test
+    void confirmTotp_delegaEnElServicio() {
+        facade.confirmTotp("123456");
+
+        verify(usuarioService, times(1)).confirmTotp("123456");
+    }
+
+    @Test
+    void disableTotp_delegaEnElServicio() {
+        facade.disableTotp("123456");
+
+        verify(usuarioService, times(1)).disableTotp("123456");
+    }
+
+    @Test
+    void isTotpEnabled_delegaEnElServicio() {
+        when(usuarioService.isTotpEnabled()).thenReturn(true);
+
+        assertEquals(true, facade.isTotpEnabled());
     }
 
     // ---- anotaciones médicas ----

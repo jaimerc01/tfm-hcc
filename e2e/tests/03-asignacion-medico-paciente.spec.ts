@@ -40,7 +40,11 @@ test('un médico solicita acceso, el paciente lo acepta y el médico ve el histo
   await login(page, MEDICO.nif)
   await page.goto('/medico')
 
-  const tarjetaPaciente = page.locator('.paciente-card', { hasText: PACIENTE_BUSCADO.nombre })
+  // La lista "Mis pacientes" reutiliza la clase .solicitud-card; la tarjeta de un
+  // paciente asignado es la que tiene enlace "Ver historial".
+  const tarjetaPaciente = page
+    .locator('.solicitud-card', { hasText: PACIENTE_BUSCADO.nombre })
+    .filter({ has: page.getByRole('link', { name: /ver historial/i }) })
   await expect(tarjetaPaciente).toBeVisible()
   await tarjetaPaciente.getByRole('link', { name: /ver historial/i }).click()
 

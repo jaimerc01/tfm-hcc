@@ -447,4 +447,159 @@ class MedicoFacadeImplTest {
 
         assertThrows(MedicoOperacionException.class, () -> facade.listarArchivosPaciente("22222222B"));
     }
+
+    @Test
+    void subirArchivoPaciente_conFalloAlNotificar_noPropagaLaExcepcion() throws Exception {
+        autenticarComo("11111111A");
+        com.hcc.tfm_hcc.model.ArchivoClinico guardado = new com.hcc.tfm_hcc.model.ArchivoClinico();
+        guardado.setId(UUID.randomUUID());
+        org.springframework.web.multipart.MultipartFile file =
+                new org.springframework.mock.web.MockMultipartFile("file", "a.pdf", "application/pdf", "x".getBytes());
+        when(archivoClinicoService.uploadForPaciente("22222222B", file)).thenReturn(guardado);
+        when(archivoClinicoMapper.toDto(guardado)).thenReturn(new com.hcc.tfm_hcc.dto.ArchivoClinicoDTO());
+        when(notificacionFacade.crearNotificacionParaUsuario(anyString(), anyString()))
+                .thenThrow(new RuntimeException("fallo al notificar"));
+
+        // El documento ya está guardado: un fallo al avisar no debe abortar la operación.
+        facade.subirArchivoPaciente("22222222B", file);
+    }
+
+    // ---- pacientes asignados ----
+
+    @Test
+    void listarMisPacientes_conMedicoAutenticado_delegaEnElServicio() {
+        autenticarComo("11111111A");
+        when(medicoService.listarMisPacientes("11111111A"))
+                .thenReturn(List.of(new PacienteDTO(), new PacienteDTO()));
+
+        assertEquals(2, facade.listarMisPacientes().size());
+    }
+
+    @Test
+    void listarMisPacientes_sinMedicoAutenticado_devuelveListaVacia() {
+        assertTrue(facade.listarMisPacientes().isEmpty());
+    }
+
+    @Test
+    void listarMisPacientes_conErrorInesperado_lanzaMedicoOperacionException() {
+        autenticarComo("11111111A");
+        when(medicoService.listarMisPacientes("11111111A")).thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(MedicoOperacionException.class, () -> facade.listarMisPacientes());
+    }
+
+    // ---- propuestas de cambio clínico ----
+
+    private com.hcc.tfm_hcc.dto.PropuestaCambioClinicoRequestDTO peticionAlergia() {
+        com.hcc.tfm_hcc.dto.PropuestaCambioClinicoRequestDTO req = new com.hcc.tfm_hcc.dto.PropuestaCambioClinicoRequestDTO();
+        req.setDominio("ALERGIA");
+        req.setOperacion("CREATE");
+        req.setMotivo("El paciente refiere una alergia nueva");
+        com.hcc.tfm_hcc.dto.AlergiaDTO alergia = new com.hcc.tfm_hcc.dto.AlergiaDTO();
+        alergia.setDescripcion("Penicilina");
+        req.setAlergia(alergia);
+        return req;
+    }
+
+    private com.hcc.tfm_hcc.model.PropuestaCambioClinico propuestaConDominio(com.hcc.tfm_hcc.model.PropuestaCambioClinico.Dominio dominio) {
+        com.hcc.tfm_hcc.model.PropuestaCambioClinico p = new com.hcc.tfm_hcc.model.PropuestaCambioClinico();
+        p.setId(UUID.randomUUID());
+        p.setDominio(dominio);
+        p.setOperacion(com.hcc.tfm_hcc.model.PropuestaCambioClinico.Operacion.CREATE);
+        p.setEstado(com.hcc.tfm_hcc.model.PropuestaCambioClinico.ESTADO_PENDIENTE);
+        p.setMotivo("motivo");
+        return p;
+    }
+
+    @Test
+    void proponerCambioClinico_conMedicoAutenticado_delegaEnElServicioYConvierteADto() {
+        autenticarComo("11111111A");
+        var request = peticionAlergia();
+        when(propuestaCambioClinicoService.crearPropuesta("11111111A", "22222222B", request))
+                .thenReturn(propuestaConDominio(com.hcc.tfm_hcc.model.PropuestaCambioClinico.Dominio.ALERGIA));
+
+        var dto = facade.proponerCambioClinico("22222222B", request);
+
+        assertEquals("ALERGIA", dto.getDominio());
+    }
+
+    @Test
+    void proponerCambioClinico_sinMedicoAutenticado_lanzaUsuarioNoAutenticadoException() {
+        assertThrows(UsuarioNoAutenticadoException.class,
+                () -> facade.proponerCambioClinico("22222222B", peticionAlergia()));
+    }
+
+    @Test
+    void proponerCambioClinico_conNifPacienteVacio_lanzaMedicoValidationException() {
+        autenticarComo("11111111A");
+        assertThrows(MedicoValidationException.class,
+                () -> facade.proponerCambioClinico("  ", peticionAlergia()));
+    }
+
+    @Test
+    void proponerCambioClinico_conPeticionInvalida_propagaPropuestaCambioClinicoException() {
+        autenticarComo("11111111A");
+        var request = peticionAlergia();
+        when(propuestaCambioClinicoService.crearPropuesta("11111111A", "22222222B", request))
+                .thenThrow(new com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException("falta el motivo"));
+
+        assertThrows(com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException.class,
+                () -> facade.proponerCambioClinico("22222222B", request));
+    }
+
+    @Test
+    void proponerCambioClinico_sinRelacionActiva_propagaUsuarioSinPermisoException() {
+        autenticarComo("11111111A");
+        var request = peticionAlergia();
+        when(propuestaCambioClinicoService.crearPropuesta("11111111A", "22222222B", request))
+                .thenThrow(new UsuarioSinPermisoException("sin relación activa"));
+
+        assertThrows(UsuarioSinPermisoException.class,
+                () -> facade.proponerCambioClinico("22222222B", request));
+    }
+
+    @Test
+    void proponerCambioClinico_conErrorInesperado_lanzaMedicoOperacionException() {
+        autenticarComo("11111111A");
+        var request = peticionAlergia();
+        when(propuestaCambioClinicoService.crearPropuesta("11111111A", "22222222B", request))
+                .thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(MedicoOperacionException.class,
+                () -> facade.proponerCambioClinico("22222222B", request));
+    }
+
+    @Test
+    void listarPropuestasCambioParaPaciente_conMedicoAutenticado_delegaEnElServicio() {
+        autenticarComo("11111111A");
+        when(propuestaCambioClinicoService.listarPropuestasEnviadasParaPaciente("11111111A", "22222222B"))
+                .thenReturn(List.of(
+                        propuestaConDominio(com.hcc.tfm_hcc.model.PropuestaCambioClinico.Dominio.ALERGIA),
+                        propuestaConDominio(com.hcc.tfm_hcc.model.PropuestaCambioClinico.Dominio.ANTECEDENTE)));
+
+        assertEquals(2, facade.listarPropuestasCambioParaPaciente("22222222B").size());
+    }
+
+    @Test
+    void listarPropuestasCambioParaPaciente_sinMedicoAutenticado_lanzaUsuarioNoAutenticadoException() {
+        assertThrows(UsuarioNoAutenticadoException.class,
+                () -> facade.listarPropuestasCambioParaPaciente("22222222B"));
+    }
+
+    @Test
+    void listarPropuestasCambioParaPaciente_conNifPacienteVacio_lanzaMedicoValidationException() {
+        autenticarComo("11111111A");
+        assertThrows(MedicoValidationException.class,
+                () -> facade.listarPropuestasCambioParaPaciente("  "));
+    }
+
+    @Test
+    void listarPropuestasCambioParaPaciente_conErrorInesperado_lanzaMedicoOperacionException() {
+        autenticarComo("11111111A");
+        when(propuestaCambioClinicoService.listarPropuestasEnviadasParaPaciente("11111111A", "22222222B"))
+                .thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(MedicoOperacionException.class,
+                () -> facade.listarPropuestasCambioParaPaciente("22222222B"));
+    }
 }

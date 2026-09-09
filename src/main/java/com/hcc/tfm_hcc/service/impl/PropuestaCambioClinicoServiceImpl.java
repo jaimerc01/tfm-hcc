@@ -135,10 +135,9 @@ public class PropuestaCambioClinicoServiceImpl implements PropuestaCambioClinico
 
     @Override
     @Transactional(readOnly = true)
-    public List<PropuestaCambioClinico> listarPropuestasPendientesParaPaciente(String nifPaciente) {
+    public List<PropuestaCambioClinico> listarPropuestasParaPaciente(String nifPaciente) {
         Usuario paciente = buscarUsuario(nifPaciente);
-        return propuestaRepository.findByPacienteIdAndEstadoOrderByFechaCreacionDesc(
-                paciente.getId(), PropuestaCambioClinico.ESTADO_PENDIENTE);
+        return propuestaRepository.findByPacienteIdOrderByFechaCreacionDesc(paciente.getId());
     }
 
     @Override

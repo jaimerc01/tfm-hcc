@@ -552,14 +552,14 @@ public class HistorialClinicoFacadeImpl implements HistorialClinicoFacade {
 
     @Override
     @PreAuthorize("isAuthenticated()")
-    public List<PropuestaCambioClinicoDTO> listarPropuestasCambioPendientes() {
-        log.debug("Listando propuestas de cambio pendientes del usuario autenticado");
+    public List<PropuestaCambioClinicoDTO> listarPropuestasCambio() {
+        log.debug("Listando propuestas de cambio del usuario autenticado");
         String nif = nifUsuarioAutenticado();
         try {
             return propuestaCambioClinicoConverter.toDtoList(
-                    propuestaCambioClinicoService.listarPropuestasPendientesParaPaciente(nif));
+                    propuestaCambioClinicoService.listarPropuestasParaPaciente(nif));
         } catch (Exception e) {
-            log.error("Error inesperado al listar propuestas de cambio pendientes: {}", e.getMessage(), e);
+            log.error("Error inesperado al listar propuestas de cambio: {}", e.getMessage(), e);
             throw new HistorialClinicoException("Error interno al listar las propuestas de cambio", e);
         }
     }

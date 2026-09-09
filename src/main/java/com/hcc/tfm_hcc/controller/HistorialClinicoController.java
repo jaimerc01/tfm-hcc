@@ -193,10 +193,10 @@ public interface HistorialClinicoController {
     ResponseEntity<UUID> borrarDatoClinico(@PathVariable("id") UUID id);
 
     /**
-     * Lista las propuestas de cambio pendientes que un médico ha enviado sobre el historial del
-     * usuario autenticado y que este debe confirmar o rechazar.
+     * Lista las propuestas de cambio que un médico ha enviado sobre el historial del usuario
+     * autenticado: las pendientes de confirmar y el histórico de las ya resueltas.
      *
-     * @return ResponseEntity con la lista de PropuestaCambioClinicoDTO pendientes
+     * @return ResponseEntity con la lista de PropuestaCambioClinicoDTO, de la más reciente a la más antigua
      */
     ResponseEntity<List<PropuestaCambioClinicoDTO>> listarPropuestasCambio();
 

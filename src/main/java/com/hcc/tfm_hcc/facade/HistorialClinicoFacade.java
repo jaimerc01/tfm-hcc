@@ -186,12 +186,13 @@ public interface HistorialClinicoFacade {
     void borrarDatoClinico(UUID id);
 
     /**
-     * Lista las propuestas de cambio en el historial del usuario autenticado que un médico ha
-     * enviado y siguen pendientes de que el paciente las confirme.
+     * Lista todas las propuestas de cambio sobre el historial del usuario autenticado que un
+     * médico ha enviado: las que siguen pendientes de confirmar y también las ya resueltas
+     * (aceptadas, rechazadas o anuladas), de la más reciente a la más antigua.
      *
-     * @return lista de PropuestaCambioClinicoDTO con estado {@code PENDIENTE}
+     * @return lista de PropuestaCambioClinicoDTO ordenada por fecha de creación descendente
      */
-    List<PropuestaCambioClinicoDTO> listarPropuestasCambioPendientes();
+    List<PropuestaCambioClinicoDTO> listarPropuestasCambio();
 
     /**
      * Resuelve una propuesta de cambio en el historial del usuario autenticado. Si la acepta, el

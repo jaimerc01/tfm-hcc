@@ -15,7 +15,7 @@ export default {
   deleteDatoClinico(id) { return api.delete(`/historia/datos-clinicos/${id}`) },
   // Edición individual de un dato clínico ya guardado (parámetro, valor, unidad, fecha)
   editarDatoClinico(id, medicion) { return api.put(`/historia/datos-clinicos/${id}`, medicion, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
-  // Propuestas de cambio que un médico ha enviado sobre el historial y que el paciente debe confirmar
+  // Propuestas de cambio que un médico ha enviado sobre el historial: pendientes de confirmar e histórico resuelto
   listarPropuestasCambio() { return api.get('/historia/propuestas-cambio') },
   responderPropuestaCambio(id, aceptar) { return api.post(`/historia/propuestas-cambio/${id}`, { aceptar }, { headers: { 'Content-Type': 'application/json; charset=utf-8' } }) },
   // Analisis de sangre: Replace all (PUT) or add new (POST). El cuerpo es un array de mediciones (application/json).

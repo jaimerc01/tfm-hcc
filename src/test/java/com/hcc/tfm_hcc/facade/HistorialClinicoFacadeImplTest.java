@@ -13,10 +13,13 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.hcc.tfm_hcc.dto.AlergiaDTO;
 import com.hcc.tfm_hcc.dto.AntecedenteClinicoDTO;
@@ -26,10 +29,15 @@ import com.hcc.tfm_hcc.dto.HistorialClinicoDTO;
 import com.hcc.tfm_hcc.exception.ArchivoClinicoException;
 import com.hcc.tfm_hcc.exception.DatosClinicosValidationException;
 import com.hcc.tfm_hcc.exception.HistorialClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioClinicoException;
+import com.hcc.tfm_hcc.exception.PropuestaCambioNoEncontradaException;
+import com.hcc.tfm_hcc.exception.UsuarioNoAutenticadoException;
 import com.hcc.tfm_hcc.facade.impl.HistorialClinicoFacadeImpl;
 import com.hcc.tfm_hcc.converter.PropuestaCambioClinicoConverter;
 import com.hcc.tfm_hcc.mapper.ArchivoClinicoMapper;
 import com.hcc.tfm_hcc.model.ArchivoClinico;
+import com.hcc.tfm_hcc.model.PropuestaCambioClinico;
+import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.service.ArchivoClinicoService;
 import com.hcc.tfm_hcc.service.HistorialClinicoService;
 import com.hcc.tfm_hcc.service.PropuestaCambioClinicoService;
@@ -50,6 +58,18 @@ class HistorialClinicoFacadeImplTest {
         propuestaCambioClinicoService = mock(PropuestaCambioClinicoService.class);
         facade = new HistorialClinicoFacadeImpl(archivoClinicoService, archivoClinicoMapper, historiaClinicaService,
                 propuestaCambioClinicoService, new PropuestaCambioClinicoConverter(new com.fasterxml.jackson.databind.ObjectMapper()));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private void autenticarComo(String nif) {
+        Usuario usuario = new Usuario();
+        usuario.setNif(nif);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(usuario, null));
     }
 
     // ---- archivos clínicos ----
@@ -431,5 +451,192 @@ class HistorialClinicoFacadeImplTest {
         org.mockito.Mockito.doThrow(new RuntimeException("fallo")).when(historiaClinicaService).borrarDatoClinico(id);
 
         assertThrows(HistorialClinicoException.class, () -> facade.borrarDatoClinico(id));
+    }
+
+    @Test
+    void editarDatoClinico_conDatosValidos_devuelveElHistorialActualizado() {
+        UUID id = UUID.randomUUID();
+        DatoClinicoEntradaDTO datos = new DatoClinicoEntradaDTO();
+        datos.setValue("120");
+        HistorialClinicoDTO resultado = new HistorialClinicoDTO();
+        when(historiaClinicaService.editarDatoClinico(id, datos)).thenReturn(resultado);
+
+        assertEquals(resultado, facade.editarDatoClinico(id, datos));
+    }
+
+    @Test
+    void editarDatoClinico_conIdNulo_lanzaDatosClinicosValidationException() {
+        assertThrows(DatosClinicosValidationException.class,
+                () -> facade.editarDatoClinico(null, new DatoClinicoEntradaDTO()));
+    }
+
+    @Test
+    void editarDatoClinico_conDatosNulos_lanzaDatosClinicosValidationException() {
+        assertThrows(DatosClinicosValidationException.class,
+                () -> facade.editarDatoClinico(UUID.randomUUID(), null));
+    }
+
+    @Test
+    void editarDatoClinico_conErrorInesperado_lanzaHistorialClinicoException() {
+        UUID id = UUID.randomUUID();
+        DatoClinicoEntradaDTO datos = new DatoClinicoEntradaDTO();
+        datos.setValue("120");
+        when(historiaClinicaService.editarDatoClinico(id, datos)).thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(HistorialClinicoException.class, () -> facade.editarDatoClinico(id, datos));
+    }
+
+    // ---- propuestas de cambio clínico (lado paciente) ----
+
+    private PropuestaCambioClinico propuestaPendiente() {
+        PropuestaCambioClinico p = new PropuestaCambioClinico();
+        p.setId(UUID.randomUUID());
+        p.setDominio(PropuestaCambioClinico.Dominio.ALERGIA);
+        p.setOperacion(PropuestaCambioClinico.Operacion.CREATE);
+        p.setEstado(PropuestaCambioClinico.ESTADO_PENDIENTE);
+        p.setMotivo("motivo");
+        return p;
+    }
+
+    @Test
+    void listarPropuestasCambio_conUsuarioAutenticado_devuelveLasPropuestasConvertidas() {
+        autenticarComo("12345678A");
+        when(propuestaCambioClinicoService.listarPropuestasParaPaciente("12345678A"))
+                .thenReturn(List.of(propuestaPendiente(), propuestaPendiente()));
+
+        assertEquals(2, facade.listarPropuestasCambio().size());
+    }
+
+    @Test
+    void listarPropuestasCambio_sinUsuarioAutenticado_lanzaUsuarioNoAutenticadoException() {
+        assertThrows(UsuarioNoAutenticadoException.class, () -> facade.listarPropuestasCambio());
+    }
+
+    @Test
+    void listarPropuestasCambio_conErrorInesperado_lanzaHistorialClinicoException() {
+        autenticarComo("12345678A");
+        when(propuestaCambioClinicoService.listarPropuestasParaPaciente("12345678A"))
+                .thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(HistorialClinicoException.class, () -> facade.listarPropuestasCambio());
+    }
+
+    @Test
+    void responderPropuestaCambio_conAceptacion_delegaEnElServicioYConvierteADto() {
+        autenticarComo("12345678A");
+        UUID id = UUID.randomUUID();
+        when(propuestaCambioClinicoService.resolver("12345678A", id, true)).thenReturn(propuestaPendiente());
+
+        assertEquals("ALERGIA", facade.responderPropuestaCambio(id, true).getDominio());
+        verify(propuestaCambioClinicoService, times(1)).resolver("12345678A", id, true);
+    }
+
+    @Test
+    void responderPropuestaCambio_conIdNulo_lanzaDatosClinicosValidationException() {
+        autenticarComo("12345678A");
+        assertThrows(DatosClinicosValidationException.class, () -> facade.responderPropuestaCambio(null, true));
+    }
+
+    @Test
+    void responderPropuestaCambio_conPropuestaInexistente_propagaPropuestaCambioNoEncontradaException() {
+        autenticarComo("12345678A");
+        UUID id = UUID.randomUUID();
+        when(propuestaCambioClinicoService.resolver("12345678A", id, false))
+                .thenThrow(new PropuestaCambioNoEncontradaException("no existe"));
+
+        assertThrows(PropuestaCambioNoEncontradaException.class, () -> facade.responderPropuestaCambio(id, false));
+    }
+
+    @Test
+    void responderPropuestaCambio_conPropuestaYaResuelta_propagaPropuestaCambioClinicoException() {
+        autenticarComo("12345678A");
+        UUID id = UUID.randomUUID();
+        when(propuestaCambioClinicoService.resolver("12345678A", id, true))
+                .thenThrow(new PropuestaCambioClinicoException("ya resuelta"));
+
+        assertThrows(PropuestaCambioClinicoException.class, () -> facade.responderPropuestaCambio(id, true));
+    }
+
+    @Test
+    void responderPropuestaCambio_conErrorInesperado_lanzaHistorialClinicoException() {
+        autenticarComo("12345678A");
+        UUID id = UUID.randomUUID();
+        when(propuestaCambioClinicoService.resolver("12345678A", id, true))
+                .thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(HistorialClinicoException.class, () -> facade.responderPropuestaCambio(id, true));
+    }
+
+    @Test
+    void responderPropuestaCambio_sinUsuarioAutenticado_lanzaUsuarioNoAutenticadoException() {
+        assertThrows(UsuarioNoAutenticadoException.class,
+                () -> facade.responderPropuestaCambio(UUID.randomUUID(), true));
+    }
+
+    // ---- ramas de error inesperado en antecedentes / alergias ----
+
+    @Test
+    void crearAntecedente_conErrorInesperado_lanzaHistorialClinicoException() {
+        AntecedenteClinicoDTO entrada = antecedenteValido();
+        when(historiaClinicaService.crearAntecedente(entrada)).thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(HistorialClinicoException.class, () -> facade.crearAntecedente(entrada));
+    }
+
+    @Test
+    void editarAntecedente_conErrorInesperado_lanzaHistorialClinicoException() {
+        UUID id = UUID.randomUUID();
+        AntecedenteClinicoDTO entrada = antecedenteValido();
+        when(historiaClinicaService.editarAntecedente(id, entrada)).thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(HistorialClinicoException.class, () -> facade.editarAntecedente(id, entrada));
+    }
+
+    @Test
+    void borrarAntecedente_conErrorInesperado_lanzaHistorialClinicoException() {
+        UUID id = UUID.randomUUID();
+        when(historiaClinicaService.borrarAntecedente(id)).thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(HistorialClinicoException.class, () -> facade.borrarAntecedente(id));
+    }
+
+    @Test
+    void crearAlergia_conErrorInesperado_lanzaHistorialClinicoException() {
+        AlergiaDTO entrada = alergiaValida();
+        when(historiaClinicaService.crearAlergia(entrada)).thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(HistorialClinicoException.class, () -> facade.crearAlergia(entrada));
+    }
+
+    @Test
+    void borrarAlergia_conErrorInesperado_lanzaHistorialClinicoException() {
+        UUID id = UUID.randomUUID();
+        when(historiaClinicaService.borrarAlergia(id)).thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(HistorialClinicoException.class, () -> facade.borrarAlergia(id));
+    }
+
+    @Test
+    void getMineResource_conErrorInesperado_lanzaArchivoClinicoException() {
+        UUID id = UUID.randomUUID();
+        when(archivoClinicoService.getMineResource(id)).thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(ArchivoClinicoException.class, () -> facade.getMineResource(id));
+    }
+
+    @Test
+    void borrarArchivoClinico_conErrorInesperado_lanzaArchivoClinicoException() throws IOException {
+        UUID id = UUID.randomUUID();
+        org.mockito.Mockito.doThrow(new RuntimeException("fallo")).when(archivoClinicoService).borrarArchivo(id);
+
+        assertThrows(ArchivoClinicoException.class, () -> facade.borrarArchivoClinico(id));
+    }
+
+    @Test
+    void upload_conErrorInesperado_lanzaArchivoClinicoException() throws IOException {
+        MockMultipartFile file = new MockMultipartFile("file", "informe.pdf", "application/pdf", "contenido".getBytes());
+        when(archivoClinicoService.uploadMine(file)).thenThrow(new RuntimeException("fallo"));
+
+        assertThrows(ArchivoClinicoException.class, () -> facade.upload(file));
     }
 }
