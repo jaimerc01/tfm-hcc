@@ -45,7 +45,11 @@ export default defineConfig({
       // Backend Spring Boot con el perfil e2e (Postgres 5433 + Mongo 27018).
       // Se espera solo a que el puerto acepte conexiones; la disponibilidad real
       // (login funcional) la garantiza el proyecto `setup` con sus reintentos.
-      command: 'mvn -q spring-boot:run -Dspring-boot.run.profiles=e2e',
+      // Se usa el Maven Wrapper (mvnw) para no depender de un Maven de sistema.
+      command:
+        process.platform === 'win32'
+          ? 'mvnw.cmd -q spring-boot:run -Dspring-boot.run.profiles=e2e'
+          : './mvnw -q spring-boot:run -Dspring-boot.run.profiles=e2e',
       cwd: '..',
       port: 8081,
       reuseExistingServer: !process.env.CI,
