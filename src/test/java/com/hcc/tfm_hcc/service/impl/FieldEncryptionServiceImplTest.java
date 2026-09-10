@@ -3,6 +3,7 @@ package com.hcc.tfm_hcc.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -55,9 +56,8 @@ class FieldEncryptionServiceImplTest {
     }
 
     @Test
-    void descifrar_conValorSinCifrarPrevio_loDevuelveTalCual() {
-        String textoPlano = "documento-previo-a-activar-el-cifrado";
-
-        assertEquals(textoPlano, service.descifrar(textoPlano));
+    void descifrar_conValorNoDescifrable_lanzaExcepcion() {
+        assertThrows(IllegalStateException.class,
+                () -> service.descifrar("documento-sin-cifrar"));
     }
 }

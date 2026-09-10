@@ -108,8 +108,13 @@ public class WebSecurityConfig {
      * que la aplicación no la usa para nada más (login normal y llamadas posteriores siguen
      * siendo JWT sin estado).
      */
+    // CSRF deshabilitado a propósito: la API es stateless y se autentica con un token
+    // Bearer en la cabecera Authorization, no con cookies de sesión, por lo que no hay
+    // vector CSRF. La sesión efímera del handshake OAuth2 la protege el parámetro "state"
+    // que gestiona Spring Security. Por eso se suprime java:S4502 en ambas cadenas.
     @Bean
     @Order(1)
+    @SuppressWarnings("java:S4502")
     public SecurityFilterChain oauth2LoginFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher("/oauth2/**", "/login/oauth2/**")
@@ -130,6 +135,7 @@ public class WebSecurityConfig {
 
     @Bean
     @Order(2)
+    @SuppressWarnings("java:S4502")
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, AccessLogFilter accessLogFilter) throws Exception {
         http
             .csrf(csrf -> csrf.disable())

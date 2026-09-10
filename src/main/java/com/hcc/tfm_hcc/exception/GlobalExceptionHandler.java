@@ -89,7 +89,7 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(causaRelevante.getMessage());
         }
 
-        log.error("Error en la gestión de archivos clínicos: {}", e.getMessage(), e);
+        log.error("Error inesperado en la gestión de archivos clínicos", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorMessages.ERROR_INTERNO_SERVIDOR);
     }
 
@@ -181,7 +181,7 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(causaRelevante.getMessage());
         }
 
-        log.error("Error interno en operación de historial clínico: {}", e.getMessage(), e);
+        log.error("Error interno en operación de historial clínico", e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorMessages.ERROR_INTERNO_SERVIDOR);
     }
 

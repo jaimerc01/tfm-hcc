@@ -41,11 +41,11 @@ class AESEncryptionConverterTest {
     }
 
     @Test
-    void convertToDatabaseColumn_noUsaElPrefijoDeterminista() {
+    void convertToDatabaseColumn_devuelveBase64ConMasBytesQueElIv() {
         String cifrado = converter.convertToDatabaseColumn("12345678A");
 
         assertNotNull(cifrado);
-        assertTrue(!cifrado.startsWith("DET1:"));
+        assertTrue(Base64.getDecoder().decode(cifrado).length > 12);
     }
 
     @Test
@@ -69,50 +69,20 @@ class AESEncryptionConverterTest {
     }
 
     @Test
-    void convertToEntityAttribute_conFormatoDeterministaAntiguo_sigueSiendoLegible() throws Exception {
-        String original = "12345678A";
-        String ciphertextDeterminista = "DET1:" + cifrarConFormatoDeterminista(original);
+    void convertToEntityAttribute_conCriptogramaGcmValido_loDescifra() throws Exception {
+        String original = "dato-clinico";
+        String criptograma = cifrarGcm(original);
 
-        String descifrado = converter.convertToEntityAttribute(ciphertextDeterminista);
-
-        assertEquals(original, descifrado);
+        assertEquals(original, converter.convertToEntityAttribute(criptograma));
     }
 
     @Test
-    void convertToEntityAttribute_conFormatoLegacyGcm_sigueSiendoLegible() throws Exception {
-        String original = "dato-clinico-legacy";
-        String legacyCiphertext = cifrarConFormatoLegacyGcm(original);
-
-        String descifrado = converter.convertToEntityAttribute(legacyCiphertext);
-
-        assertEquals(original, descifrado);
+    void convertToEntityAttribute_conValorNoDescifrable_lanzaExcepcion() {
+        assertThrows(IllegalStateException.class,
+                () -> converter.convertToEntityAttribute("texto-plano-cualquiera"));
     }
 
-    @Test
-    void convertToEntityAttribute_conValorNoReconocidoNiPrefijadoNiLegacy_devuelveElValorSinCambios() {
-        String valorSinCifrar = "texto-plano-de-migracion";
-
-        String resultado = converter.convertToEntityAttribute(valorSinCifrar);
-
-        assertEquals(valorSinCifrar, resultado);
-    }
-
-    @Test
-    void convertToEntityAttribute_conPrefijoDeterministaPeroContenidoCorrupto_lanzaExcepcion() {
-        String corrupto = "DET1:no-es-base64-valido!!!";
-
-        assertThrows(IllegalStateException.class, () -> converter.convertToEntityAttribute(corrupto));
-    }
-
-    private String cifrarConFormatoDeterminista(String plaintext) throws Exception {
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, keyProvider.getSecretKey());
-
-        byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
-        return Base64.getEncoder().encodeToString(ciphertext);
-    }
-
-    private String cifrarConFormatoLegacyGcm(String plaintext) throws Exception {
+    private String cifrarGcm(String plaintext) throws Exception {
         byte[] iv = new byte[12];
         new SecureRandom().nextBytes(iv);
 

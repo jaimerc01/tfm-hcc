@@ -173,7 +173,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
     private void validarNuevaPassword(String nuevaPassword) {
         if (nuevaPassword == null || nuevaPassword.trim().length() < LONGITUD_MINIMA_PASSWORD) {
-            throw new IllegalArgumentException(ErrorMessages.ERROR_RESET_PASSWORD_DEBIL);
+            throw new IllegalArgumentException(ErrorMessages.ERROR_RESET_CONTRASENA_DEBIL);
         }
     }
 

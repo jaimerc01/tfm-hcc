@@ -59,9 +59,9 @@ public final class ErrorMessages {
 
     public static final String ERROR_RESET_TOKEN_INVALIDO =
             "El enlace de restablecimiento no es válido o ha caducado. Solicita uno nuevo.";
-    public static final String ERROR_RESET_PASSWORD_DEBIL =
+    public static final String ERROR_RESET_CONTRASENA_DEBIL =
             "La nueva contraseña debe tener al menos 8 caracteres";
-    public static final String ERROR_REGISTRO_PASSWORD_DEBIL =
+    public static final String ERROR_REGISTRO_CONTRASENA_DEBIL =
             "La contraseña debe tener al menos 8 caracteres";
     public static final String ERROR_CONSENTIMIENTO_REQUERIDO =
             "Debes dar tu consentimiento explícito para el tratamiento de tus datos de salud para poder registrarte";

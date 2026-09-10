@@ -135,7 +135,7 @@ public class UsuarioControllerImpl implements UsuarioController {
             // restablecimiento de contraseña (8 caracteres).
             if (changePassworRequest.getNewPassword() == null || changePassworRequest.getNewPassword().length() < 8) {
                 log.warn("Contraseña nueva demasiado corta");
-                throw new UsuarioValidationException(ErrorMessages.ERROR_RESET_PASSWORD_DEBIL);
+                throw new UsuarioValidationException(ErrorMessages.ERROR_RESET_CONTRASENA_DEBIL);
             }
             
             usuarioFacade.changePassword(changePassworRequest.getCurrentPassword(), changePassworRequest.getNewPassword());

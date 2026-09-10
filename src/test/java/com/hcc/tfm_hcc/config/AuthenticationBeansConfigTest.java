@@ -19,9 +19,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
 import com.hcc.tfm_hcc.converter.EncryptionKeyProvider;
 import com.hcc.tfm_hcc.model.Perfil;
 import com.hcc.tfm_hcc.model.Usuario;
@@ -92,18 +92,15 @@ class AuthenticationBeansConfigTest {
     }
 
     @Test
-    void passwordEncoder_devuelveUnLegacyAwarePasswordEncoder() {
-        AESEncryptionConverter converter = new AESEncryptionConverter(new EncryptionKeyProvider(CLAVE_PRUEBAS_BASE64));
+    void passwordEncoder_devuelveUnBCryptPasswordEncoder() {
+        PasswordEncoder encoder = config.passwordEncoder();
 
-        PasswordEncoder encoder = config.passwordEncoder(converter);
-
-        assertTrue(encoder instanceof LegacyAwarePasswordEncoder);
+        assertTrue(encoder instanceof BCryptPasswordEncoder);
     }
 
     @Test
     void authenticationManager_conCredencialesCorrectas_autenticaAlUsuario() {
-        AESEncryptionConverter converter = new AESEncryptionConverter(new EncryptionKeyProvider(CLAVE_PRUEBAS_BASE64));
-        PasswordEncoder encoder = config.passwordEncoder(converter);
+        PasswordEncoder encoder = config.passwordEncoder();
         Usuario usuario = usuarioConId("12345678A");
         usuario.setPassword(encoder.encode("password123"));
         UserDetailsService uds = nif -> usuario;
@@ -117,8 +114,7 @@ class AuthenticationBeansConfigTest {
 
     @Test
     void authenticationManager_conCredencialesIncorrectas_lanzaBadCredentialsException() {
-        AESEncryptionConverter converter = new AESEncryptionConverter(new EncryptionKeyProvider(CLAVE_PRUEBAS_BASE64));
-        PasswordEncoder encoder = config.passwordEncoder(converter);
+        PasswordEncoder encoder = config.passwordEncoder();
         Usuario usuario = usuarioConId("12345678A");
         usuario.setPassword(encoder.encode("password123"));
         UserDetailsService uds = nif -> usuario;
