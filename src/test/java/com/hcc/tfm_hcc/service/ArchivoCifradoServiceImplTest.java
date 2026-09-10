@@ -92,11 +92,9 @@ class ArchivoCifradoServiceImplTest {
         Path archivoCorrupto = tempDir.resolve("corrupto.enc");
         Files.write(archivoCorrupto, "contenido-no-cifrado-demasiado-corto".getBytes(StandardCharsets.UTF_8));
 
-        assertThrows(IOException.class, () -> {
-            try (var descifrado = service.descifrar(Files.newInputStream(archivoCorrupto))) {
-                descifrado.readAllBytes();
-            }
-        });
+        try (InputStream descifrado = service.descifrar(Files.newInputStream(archivoCorrupto))) {
+            assertThrows(IOException.class, descifrado::readAllBytes);
+        }
     }
 
     @Test

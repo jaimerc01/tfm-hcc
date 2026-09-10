@@ -329,7 +329,7 @@ public class AutenticacionFacadeImpl implements AutenticacionFacade {
         }
 
         if (usuarioDTO.getPassword().trim().length() < LONGITUD_MINIMA_PASSWORD) {
-            throw new InvalidRegistrationDataException(ErrorMessages.ERROR_REGISTRO_PASSWORD_DEBIL);
+            throw new InvalidRegistrationDataException(ErrorMessages.ERROR_REGISTRO_CONTRASENA_DEBIL);
         }
     }
 }

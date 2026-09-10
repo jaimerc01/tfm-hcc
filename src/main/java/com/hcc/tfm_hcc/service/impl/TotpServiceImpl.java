@@ -82,6 +82,13 @@ public class TotpServiceImpl implements TotpService {
                 b.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * HMAC-SHA1 es el algoritmo por defecto de TOTP (RFC 6238, sobre HOTP de RFC 4226)
+     * y el único que garantizan de forma fiable las aplicaciones autenticadoras. Sigue
+     * siendo un MAC seguro: las colisiones conocidas de SHA-1 no comprometen su uso
+     * dentro de HMAC. Por eso se suprime aquí la regla java:S4790 ("weak hash algorithm").
+     */
+    @SuppressWarnings("java:S4790")
     private String generarCodigoParaPaso(String secretoBase32, long paso) {
         try {
             byte[] clave = base32.decode(secretoBase32);

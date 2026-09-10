@@ -18,11 +18,10 @@ import com.hcc.tfm_hcc.service.FieldEncryptionService;
  *
  * <p>Deliberadamente reimplementa (en vez de reutilizar) el mismo esquema AES/GCM
  * que ya usa {@code AESEncryptionConverter} para columnas JPA: ese converter está
- * ligado a la interfaz {@code AttributeConverter} de JPA y acoplado a la
- * compatibilidad con formatos heredados (AES/ECB determinista), que no aplican
- * aquí. Reutilizar directamente esa clase habría exigido tocar su constructor y,
- * con ello, cada test que la instancia manualmente, por un beneficio marginal.
- * Ambas clases sí comparten la misma clave a través de {@link EncryptionKeyProvider}.
+ * ligado a la interfaz {@code AttributeConverter} de JPA, y reutilizarlo aquí habría
+ * exigido tocar su constructor y, con ello, cada test que lo instancia manualmente,
+ * por un beneficio marginal. Ambas clases sí comparten la misma clave a través de
+ * {@link EncryptionKeyProvider}.
  */
 @Service
 public class FieldEncryptionServiceImpl implements FieldEncryptionService {
@@ -67,17 +66,8 @@ public class FieldEncryptionServiceImpl implements FieldEncryptionService {
         if (valorAlmacenado == null) {
             return null;
         }
-        String descifrado = tryGcmDecrypt(valorAlmacenado);
-        return descifrado != null ? descifrado : valorAlmacenado;
-    }
-
-    private String tryGcmDecrypt(String valor) {
         try {
-            byte[] decoded = Base64.getDecoder().decode(valor);
-
-            if (decoded.length < GCM_IV_LENGTH_BYTES + 1) {
-                return null;
-            }
+            byte[] decoded = Base64.getDecoder().decode(valorAlmacenado);
 
             byte[] iv = new byte[GCM_IV_LENGTH_BYTES];
             byte[] ciphertext = new byte[decoded.length - GCM_IV_LENGTH_BYTES];
@@ -85,13 +75,11 @@ public class FieldEncryptionServiceImpl implements FieldEncryptionService {
             System.arraycopy(decoded, GCM_IV_LENGTH_BYTES, ciphertext, 0, ciphertext.length);
 
             Cipher cipher = Cipher.getInstance(GCM_ALGORITHM);
-            GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv);
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
 
-            byte[] plaintext = cipher.doFinal(ciphertext);
-            return new String(plaintext, StandardCharsets.UTF_8);
-        } catch (Exception _) {
-            return null;
+            return new String(cipher.doFinal(ciphertext), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new IllegalStateException("Error al descifrar el campo", e);
         }
     }
 }

@@ -23,11 +23,8 @@ import jakarta.persistence.Converter;
  * deben usar además un índice de búsqueda determinista aparte, calculado con
  * {@link com.hcc.tfm_hcc.service.HmacSearchIndexService} y almacenado en su propia columna.
  *
- * Compatibilidad con datos ya cifrados por versiones anteriores del proyecto:
- * - Valores con el prefijo "DET1:" fueron cifrados con AES/ECB de forma determinista
- *   (esquema anterior, mantenido solo por compatibilidad de lectura).
- * - Valores sin prefijo se interpretan como AES/GCM (formato actual, y también el que
- *   usaba el esquema "legacy" previo al determinista, indistinguible en formato).
+ * Solo entiende su propio formato: un valor que no sea un criptograma AES/GCM válido para
+ * la clave actual provoca una excepción al leerlo, nunca se devuelve tal cual.
  *
  * Nota: la contraseña no debe usar este convertidor; debe usar solo BCrypt.
  */
@@ -35,8 +32,6 @@ import jakarta.persistence.Converter;
 @Converter(autoApply = false)
 public class AESEncryptionConverter implements AttributeConverter<String, String> {
 
-    private static final String DETERMINISTIC_PREFIX = "DET1:";
-    private static final String DETERMINISTIC_ALGORITHM = "AES/ECB/PKCS5Padding";
     private static final String GCM_ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_IV_LENGTH_BYTES = 12;
     private static final int GCM_TAG_LENGTH_BITS = 128;
@@ -60,7 +55,7 @@ public class AESEncryptionConverter implements AttributeConverter<String, String
 
     @Override
     public String convertToEntityAttribute(String dbData) {
-        return decryptFromBase64OrPlain(dbData);
+        return decryptFromBase64(dbData);
     }
 
     /**
@@ -96,51 +91,19 @@ public class AESEncryptionConverter implements AttributeConverter<String, String
     }
 
     /**
-     * Descifra un valor de base de datos que puede estar en cualquiera de los tres formatos
-     * que ha usado este proyecto (ver la nota de compatibilidad de la clase): legado
-     * determinista con prefijo {@code DET1:}, AES/GCM actual, o texto en claro todavía sin
-     * migrar (se devuelve tal cual, sin fallar, para permitir migraciones de columna en dos
-     * fases). Expuesto (paquete) por el mismo motivo que {@link #encryptToBase64(String)}.
+     * Descifra un valor cifrado con AES/GCM y codificado en Base64 por
+     * {@link #encryptToBase64(String)}. Expuesto (paquete) por el mismo motivo.
      *
-     * @param dbData valor tal como está almacenado en la columna, o {@code null}
+     * @param dbData valor cifrado tal como está almacenado en la columna, o {@code null}
      * @return el texto en claro correspondiente, o {@code null} si {@code dbData} es {@code null}
+     * @throws IllegalStateException si {@code dbData} no es un criptograma AES/GCM válido para la clave actual
      */
-    String decryptFromBase64OrPlain(String dbData) {
+    String decryptFromBase64(String dbData) {
         if (dbData == null) {
             return null;
         }
         try {
-            if (dbData.startsWith(DETERMINISTIC_PREFIX)) {
-                return decryptDeterministic(dbData.substring(DETERMINISTIC_PREFIX.length()));
-            }
-
-            String gcm = tryGcmDecrypt(dbData);
-            if (gcm != null) {
-                return gcm;
-            }
-
-            return dbData;
-        } catch (Exception e) {
-            throw new IllegalStateException("Error al descifrar datos clínicos de base de datos.", e);
-        }
-    }
-
-    private String decryptDeterministic(String encodedCiphertext) throws Exception {
-        byte[] ciphertext = Base64.getDecoder().decode(encodedCiphertext);
-        Cipher cipher = Cipher.getInstance(DETERMINISTIC_ALGORITHM);
-        cipher.init(Cipher.DECRYPT_MODE, secretKey);
-
-        byte[] plaintext = cipher.doFinal(ciphertext);
-        return new String(plaintext, StandardCharsets.UTF_8);
-    }
-
-    private String tryGcmDecrypt(String dbData) {
-        try {
             byte[] decoded = Base64.getDecoder().decode(dbData);
-
-            if (decoded.length < GCM_IV_LENGTH_BYTES + 1) {
-                return null;
-            }
 
             byte[] iv = new byte[GCM_IV_LENGTH_BYTES];
             byte[] ciphertext = new byte[decoded.length - GCM_IV_LENGTH_BYTES];
@@ -148,13 +111,11 @@ public class AESEncryptionConverter implements AttributeConverter<String, String
             System.arraycopy(decoded, GCM_IV_LENGTH_BYTES, ciphertext, 0, ciphertext.length);
 
             Cipher cipher = Cipher.getInstance(GCM_ALGORITHM);
-            GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv);
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
 
-            byte[] plaintext = cipher.doFinal(ciphertext);
-            return new String(plaintext, StandardCharsets.UTF_8);
-        } catch (Exception _) {
-            return null;
+            return new String(cipher.doFinal(ciphertext), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            throw new IllegalStateException("Error al descifrar atributo de datos clínicos.", e);
         }
     }
 }

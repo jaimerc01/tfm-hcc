@@ -21,14 +21,13 @@ public interface FieldEncryptionService {
     String cifrar(String texto);
 
     /**
-     * Descifra un valor previamente cifrado con {@link #cifrar(String)}.
-     *
-     * <p>Si el valor no tiene el formato de un ciphertext válido (por ejemplo,
-     * documentos ya existentes antes de activar este cifrado), se devuelve tal
-     * cual, asumiendo que es texto plano heredado.</p>
+     * Descifra un valor previamente cifrado con {@link #cifrar(String)}. Devuelve
+     * {@code null} si la entrada es {@code null}.
      *
      * @param valorAlmacenado valor tal y como está guardado
      * @return el valor en claro
+     * @throws IllegalStateException si {@code valorAlmacenado} no es un criptograma
+     *         AES/GCM válido para la clave actual
      */
     String descifrar(String valorAlmacenado);
 }

@@ -10,9 +10,9 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.hcc.tfm_hcc.converter.AESEncryptionConverter;
 import com.hcc.tfm_hcc.model.Perfil;
 import com.hcc.tfm_hcc.model.Usuario;
 import com.hcc.tfm_hcc.repository.PerfilUsuarioRepository;
@@ -56,8 +56,8 @@ public class AuthenticationBeansConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder(AESEncryptionConverter encryptionConverter) {
-        return new LegacyAwarePasswordEncoder(encryptionConverter);
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     @Bean

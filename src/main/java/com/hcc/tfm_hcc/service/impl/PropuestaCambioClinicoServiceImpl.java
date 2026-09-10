@@ -366,8 +366,11 @@ public class PropuestaCambioClinicoServiceImpl implements PropuestaCambioClinico
     }
 
     private String nombreONif(Usuario usuario) {
+        if (usuario == null) {
+            return "";
+        }
         String nombre = NombreUtil.nombreCompleto(usuario);
-        return (nombre == null || nombre.isBlank()) ? usuario.getNif() : nombre;
+        return nombre.isBlank() ? usuario.getNif() : nombre;
     }
 
     private void auditar(PropuestaCambioClinico propuesta, String valorAnterior, String valorNuevo,

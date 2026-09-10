@@ -3,6 +3,7 @@ package com.hcc.tfm_hcc.converter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
@@ -59,28 +60,8 @@ class AESEncryptionLocalDateTimeConverterTest {
     }
 
     @Test
-    void convertToEntityAttribute_conFormatoTextoDePostgresSinCifrar_seParseaComoFallback() {
-        // Formato que produce Postgres al convertir una columna TIMESTAMP a texto
-        // (ALTER TABLE ... USING fecha_nacimiento::text), antes de que la fila se
-        // reescriba y quede cifrada.
-        LocalDateTime descifrado = converter.convertToEntityAttribute("1990-05-14 00:00:00");
-
-        assertEquals(LocalDateTime.of(1990, 5, 14, 0, 0, 0), descifrado);
-    }
-
-    @Test
-    void convertToEntityAttribute_conFormatoTextoDePostgresConMicrosegundos_seParseaComoFallback() {
-        LocalDateTime descifrado = converter.convertToEntityAttribute("1990-05-14 00:00:00.123456");
-
-        assertEquals(LocalDateTime.of(1990, 5, 14, 0, 0, 0, 123_456_000), descifrado);
-    }
-
-    @Test
-    void convertToEntityAttribute_conFechaSinHoraDeColumnaDateSinCifrar_seParseaAMedianoche() {
-        // Formato que produce Postgres al convertir una columna DATE a texto
-        // (ALTER TABLE ... USING fecha_nacimiento::text): solo fecha, sin hora.
-        LocalDateTime descifrado = converter.convertToEntityAttribute("1990-01-01");
-
-        assertEquals(LocalDateTime.of(1990, 1, 1, 0, 0, 0), descifrado);
+    void convertToEntityAttribute_conValorNoDescifrable_lanzaExcepcion() {
+        assertThrows(IllegalStateException.class,
+                () -> converter.convertToEntityAttribute("1990-05-14 00:00:00"));
     }
 }
