@@ -126,8 +126,9 @@ Escucha en `http://localhost:8081`. Hibernate crea el esquema en el primer arran
 En otra terminal:
 
 ```bash
-npm --prefix frontend install
-npm --prefix frontend run serve
+cd frontend
+npm install
+npm run serve
 ```
 
 Disponible en `http://localhost:8080`.
@@ -188,8 +189,9 @@ El informe de cobertura combinado queda en `target/site/jacoco/index.html`.
 ### Frontend
 
 ```bash
-npm --prefix frontend test              # unitarias + integración (Vitest)
-npm --prefix frontend run test:coverage # con informe de cobertura
+cd frontend
+npm test              # unitarias + integración (Vitest)
+npm run test:coverage # con informe de cobertura
 ```
 
 ### Extremo a extremo
